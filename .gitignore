@@ -1,0 +1,32 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ambiente Virtual
+.venv/
+venv/
+env/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# Banco temporário de testes
+data/teste*.db
+
+# Arquivos temporários
+*.tmp
+*.bak
+
+# Sistema
+.DS_Store
+Thumbs.db

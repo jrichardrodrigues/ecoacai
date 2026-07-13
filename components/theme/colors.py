@@ -1,0 +1,15 @@
+class Colors:
+    PRIMARY = "#781946"
+    PRIMARY_LIGHT = "#A42B69"
+
+    BACKGROUND = "#F8F4F6"
+    SURFACE = "#FFFFFF"
+
+    TEXT = "#2D1B25"
+    TEXT_SECONDARY = "#6B5A63"
+
+    SUCCESS = "#2E7D32"
+    ERROR = "#C62828"
+    WARNING = "#F9A825"
+
+    BORDER = "#E5D9DF"

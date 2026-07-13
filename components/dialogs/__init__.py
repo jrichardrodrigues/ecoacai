@@ -1,0 +1,1 @@
+from .confirm_dialog import confirmar_exclusao

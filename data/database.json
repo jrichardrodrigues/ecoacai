@@ -1,0 +1,90 @@
+{
+    "usuarios": [
+        {
+            "id": 1,
+            "nome": "Maria do Açaí",
+            "cpf": "123.456.789-09",
+            "email": "maria@email.com",
+            "celular": "91999999999",
+            "endereco": "Rua Principal, 100",
+            "bairro": "Guamá",
+            "setor": "Guamá"
+        },
+        {
+            "id": 2,
+            "nome": "João do Açaí",
+            "cpf": "529.982.247-25",
+            "email": "joao@email.com",
+            "celular": "91988887777",
+            "endereco": "Travessa Central, 55",
+            "bairro": "Terra Firme",
+            "setor": "Terra Firme"
+        },
+        {
+            "id": 3,
+            "nome": "Antonio Lobato",
+            "cpf": "168.995.350-09",
+            "email": "antoniolobato@hotmail.com",
+            "celular": "9098-7654",
+            "endereco": "Rua Antonio Barreto, 1274",
+            "bairro": "Cremação",
+            "setor": "Cremação"
+        },
+        {
+            "id": 4,
+            "nome": "Regina Belich",
+            "cpf": "133.718.782-87",
+            "email": "regina@bel.com",
+            "celular": "(91) 98990-0288",
+            "celular_confirmado": false,
+            "endereco": "Av. Alcindo cacela, 802",
+            "bairro": "Guamá",
+            "setor": "Guamá"
+        },
+        {
+            "id": 5,
+            "nome": "Regina Belich",
+            "cpf": "008.503.462-23",
+            "email": "reg@gmail.com",
+            "celular": "(91) 98229-5768",
+            "celular_confirmado": false,
+            "endereco": "Av. Alcindo Cacela, 806",
+            "bairro": "Umarizal",
+            "setor": "Cremação"
+        },
+        {
+            "id": 6,
+            "nome": "Amanda Rodrigues",
+            "cpf": "086.692.872-34",
+            "email": "antonio@hotmail.com",
+            "celular": "(00) 98229-5768",
+            "celular_confirmado": false,
+            "endereco": "Rua 1, 32",
+            "bairro": "Zero",
+            "setor": "Jurunas"
+        },
+        {
+            "id": 7,
+            "nome": "Heros Mussi Schwinden",
+            "cpf": "028.011.089-87",
+            "email": "heros@gmail.com",
+            "celular": "(91) 98215-4552",
+            "celular_confirmado": false,
+            "endereco": "Rua 1, 1",
+            "bairro": "Dois",
+            "setor": "Terra Firme"
+        },
+        {
+            "id": 8,
+            "nome": "Luiz Germano",
+            "cpf": "786.133.027-34",
+            "email": "lgermano@gmail.com",
+            "celular": "(94) 99137-3080",
+            "celular_confirmado": false,
+            "endereco": "Quadra Sqnw 110 Bloco C, 110",
+            "bairro": "Umarizal",
+            "setor": "Tapanã"
+        }
+    ],
+    "solicitacoes": []
+}

@@ -1,0 +1,15 @@
+from .constants import (
+    APP_NAME,
+    APP_SUBTITLE,
+    APP_VERSION,
+    COR_ALERTA,
+    COR_CARD,
+    COR_ERRO,
+    COR_FUNDO,
+    COR_PRIMARIA,
+    COR_SECUNDARIA,
+    COR_SUCESSO,
+    COR_TEXTO,
+    SETORES,
+    STATUS_SOLICITACAO,
+)
