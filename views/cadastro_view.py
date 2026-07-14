@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import flet as ft
 
 from components.fields import (
@@ -10,43 +12,50 @@ from config import COR_SUCESSO, SETORES
 from controllers.estabelecimento_controller import (
     EstabelecimentoController,
 )
+from models import Estabelecimento
 from utils.messages import mostrar_erro, mostrar_sucesso
 
 
 class CadastroView:
-    """Tela de cadastro de estabelecimentos e responsáveis."""
+    """Tela de cadastro e edição de estabelecimentos."""
 
     def __init__(
-            self,
-            page: ft.Page,
-            on_salvar_sucesso=None,
+        self,
+        page: ft.Page,
+        on_salvar_sucesso: Callable[[], None] | None = None,
+        estabelecimento: Estabelecimento | None = None,
     ) -> None:
         self.page = page
         self.on_salvar_sucesso = on_salvar_sucesso
+        self.estabelecimento = estabelecimento
+        self.modo_edicao = estabelecimento is not None
+
         self.controller = EstabelecimentoController()
 
-        # Campos inteligentes reutilizáveis
+        ignorar_id = (
+            estabelecimento.id
+            if estabelecimento is not None
+            and estabelecimento.id is not None
+            else 0
+        )
+
         self.nome = NameField()
 
         self.cpf = CpfField(
-            usuario_service=(
-                self.controller.estabelecimento_service
-            ),
+            usuario_service=self.controller.estabelecimento_service,
+            ignorar_id=ignorar_id,
         )
 
         self.email = EmailField(
-            usuario_service=(
-                self.controller.estabelecimento_service
-            ),
+            usuario_service=self.controller.estabelecimento_service,
+            ignorar_id=ignorar_id,
         )
 
         self.celular = PhoneField(
-            usuario_service=(
-                self.controller.estabelecimento_service
-            ),
+            usuario_service=self.controller.estabelecimento_service,
+            ignorar_id=ignorar_id,
         )
 
-        # Campos simples
         self.endereco = ft.TextField(
             label="Endereço",
             hint_text="Rua, travessa, avenida e número",
@@ -72,11 +81,27 @@ class CadastroView:
             ],
         )
 
-        # Faz os componentes compostos ocuparem o espaço disponível.
         self.nome.container.expand = True
         self.cpf.container.expand = True
         self.email.container.expand = True
         self.celular.container.expand = True
+
+        self.preencher_campos()
+
+    def preencher_campos(self) -> None:
+        """Preenche o formulário no modo de edição."""
+
+        if self.estabelecimento is None:
+            return
+
+        self.nome.value = self.estabelecimento.nome
+        self.cpf.value = self.estabelecimento.cpf
+        self.email.value = self.estabelecimento.email
+        self.celular.value = self.estabelecimento.celular
+
+        self.endereco.value = self.estabelecimento.endereco
+        self.bairro.value = self.estabelecimento.bairro
+        self.setor.value = self.estabelecimento.setor
 
     def obter_dados(self) -> dict[str, str | None]:
         """Reúne os valores preenchidos no formulário."""
@@ -114,15 +139,33 @@ class CadastroView:
         self.page.update()
 
     def salvar(self, e: ft.ControlEvent) -> None:
-        """Envia os dados preenchidos para o controller."""
+        """Cadastra ou atualiza o estabelecimento."""
 
         dados = self.obter_dados()
 
-        sucesso, mensagem = (
-            self.controller.cadastrar_estabelecimento(
-                dados,
+        if self.modo_edicao:
+            if (
+                self.estabelecimento is None
+                or self.estabelecimento.id is None
+            ):
+                mostrar_erro(
+                    self.page,
+                    "Estabelecimento sem identificador.",
+                )
+                return
+
+            sucesso, mensagem = (
+                self.controller.atualizar_estabelecimento(
+                    self.estabelecimento.id,
+                    dados,
+                )
             )
-        )
+        else:
+            sucesso, mensagem = (
+                self.controller.cadastrar_estabelecimento(
+                    dados,
+                )
+            )
 
         if not sucesso:
             mostrar_erro(
@@ -136,24 +179,52 @@ class CadastroView:
             mensagem,
         )
 
-        self.limpar_campos()
-
-        if self.on_salvar_sucesso:
+        if self.on_salvar_sucesso is not None:
             self.on_salvar_sucesso()
+            return
+
+        if not self.modo_edicao:
+            self.limpar_campos()
 
     def construir(self) -> ft.Control:
-        """Constrói e retorna o conteúdo visual da tela."""
+        """Constrói o formulário de cadastro ou edição."""
+
+        titulo = (
+            "Editar Estabelecimento"
+            if self.modo_edicao
+            else "Cadastro de Estabelecimentos"
+        )
+
+        subtitulo = (
+            "Altere os dados e clique em atualizar."
+            if self.modo_edicao
+            else (
+                "Preencha os dados do estabelecimento "
+                "ou responsável."
+            )
+        )
+
+        texto_botao = (
+            "Atualizar cadastro"
+            if self.modo_edicao
+            else "Salvar cadastro"
+        )
+
+        icone_botao = (
+            ft.Icons.EDIT
+            if self.modo_edicao
+            else ft.Icons.SAVE
+        )
 
         return ft.Column(
             controls=[
                 ft.Text(
-                    "Cadastro de Estabelecimentos",
+                    titulo,
                     size=28,
                     weight=ft.FontWeight.BOLD,
                 ),
                 ft.Text(
-                    "Preencha os dados do estabelecimento "
-                    "ou responsável.",
+                    subtitulo,
                     size=15,
                 ),
                 ft.Divider(),
@@ -197,8 +268,8 @@ class CadastroView:
                 ft.Row(
                     controls=[
                         ft.ElevatedButton(
-                            content="Salvar cadastro",
-                            icon=ft.Icons.SAVE,
+                            content=texto_botao,
+                            icon=icone_botao,
                             bgcolor=COR_SUCESSO,
                             color=ft.Colors.WHITE,
                             on_click=self.salvar,

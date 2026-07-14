@@ -1,13 +1,15 @@
+from collections.abc import Callable
+
 import flet as ft
 
 from components.tables import (
-    ActionButtons,
-    DataTable,
+    EstabelecimentoTable,
     Toolbar,
 )
 from controllers.estabelecimento_controller import (
     EstabelecimentoController,
 )
+from models import Estabelecimento
 from utils.messages import mostrar_erro, mostrar_sucesso
 
 
@@ -15,12 +17,14 @@ class EstabelecimentosView:
     """Tela de listagem e gerenciamento de estabelecimentos."""
 
     def __init__(
-            self,
-            page: ft.Page,
-            on_novo=None,
+        self,
+        page: ft.Page,
+        on_novo: Callable[[], None] | None = None,
+        on_editar: Callable[[Estabelecimento], None] | None = None,
     ) -> None:
         self.page = page
         self.on_novo = on_novo
+        self.on_editar = on_editar
 
         self.controller = EstabelecimentoController()
 
@@ -62,16 +66,10 @@ class EstabelecimentosView:
             visible=False,
         )
 
-        self.tabela = DataTable(
-            columns=[
-                ft.DataColumn(ft.Text("Nome")),
-                ft.DataColumn(ft.Text("CPF")),
-                ft.DataColumn(ft.Text("Celular")),
-                ft.DataColumn(ft.Text("Bairro")),
-                ft.DataColumn(ft.Text("Setor")),
-                ft.DataColumn(ft.Text("Situação")),
-                ft.DataColumn(ft.Text("Ações")),
-            ],
+        self.tabela = EstabelecimentoTable(
+            on_edit=self.editar,
+            on_delete=self.excluir,
+            on_collect=self.solicitar_coleta,
         )
 
         self.atualizar_tabela()
@@ -80,7 +78,7 @@ class EstabelecimentosView:
         self,
         pesquisa: str = "",
     ) -> None:
-        """Carrega os registros e atualiza a tabela."""
+        """Consulta os dados e atualiza a tabela."""
 
         estabelecimentos = (
             self.controller.listar_estabelecimentos(
@@ -88,67 +86,15 @@ class EstabelecimentosView:
             )
         )
 
+        quantidade = len(estabelecimentos)
+
         self.total.value = (
-            f"Total de estabelecimentos: "
-            f"{len(estabelecimentos)}"
+            f"Total de estabelecimentos: {quantidade}"
         )
 
-        linhas: list[ft.DataRow] = []
+        self.tabela.carregar(estabelecimentos)
 
-        for estabelecimento in estabelecimentos:
-            estabelecimento_id = estabelecimento.id
-
-            linhas.append(
-                ft.DataRow(
-                    cells=[
-                        ft.DataCell(
-                            ft.Text(estabelecimento.nome),
-                        ),
-                        ft.DataCell(
-                            ft.Text(estabelecimento.cpf),
-                        ),
-                        ft.DataCell(
-                            ft.Text(estabelecimento.celular),
-                        ),
-                        ft.DataCell(
-                            ft.Text(estabelecimento.bairro),
-                        ),
-                        ft.DataCell(
-                            ft.Text(estabelecimento.setor),
-                        ),
-                        ft.DataCell(
-                            ft.Text(
-                                "Ativo"
-                                if estabelecimento.ativo
-                                else "Inativo",
-                            ),
-                        ),
-                        ft.DataCell(
-                            ActionButtons(
-                                on_edit=(
-                                    lambda e,
-                                    item_id=estabelecimento_id:
-                                    self.editar(item_id)
-                                ),
-                                on_delete=(
-                                    lambda e,
-                                    item_id=estabelecimento_id:
-                                    self.excluir(item_id)
-                                ),
-                                on_collect=(
-                                    lambda e,
-                                    item_id=estabelecimento_id:
-                                    self.solicitar_coleta(item_id)
-                                ),
-                            ),
-                        ),
-                    ],
-                ),
-            )
-
-        self.tabela.atualizar(linhas)
-
-        tem_registros = bool(linhas)
+        tem_registros = quantidade > 0
 
         self.tabela.visible = tem_registros
         self.sem_registros.visible = not tem_registros
@@ -157,7 +103,7 @@ class EstabelecimentosView:
         self,
         e: ft.ControlEvent,
     ) -> None:
-        """Filtra a listagem conforme o texto informado."""
+        """Filtra os estabelecimentos em tempo real."""
 
         self.atualizar_tabela(
             pesquisa=e.control.value or "",
@@ -165,16 +111,26 @@ class EstabelecimentosView:
 
         self.page.update()
 
-    def novo(self, e):
+    def novo(
+        self,
+        e: ft.ControlEvent,
+    ) -> None:
+        """Abre o formulário para um novo cadastro."""
 
-        if self.on_novo:
-            self.on_novo()
+        if self.on_novo is None:
+            mostrar_erro(
+                self.page,
+                "Não foi possível abrir o cadastro.",
+            )
+            return
+
+        self.on_novo()
 
     def editar(
         self,
         estabelecimento_id: int | None,
     ) -> None:
-        """Ação temporária de edição."""
+        """Busca o registro e abre o formulário de edição."""
 
         if estabelecimento_id is None:
             mostrar_erro(
@@ -183,18 +139,33 @@ class EstabelecimentosView:
             )
             return
 
-        mostrar_erro(
-            self.page,
-            f"A edição do estabelecimento "
-            f"{estabelecimento_id} será implementada "
-            f"na próxima etapa.",
+        estabelecimento = (
+            self.controller.buscar_estabelecimento_por_id(
+                estabelecimento_id,
+            )
         )
+
+        if estabelecimento is None:
+            mostrar_erro(
+                self.page,
+                "Estabelecimento não encontrado.",
+            )
+            return
+
+        if self.on_editar is None:
+            mostrar_erro(
+                self.page,
+                "Não foi possível abrir a edição.",
+            )
+            return
+
+        self.on_editar(estabelecimento)
 
     def excluir(
         self,
         estabelecimento_id: int | None,
     ) -> None:
-        """Realiza a exclusão lógica do registro."""
+        """Realiza a exclusão lógica do estabelecimento."""
 
         if estabelecimento_id is None:
             mostrar_erro(
@@ -231,7 +202,7 @@ class EstabelecimentosView:
         self,
         estabelecimento_id: int | None,
     ) -> None:
-        """Ação temporária para solicitação de coleta."""
+        """Ação temporária para a futura solicitação de coleta."""
 
         if estabelecimento_id is None:
             mostrar_erro(
@@ -242,9 +213,8 @@ class EstabelecimentosView:
 
         mostrar_erro(
             self.page,
-            f"A solicitação de coleta do estabelecimento "
-            f"{estabelecimento_id} será implementada "
-            f"na próxima etapa.",
+            "A solicitação de coleta será implementada "
+            "na Sprint v0.6.0.",
         )
 
     def build(self) -> ft.Control:

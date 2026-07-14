@@ -2,11 +2,13 @@ from collections.abc import Callable
 
 import flet as ft
 
+from models import Estabelecimento
 from views.cadastro_view import CadastroView
 from views.estabelecimentos_view import EstabelecimentosView
 
 
 class NavigationController:
+    """Controla a troca do conteúdo principal da aplicação."""
 
     def __init__(self, page: ft.Page) -> None:
         self.page = page
@@ -59,21 +61,40 @@ class NavigationController:
 
     def _cadastro(self) -> ft.Control:
         return CadastroView(
-            self.page,
+            page=self.page,
             on_salvar_sucesso=self.abrir_estabelecimentos,
         ).construir()
 
-    def _estabelecimentos(self):
+    def _estabelecimentos(self) -> ft.Control:
         return EstabelecimentosView(
-            self.page,
+            page=self.page,
             on_novo=self.abrir_cadastro,
+            on_editar=self.abrir_edicao,
         ).build()
 
     def abrir_cadastro(self) -> None:
+        """Abre o formulário no modo de cadastro."""
+
         self.conteudo.content = self._cadastro()
         self.page.update()
 
+    def abrir_edicao(
+        self,
+        estabelecimento: Estabelecimento,
+    ) -> None:
+        """Abre o formulário preenchido no modo de edição."""
+
+        self.conteudo.content = CadastroView(
+            page=self.page,
+            estabelecimento=estabelecimento,
+            on_salvar_sucesso=self.abrir_estabelecimentos,
+        ).construir()
+
+        self.page.update()
+
     def abrir_estabelecimentos(self) -> None:
+        """Retorna à listagem e recarrega os dados."""
+
         self.conteudo.content = self._estabelecimentos()
         self.page.update()
 
@@ -103,6 +124,8 @@ class NavigationController:
         )
 
     def mudar_tela(self, indice: int) -> None:
+        """Muda a tela com base no índice do menu."""
+
         construtor_tela = self._rotas.get(
             indice,
             self._home,
