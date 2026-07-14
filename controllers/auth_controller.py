@@ -5,7 +5,7 @@ from services import AuthService
 class AuthController:
     """Ponte entre as telas de autenticação e o AuthService."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.auth_service = AuthService()
         self.usuario_logado: Usuario | None = None
 
@@ -20,10 +20,12 @@ class AuthController:
 
         if sucesso:
             self.usuario_logado = usuario
+        else:
+            self.usuario_logado = None
 
         return sucesso, mensagem
 
-    def sair(self):
+    def sair(self) -> None:
         self.usuario_logado = None
 
     def esta_autenticado(self) -> bool:

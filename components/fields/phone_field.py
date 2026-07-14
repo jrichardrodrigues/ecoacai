@@ -19,9 +19,9 @@ class PhoneField(BaseValidatedField):
     }
 
     def __init__(
-        self,
-        usuario_service,
-        ignorar_id: int = 0,
+            self,
+            usuario_service=None,
+            ignorar_id: int = 0,
     ):
         super().__init__(
             label="Celular/WhatsApp",
@@ -102,9 +102,12 @@ class PhoneField(BaseValidatedField):
                 self.erro("Número de telefone fixo inválido.")
                 return
 
-        if self.usuario_service.celular_existe(
-            celular_formatado,
-            ignorar_id=self.ignorar_id,
+        if (
+            self.usuario_service is not None
+            and self.usuario_service.celular_existe(
+                celular_formatado,
+                ignorar_id=self.ignorar_id,
+            )
         ):
             self.erro("Celular já cadastrado.")
             return

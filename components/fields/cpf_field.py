@@ -7,7 +7,7 @@ class CpfField(BaseValidatedField):
 
     def __init__(
         self,
-        usuario_service,
+        usuario_service=None,
         ignorar_id: int = 0,
     ):
         super().__init__(
@@ -36,9 +36,13 @@ class CpfField(BaseValidatedField):
             self.erro("CPF inválido.")
             return
 
-        if self.usuario_service.cpf_existe(
-            cpf,
-            ignorar_id=self.ignorar_id,
+        # Somente verifica duplicidade quando existe um service.
+        if (
+            self.usuario_service is not None
+            and self.usuario_service.cpf_existe(
+                cpf,
+                ignorar_id=self.ignorar_id,
+            )
         ):
             self.erro("CPF já cadastrado.")
             return

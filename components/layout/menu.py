@@ -7,7 +7,10 @@ def criar_menu(on_change):
         label_type=ft.NavigationRailLabelType.ALL,
         min_width=90,
         min_extended_width=220,
-        leading=ft.Icon(ft.Icons.LOCAL_SHIPPING, size=40),
+        leading=ft.Icon(
+            ft.Icons.LOCAL_SHIPPING,
+            size=40,
+        ),
         destinations=[
             ft.NavigationRailDestination(
                 icon=ft.Icons.HOME_OUTLINED,
@@ -18,6 +21,11 @@ def criar_menu(on_change):
                 icon=ft.Icons.PERSON_ADD_ALT_OUTLINED,
                 selected_icon=ft.Icons.PERSON_ADD,
                 label="Cadastro",
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.Icons.STORE_OUTLINED,
+                selected_icon=ft.Icons.STORE,
+                label="Estabelecimentos",
             ),
             ft.NavigationRailDestination(
                 icon=ft.Icons.LOCAL_SHIPPING_OUTLINED,

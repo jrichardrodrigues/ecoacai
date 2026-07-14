@@ -6,31 +6,44 @@ from components.fields import (
     NameField,
     PhoneField,
 )
-from config import SETORES
-from controllers.usuario_controller import UsuarioController
+from config import COR_SUCESSO, SETORES
+from controllers.estabelecimento_controller import (
+    EstabelecimentoController,
+)
 from utils.messages import mostrar_erro, mostrar_sucesso
 
 
 class CadastroView:
     """Tela de cadastro de estabelecimentos e responsáveis."""
 
-    def __init__(self, page: ft.Page):
+    def __init__(
+            self,
+            page: ft.Page,
+            on_salvar_sucesso=None,
+    ) -> None:
         self.page = page
-        self.controller = UsuarioController()
+        self.on_salvar_sucesso = on_salvar_sucesso
+        self.controller = EstabelecimentoController()
 
         # Campos inteligentes reutilizáveis
         self.nome = NameField()
 
         self.cpf = CpfField(
-            usuario_service=self.controller.usuario_service,
+            usuario_service=(
+                self.controller.estabelecimento_service
+            ),
         )
 
         self.email = EmailField(
-            usuario_service=self.controller.usuario_service,
+            usuario_service=(
+                self.controller.estabelecimento_service
+            ),
         )
 
         self.celular = PhoneField(
-            usuario_service=self.controller.usuario_service,
+            usuario_service=(
+                self.controller.estabelecimento_service
+            ),
         )
 
         # Campos simples
@@ -65,7 +78,7 @@ class CadastroView:
         self.email.container.expand = True
         self.celular.container.expand = True
 
-    def obter_dados(self) -> dict:
+    def obter_dados(self) -> dict[str, str | None]:
         """Reúne os valores preenchidos no formulário."""
 
         return {
@@ -78,7 +91,10 @@ class CadastroView:
             "setor": self.setor.value,
         }
 
-    def limpar_campos(self, e=None):
+    def limpar_campos(
+        self,
+        e: ft.ControlEvent | None = None,
+    ) -> None:
         """Limpa os campos e as mensagens de validação."""
 
         self.nome.limpar()
@@ -97,21 +113,37 @@ class CadastroView:
 
         self.page.update()
 
-    def salvar(self, e):
+    def salvar(self, e: ft.ControlEvent) -> None:
         """Envia os dados preenchidos para o controller."""
 
         dados = self.obter_dados()
 
-        sucesso, mensagem = self.controller.cadastrar_usuario(dados)
+        sucesso, mensagem = (
+            self.controller.cadastrar_estabelecimento(
+                dados,
+            )
+        )
 
         if not sucesso:
-            mostrar_erro(self.page, mensagem)
+            mostrar_erro(
+                self.page,
+                mensagem,
+            )
             return
 
-        mostrar_sucesso(self.page, mensagem)
+        mostrar_sucesso(
+            self.page,
+            mensagem,
+        )
+
         self.limpar_campos()
 
-    def construir(self):
+        if self.on_salvar_sucesso:
+            self.on_salvar_sucesso()
+
+    def construir(self) -> ft.Control:
+        """Constrói e retorna o conteúdo visual da tela."""
+
         return ft.Column(
             controls=[
                 ft.Text(
@@ -120,19 +152,18 @@ class CadastroView:
                     weight=ft.FontWeight.BOLD,
                 ),
                 ft.Text(
-                    "Preencha os dados do estabelecimento ou responsável.",
+                    "Preencha os dados do estabelecimento "
+                    "ou responsável.",
                     size=15,
                 ),
                 ft.Divider(),
 
-                # Nome
                 ft.Row(
                     controls=[
                         self.nome.container,
                     ],
                 ),
 
-                # CPF e e-mail
                 ft.Row(
                     controls=[
                         self.cpf.container,
@@ -141,14 +172,12 @@ class CadastroView:
                     spacing=15,
                 ),
 
-                # Celular
                 ft.Row(
                     controls=[
                         self.celular.container,
                     ],
                 ),
 
-                # Endereço e bairro
                 ft.Row(
                     controls=[
                         self.endereco,
@@ -157,7 +186,6 @@ class CadastroView:
                     spacing=15,
                 ),
 
-                # Setor
                 ft.Row(
                     controls=[
                         self.setor,
@@ -166,13 +194,12 @@ class CadastroView:
 
                 ft.Divider(),
 
-                # Ações
                 ft.Row(
                     controls=[
                         ft.ElevatedButton(
                             content="Salvar cadastro",
                             icon=ft.Icons.SAVE,
-                            bgcolor=ft.Colors.GREEN,
+                            bgcolor=COR_SUCESSO,
                             color=ft.Colors.WHITE,
                             on_click=self.salvar,
                         ),

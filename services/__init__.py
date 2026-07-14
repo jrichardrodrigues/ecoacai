@@ -8,3 +8,9 @@ from .cep_service import CepService
 from .phone_service import PhoneService
 from .cadastro_conta_service import CadastroContaService
 from .auth_service import AuthService
+from .estabelecimento_service import (
+    EstabelecimentoService,
+)
+from .estabelecimento_validation_service import (
+    EstabelecimentoValidationService,
+)

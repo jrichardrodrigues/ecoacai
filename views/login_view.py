@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import flet as ft
 
 from components.buttons import (
@@ -9,13 +11,29 @@ from components.cards import FormCard
 from components.fields import CpfField, PasswordField
 from components.headers import PageHeader
 from components.theme import Colors
-from controllers import LoginController
+from config import APP_NAME
+from controllers.auth_controller import AuthController
+from models import Usuario
+from utils.messages import mostrar_erro
 
 
 class LoginView:
-    def __init__(self, page: ft.Page):
+    """Tela de autenticação do Açaí Coleta."""
+
+    def __init__(
+        self,
+        page: ft.Page,
+        auth_controller: AuthController,
+        on_login_sucesso: Callable[[Usuario], None],
+        on_criar_conta: Callable[[ft.ControlEvent], None],
+        on_esqueci_senha: Callable[[ft.ControlEvent], None],
+    ) -> None:
         self.page = page
-        self.controller = LoginController()
+        self.controller = auth_controller
+
+        self._on_login_sucesso = on_login_sucesso
+        self._on_criar_conta = on_criar_conta
+        self._on_esqueci_senha = on_esqueci_senha
 
         self.cpf = CpfField(
             usuario_service=None,
@@ -31,30 +49,50 @@ class LoginView:
             value=False,
         )
 
-    def on_entrar(self, e):
-        sucesso, resultado = self.controller.entrar(
+    def on_entrar(self, e: ft.ControlEvent) -> None:
+        """Tenta autenticar o usuário com CPF e senha."""
+
+        sucesso, mensagem = self.controller.entrar(
             self.cpf.value,
             self.senha.value,
         )
 
-        if sucesso:
-            print("Login realizado com sucesso!")
-            print(resultado)
-        else:
-            print(resultado)
+        if not sucesso:
+            mostrar_erro(
+                self.page,
+                mensagem,
+            )
+            return
 
-    def on_criar_conta(self, e):
-        print("Botão CRIAR CONTA clicado")
+        usuario = self.controller.usuario_logado
 
-    def on_esqueci_senha(self, e):
-        print("Botão ESQUECI MINHA SENHA clicado")
+        if usuario is None:
+            mostrar_erro(
+                self.page,
+                "Não foi possível recuperar o usuário autenticado.",
+            )
+            return
 
-    def build(self):
+        self._on_login_sucesso(usuario)
+
+    def on_criar_conta(self, e: ft.ControlEvent) -> None:
+        """Encaminha o evento para o fluxo de criação de conta."""
+
+        self._on_criar_conta(e)
+
+    def on_esqueci_senha(self, e: ft.ControlEvent) -> None:
+        """Encaminha o evento para o fluxo de recuperação de senha."""
+
+        self._on_esqueci_senha(e)
+
+    def construir(self) -> ft.Control:
+        """Constrói e retorna o conteúdo visual da tela de login."""
+
         card = FormCard(
             content=ft.Column(
                 controls=[
                     PageHeader(
-                        title="EcoAçaí",
+                        title=APP_NAME,
                         subtitle=(
                             "Plataforma Inteligente de Recolhimento\n"
                             "de Caroço de Açaí"
@@ -104,3 +142,10 @@ class LoginView:
             padding=20,
             content=card,
         )
+
+    def build(self) -> ft.Control:
+        """
+        Mantém compatibilidade com locais que ainda chamem build().
+        """
+
+        return self.construir()

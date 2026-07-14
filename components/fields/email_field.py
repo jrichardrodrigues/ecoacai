@@ -7,7 +7,7 @@ class EmailField(BaseValidatedField):
 
     def __init__(
         self,
-        usuario_service,
+        usuario_service=None,
         ignorar_id: int = 0,
     ):
         super().__init__(
@@ -34,9 +34,12 @@ class EmailField(BaseValidatedField):
             self.erro(mensagem)
             return
 
-        if self.usuario_service.email_existe(
-            email,
-            ignorar_id=self.ignorar_id,
+        if (
+            self.usuario_service is not None
+            and self.usuario_service.email_existe(
+                email,
+                ignorar_id=self.ignorar_id,
+            )
         ):
             self.erro("E-mail já cadastrado.")
             return
