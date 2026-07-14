@@ -11,6 +11,7 @@ from controllers.estabelecimento_controller import (
 )
 from models import Estabelecimento
 from utils.messages import mostrar_erro, mostrar_sucesso
+from components.dialogs import confirmar_exclusao
 
 
 class EstabelecimentosView:
@@ -162,10 +163,10 @@ class EstabelecimentosView:
         self.on_editar(estabelecimento)
 
     def excluir(
-        self,
-        estabelecimento_id: int | None,
+            self,
+            estabelecimento_id: int | None,
     ) -> None:
-        """Realiza a exclusão lógica do estabelecimento."""
+        """Solicita confirmação antes de excluir."""
 
         if estabelecimento_id is None:
             mostrar_erro(
@@ -174,29 +175,37 @@ class EstabelecimentosView:
             )
             return
 
-        sucesso, mensagem = (
-            self.controller.excluir_estabelecimento(
-                estabelecimento_id,
-            )
-        )
+        def confirmar():
 
-        if not sucesso:
-            mostrar_erro(
+            sucesso, mensagem = (
+                self.controller.excluir_estabelecimento(
+                    estabelecimento_id,
+                )
+            )
+
+            if not sucesso:
+                mostrar_erro(
+                    self.page,
+                    mensagem,
+                )
+                return
+
+            mostrar_sucesso(
                 self.page,
                 mensagem,
             )
-            return
 
-        mostrar_sucesso(
-            self.page,
-            mensagem,
+            self.atualizar_tabela(
+                pesquisa=self.toolbar.search.value or "",
+            )
+
+            self.page.update()
+
+        confirmar_exclusao(
+            page=self.page,
+            mensagem="Deseja realmente excluir este estabelecimento?",
+            on_confirm=confirmar,
         )
-
-        self.atualizar_tabela(
-            pesquisa=self.toolbar.search.value or "",
-        )
-
-        self.page.update()
 
     def solicitar_coleta(
         self,

@@ -1,28 +1,43 @@
 import flet as ft
 
 
-def confirmar_exclusao(page: ft.Page, on_confirmar):
-    dialog = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("Confirmar exclusão"),
-        content=ft.Text("Deseja realmente excluir este cadastro?"),
-        actions=[
-            ft.TextButton(
-                "Cancelar",
-                on_click=lambda e: fechar_dialogo(page, dialog),
-            ),
-            ft.TextButton(
-                "Excluir",
-                on_click=on_confirmar,
-            ),
-        ],
-    )
+class ConfirmDialog(ft.AlertDialog):
+    """Diálogo reutilizável para confirmação."""
 
-    page.dialog = dialog
-    dialog.open = True
-    page.update()
+    def __init__(
+        self,
+        page: ft.Page,
+        titulo: str,
+        mensagem: str,
+        on_confirm,
+    ):
+        self._page = page
+        self.on_confirm = on_confirm
 
+        super().__init__(
+            modal=True,
+            title=ft.Text(titulo),
+            content=ft.Text(mensagem),
+            actions=[
+                ft.TextButton(
+                    "Cancelar",
+                    on_click=self.cancelar,
+                ),
+                ft.FilledButton(
+                    "Excluir",
+                    on_click=self.confirmar,
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
 
-def fechar_dialogo(page: ft.Page, dialog: ft.AlertDialog):
-    dialog.open = False
-    page.update()
+    def cancelar(self, e):
+        self.open = False
+        self._page.update()
+
+    def confirmar(self, e):
+        self.open = False
+        self._page.update()
+
+        if self.on_confirm:
+            self.on_confirm()
