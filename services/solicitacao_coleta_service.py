@@ -191,3 +191,69 @@ class SolicitacaoColetaService:
             True,
             "Solicitação excluída com sucesso.",
         )
+
+    def alterar_status(
+            self,
+            solicitacao_id: int,
+    ) -> tuple[bool, str, SolicitacaoColeta | None]:
+        """Avança a solicitação para o próximo status."""
+
+        solicitacao = self.repository.buscar_por_id(
+            solicitacao_id
+        )
+
+        if solicitacao is None:
+            return (
+                False,
+                "Solicitação não encontrada.",
+                None,
+            )
+
+        agora = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        if solicitacao.status == "PENDENTE":
+
+            solicitacao.status = "AGENDADA"
+            solicitacao.data_agendada = agora
+
+        elif solicitacao.status == "AGENDADA":
+
+            solicitacao.status = "EM_COLETA"
+
+        elif solicitacao.status == "EM_COLETA":
+
+            solicitacao.status = "CONCLUIDA"
+            solicitacao.data_conclusao = agora
+
+        else:
+
+            solicitacao.status = "PENDENTE"
+            solicitacao.data_agendada = None
+            solicitacao.data_conclusao = None
+
+        try:
+
+            atualizada = self.repository.alterar_status(
+                solicitacao
+            )
+
+        except Exception as erro:
+
+            print(
+                "Erro ao alterar status:",
+                erro,
+            )
+
+            return (
+                False,
+                "Não foi possível alterar o status.",
+                None,
+            )
+
+        return (
+            True,
+            "Status atualizado com sucesso.",
+            atualizada,
+        )

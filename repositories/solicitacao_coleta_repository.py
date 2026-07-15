@@ -129,6 +129,34 @@ class SolicitacaoColetaRepository:
 
         return self.buscar_por_id(solicitacao.id)
 
+    def alterar_status(
+            self,
+            solicitacao: SolicitacaoColeta,
+    ) -> SolicitacaoColeta | None:
+        """Atualiza apenas o status e as datas da solicitação."""
+
+        with self.database.obter_conexao() as conexao:
+            conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    status = ?,
+                    data_agendada = ?,
+                    data_conclusao = ?
+                WHERE id = ?
+                """,
+                (
+                    solicitacao.status,
+                    solicitacao.data_agendada,
+                    solicitacao.data_conclusao,
+                    solicitacao.id,
+                ),
+            )
+
+        return self.buscar_por_id(
+            solicitacao.id
+        )
+
     def excluir(
             self,
             solicitacao_id: int,

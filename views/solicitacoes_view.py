@@ -16,8 +16,6 @@ from utils.messages import (
     mostrar_erro,
     mostrar_sucesso,
 )
-from components.dialogs import ConfirmDialog
-
 
 class SolicitacoesView:
     """Tela de listagem das solicitações de coleta."""
@@ -293,10 +291,10 @@ class SolicitacoesView:
         )
 
     def alterar_status(
-        self,
-        solicitacao_id: int | None,
+            self,
+            solicitacao_id: int | None,
     ) -> None:
-        """Ação temporária para alteração de status."""
+        """Altera o status da solicitação."""
 
         if solicitacao_id is None:
             mostrar_erro(
@@ -305,10 +303,25 @@ class SolicitacoesView:
             )
             return
 
-        mostrar_erro(
+        sucesso, mensagem, _ = (
+            self.controller.alterar_status(
+                solicitacao_id
+            )
+        )
+
+        if not sucesso:
+            mostrar_erro(
+                self.page,
+                mensagem,
+            )
+            return
+
+        self.atualizar_lista()
+        self.page.update()
+
+        mostrar_sucesso(
             self.page,
-            f"Alteração de status da solicitação "
-            f"{solicitacao_id} será implementada.",
+            mensagem,
         )
 
     def abrir_maps(

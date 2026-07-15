@@ -51,3 +51,13 @@ class SolicitacaoColetaController:
         return self.service.excluir(
             solicitacao_id
         )
+
+    def alterar_status(
+            self,
+            solicitacao_id: int,
+    ):
+        """Altera o status da solicitação."""
+
+        return self.service.alterar_status(
+            solicitacao_id
+        )
