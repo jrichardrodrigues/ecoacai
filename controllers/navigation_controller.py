@@ -7,6 +7,7 @@ from views.cadastro_view import CadastroView
 from views.estabelecimentos_view import EstabelecimentosView
 from views.solicitacoes_view import SolicitacoesView
 from views.solicitacao_form_view import SolicitacaoFormView
+from views.dashboard_view import DashboardView
 
 
 class NavigationController:
@@ -30,11 +31,15 @@ class NavigationController:
                 "Painel",
                 "Aqui ficará o painel de solicitações ativas.",
             ),
-            5: lambda: self._tela_temporaria(
-                "Dashboard",
-                "Aqui ficarão os indicadores do sistema.",
-            ),
+            5: self._dashboard,
         }
+
+    def _dashboard(self) -> ft.Control:
+        """Abre o Dashboard."""
+
+        return DashboardView(
+            page=self.page,
+        ).build()
 
     def _home(self) -> ft.Control:
         return ft.Column(

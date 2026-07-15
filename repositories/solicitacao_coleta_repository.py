@@ -174,6 +174,65 @@ class SolicitacaoColetaRepository:
 
             return cursor.rowcount > 0
 
+    def obter_estatisticas(self) -> dict:
+        """Retorna indicadores para o Dashboard."""
+
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                SELECT
+                    COUNT(*) AS total,
+
+                    SUM(
+                        CASE
+                            WHEN status='PENDENTE'
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS pendentes,
+
+                    SUM(
+                        CASE
+                            WHEN status='AGENDADA'
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS agendadas,
+
+                    SUM(
+                        CASE
+                            WHEN status='EM_COLETA'
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS em_coleta,
+
+                    SUM(
+                        CASE
+                            WHEN status='CONCLUIDA'
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS concluidas,
+
+                    COALESCE(
+                        SUM(quantidade_sacas),
+                        0
+                    ) AS total_sacas,
+
+                    COALESCE(
+                        SUM(quantidade_kg),
+                        0
+                    ) AS total_kg
+
+                FROM solicitacoes
+                """
+            )
+
+            row = cursor.fetchone()
+
+            return dict(row)
+
     def buscar_por_id(
         self,
         solicitacao_id: int,

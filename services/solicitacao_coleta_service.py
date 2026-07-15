@@ -16,6 +16,11 @@ class SolicitacaoColetaService:
     def listar(self):
         return self.repository.listar()
 
+    def obter_estatisticas(self) -> dict:
+        """Retorna os indicadores do Dashboard."""
+
+        return self.repository.obter_estatisticas()
+
     def buscar_por_id(
         self,
         solicitacao_id: int,

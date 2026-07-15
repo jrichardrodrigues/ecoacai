@@ -402,10 +402,10 @@ class SolicitacoesView:
             )
 
     def abrir_whatsapp(
-        self,
-        solicitacao_id: int | None,
+            self,
+            solicitacao_id: int | None,
     ) -> None:
-        """Ação temporária para integração com WhatsApp."""
+        """Abre o WhatsApp do estabelecimento."""
 
         if solicitacao_id is None:
             mostrar_erro(
@@ -414,11 +414,95 @@ class SolicitacoesView:
             )
             return
 
-        mostrar_erro(
-            self.page,
-            f"WhatsApp da solicitação "
-            f"{solicitacao_id} será integrado.",
+        solicitacao = self.controller.buscar_por_id(
+            solicitacao_id
         )
+
+        if solicitacao is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação não encontrada.",
+            )
+            return
+
+        estabelecimento = (
+            self.estabelecimento_controller
+            .buscar_estabelecimento_por_id(
+                solicitacao.estabelecimento_id
+            )
+        )
+
+        if estabelecimento is None:
+            mostrar_erro(
+                self.page,
+                "Estabelecimento não encontrado.",
+            )
+            return
+
+        telefone = "".join(
+            c for c in estabelecimento.celular
+            if c.isdigit()
+        )
+
+        if not telefone:
+            mostrar_erro(
+                self.page,
+                "O estabelecimento não possui celular cadastrado.",
+            )
+            return
+
+        # Acrescenta o código do Brasil se necessário
+        if not telefone.startswith("55"):
+            telefone = "55" + telefone
+
+        mensagens = {
+            "PENDENTE": (
+                "Recebemos sua solicitação de coleta."
+            ),
+            "AGENDADA": (
+                "Sua coleta foi agendada."
+            ),
+            "EM_COLETA": (
+                "Nossa equipe está a caminho."
+            ),
+            "CONCLUIDA": (
+                "Sua coleta foi concluída. Obrigado!"
+            ),
+        }
+
+        mensagem = (
+            f"Olá, {estabelecimento.nome}!\n\n"
+            f"{mensagens.get(solicitacao.status, '')}\n\n"
+            f"Solicitação: {solicitacao.numero}\n"
+            f"Status: {solicitacao.status.replace('_', ' ')}\n"
+            f"Sacas: {solicitacao.quantidade_sacas}\n"
+            f"Peso: {solicitacao.quantidade_kg:.1f} kg\n\n"
+            f"Equipe EcoAçaí 🌱"
+        )
+
+        url = (
+            f"https://wa.me/{telefone}"
+            f"?text={urllib.parse.quote(mensagem)}"
+        )
+
+        try:
+            webbrowser.open(url)
+
+            mostrar_sucesso(
+                self.page,
+                "Abrindo WhatsApp...",
+            )
+
+        except Exception as erro:
+            print(
+                "Erro ao abrir WhatsApp:",
+                erro,
+            )
+
+            mostrar_erro(
+                self.page,
+                "Não foi possível abrir o WhatsApp.",
+            )
 
     def build(self) -> ft.Control:
         """Constrói e retorna a tela."""

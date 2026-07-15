@@ -116,9 +116,16 @@ class SolicitacaoCard(ft.Card):
 
         if on_whatsapp is not None:
             botoes.append(
-                ft.IconButton(
-                    icon=ft.Icons.CHAT_OUTLINED,
+                ft.Container(
+                    content=ft.Image(
+                        src="assets/icons/whatsapp.png",
+                        width=22,
+                        height=22,
+                    ),
                     tooltip="Abrir WhatsApp",
+                    ink=True,
+                    border_radius=20,
+                    padding=4,
                     on_click=on_whatsapp,
                 ),
             )

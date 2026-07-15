@@ -10,6 +10,11 @@ class SolicitacaoColetaController:
     def listar(self):
         return self.service.listar()
 
+    def obter_estatisticas(self):
+        """Retorna os indicadores do Dashboard."""
+
+        return self.service.obter_estatisticas()
+
     def buscar_por_id(
         self,
         solicitacao_id: int,
