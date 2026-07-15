@@ -17,13 +17,14 @@ class SolicitacaoCard(ft.Card):
     """Card reutilizável para exibir uma solicitação de coleta."""
 
     def __init__(
-        self,
-        solicitacao: SolicitacaoColeta,
-        nome_estabelecimento: str,
-        on_editar: Callable[[ft.ControlEvent], None] | None = None,
-        on_status: Callable[[ft.ControlEvent], None] | None = None,
-        on_maps: Callable[[ft.ControlEvent], None] | None = None,
-        on_whatsapp: Callable[[ft.ControlEvent], None] | None = None,
+            self,
+            solicitacao: SolicitacaoColeta,
+            nome_estabelecimento: str,
+            on_editar=None,
+            on_excluir=None,
+            on_status=None,
+            on_maps=None,
+            on_whatsapp=None,
     ) -> None:
         cor_status = CORES_STATUS.get(
             solicitacao.status,
@@ -127,6 +128,16 @@ class SolicitacaoCard(ft.Card):
                     icon=ft.Icons.EDIT_OUTLINED,
                     tooltip="Editar solicitação",
                     on_click=on_editar,
+                ),
+            )
+
+        if on_excluir is not None:
+            botoes.append(
+                ft.IconButton(
+                    icon=ft.Icons.DELETE_OUTLINE,
+                    tooltip="Excluir solicitação",
+                    icon_color=ft.Colors.RED,
+                    on_click=on_excluir,
                 ),
             )
 

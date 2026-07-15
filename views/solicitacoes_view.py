@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import flet as ft
 
 from components.cards import SolicitacaoCard
@@ -8,11 +10,13 @@ from controllers.estabelecimento_controller import (
 from controllers.solicitacao_coleta_controller import (
     SolicitacaoColetaController,
 )
-# from utils.messages import mostrar_erro
+from models import SolicitacaoColeta
+from components.dialogs import ConfirmDialog
 from utils.messages import (
     mostrar_erro,
     mostrar_sucesso,
 )
+from components.dialogs import ConfirmDialog
 
 
 class SolicitacoesView:
@@ -21,12 +25,17 @@ class SolicitacoesView:
     def __init__(
         self,
         page: ft.Page,
-        on_nova_solicitacao=None,
+        on_nova_solicitacao: Callable[[], None] | None = None,
+        on_editar_solicitacao: (
+            Callable[[SolicitacaoColeta], None] | None
+        ) = None,
     ) -> None:
         self.page = page
         self.on_nova_solicitacao = on_nova_solicitacao
+        self.on_editar_solicitacao = on_editar_solicitacao
 
         self.controller = SolicitacaoColetaController()
+
         self.estabelecimento_controller = (
             EstabelecimentoController()
         )
@@ -84,7 +93,7 @@ class SolicitacoesView:
         self,
         pesquisa: str = "",
     ) -> None:
-        """Carrega as solicitações e monta os Cards."""
+        """Carrega as solicitações e monta os cards."""
 
         solicitacoes = self.controller.listar()
 
@@ -124,9 +133,7 @@ class SolicitacoesView:
             cards.append(
                 SolicitacaoCard(
                     solicitacao=solicitacao,
-                    nome_estabelecimento=(
-                        nome_estabelecimento
-                    ),
+                    nome_estabelecimento=nome_estabelecimento,
                     on_editar=(
                         lambda e,
                         item_id=solicitacao.id:
@@ -146,6 +153,11 @@ class SolicitacoesView:
                         lambda e,
                         item_id=solicitacao.id:
                         self.abrir_whatsapp(item_id)
+                    ),
+                    on_excluir=(
+                        lambda e,
+                               item_id=solicitacao.id:
+                        self.excluir(item_id)
                     ),
                 )
             )
@@ -167,6 +179,8 @@ class SolicitacoesView:
         self,
         e: ft.ControlEvent,
     ) -> None:
+        """Pesquisa solicitações em tempo real."""
+
         self.atualizar_lista(
             pesquisa=e.control.value or "",
         )
@@ -174,15 +188,16 @@ class SolicitacoesView:
         self.page.update()
 
     def nova_solicitacao(
-            self,
-            e: ft.ControlEvent,
+        self,
+        e: ft.ControlEvent,
     ) -> None:
-        """Abre o formulário de nova solicitação."""
+        """Solicita a abertura do formulário de cadastro."""
 
         if self.on_nova_solicitacao is None:
             mostrar_erro(
                 self.page,
-                "A navegação não foi configurada.",
+                "A navegação para nova solicitação "
+                "não foi configurada.",
             )
             return
 
@@ -192,16 +207,104 @@ class SolicitacoesView:
         self,
         solicitacao_id: int | None,
     ) -> None:
-        mostrar_erro(
+        """Solicita a abertura do formulário de edição."""
+
+        if solicitacao_id is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação inválida.",
+            )
+            return
+
+        solicitacao = self.controller.buscar_por_id(
+            solicitacao_id
+        )
+
+        if solicitacao is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação não encontrada.",
+            )
+            return
+
+        if self.on_editar_solicitacao is None:
+            mostrar_erro(
+                self.page,
+                "A navegação para edição "
+                "não foi configurada.",
+            )
+            return
+
+        self.on_editar_solicitacao(
+            solicitacao
+        )
+
+    def excluir(
+            self,
+            solicitacao_id: int | None,
+    ) -> None:
+        """Solicita confirmação para excluir."""
+
+        if solicitacao_id is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação inválida.",
+            )
+            return
+
+        dialog = ConfirmDialog(
+            page=self.page,
+            titulo="Excluir Solicitação",
+            mensagem=(
+                "Deseja realmente excluir esta solicitação?"
+            ),
+            on_confirm=lambda: self.confirmar_exclusao(
+                solicitacao_id
+            ),
+        )
+
+        self.page.overlay.append(dialog)
+        dialog.open = True
+        self.page.update()
+
+    def confirmar_exclusao(
+            self,
+            solicitacao_id: int,
+    ) -> None:
+        """Exclui a solicitação."""
+
+        sucesso, mensagem = self.controller.excluir(
+            solicitacao_id
+        )
+
+        if not sucesso:
+            mostrar_erro(
+                self.page,
+                mensagem,
+            )
+            return
+
+        self.atualizar_lista()
+        self.page.update()
+
+        mostrar_sucesso(
             self.page,
-            f"Edição da solicitação "
-            f"{solicitacao_id} será implementada.",
+            mensagem,
         )
 
     def alterar_status(
         self,
         solicitacao_id: int | None,
     ) -> None:
+        """Ação temporária para alteração de status."""
+
+        if solicitacao_id is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação inválida.",
+            )
+            return
+
         mostrar_erro(
             self.page,
             f"Alteração de status da solicitação "
@@ -212,6 +315,15 @@ class SolicitacoesView:
         self,
         solicitacao_id: int | None,
     ) -> None:
+        """Ação temporária para integração com Google Maps."""
+
+        if solicitacao_id is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação inválida.",
+            )
+            return
+
         mostrar_erro(
             self.page,
             f"Google Maps da solicitação "
@@ -222,6 +334,15 @@ class SolicitacoesView:
         self,
         solicitacao_id: int | None,
     ) -> None:
+        """Ação temporária para integração com WhatsApp."""
+
+        if solicitacao_id is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação inválida.",
+            )
+            return
+
         mostrar_erro(
             self.page,
             f"WhatsApp da solicitação "
@@ -229,6 +350,8 @@ class SolicitacoesView:
         )
 
     def build(self) -> ft.Control:
+        """Constrói e retorna a tela."""
+
         return ft.Column(
             controls=[
                 self.toolbar,

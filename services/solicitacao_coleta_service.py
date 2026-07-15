@@ -85,3 +85,109 @@ class SolicitacaoColetaService:
             "Solicitação cadastrada com sucesso.",
             cadastrada,
         )
+
+    def atualizar(
+            self,
+            solicitacao: SolicitacaoColeta,
+    ) -> tuple[bool, str, SolicitacaoColeta | None]:
+        """Atualiza uma solicitação existente."""
+
+        if solicitacao.id is None:
+            return (
+                False,
+                "Solicitação inválida.",
+                None,
+            )
+
+        if solicitacao.estabelecimento_id <= 0:
+            return (
+                False,
+                "Selecione um estabelecimento.",
+                None,
+            )
+
+        if solicitacao.quantidade_sacas <= 0:
+            return (
+                False,
+                "A quantidade de sacas deve ser maior que zero.",
+                None,
+            )
+
+        if solicitacao.quantidade_kg < 0:
+            return (
+                False,
+                "A quantidade em quilos não pode ser negativa.",
+                None,
+            )
+
+        try:
+            atualizada = self.repository.atualizar(
+                solicitacao
+            )
+
+        except Exception as erro:
+            print(
+                "Erro ao atualizar solicitação:",
+                erro,
+            )
+
+            return (
+                False,
+                "Não foi possível atualizar a solicitação.",
+                None,
+            )
+
+        return (
+            True,
+            "Solicitação atualizada com sucesso.",
+            atualizada,
+        )
+
+    def excluir(
+            self,
+            solicitacao_id: int,
+    ) -> tuple[bool, str]:
+        """Exclui uma solicitação."""
+
+        if solicitacao_id <= 0:
+            return (
+                False,
+                "Solicitação inválida.",
+            )
+
+        solicitacao = self.repository.buscar_por_id(
+            solicitacao_id
+        )
+
+        if solicitacao is None:
+            return (
+                False,
+                "Solicitação não encontrada.",
+            )
+
+        try:
+            sucesso = self.repository.excluir(
+                solicitacao_id
+            )
+
+        except Exception as erro:
+            print(
+                "Erro ao excluir solicitação:",
+                erro,
+            )
+
+            return (
+                False,
+                "Não foi possível excluir a solicitação.",
+            )
+
+        if not sucesso:
+            return (
+                False,
+                "Não foi possível excluir a solicitação.",
+            )
+
+        return (
+            True,
+            "Solicitação excluída com sucesso.",
+        )

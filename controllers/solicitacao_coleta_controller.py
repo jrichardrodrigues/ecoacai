@@ -31,3 +31,23 @@ class SolicitacaoColetaController:
             quantidade_kg=quantidade_kg,
             observacao=observacao,
         )
+
+    def atualizar(
+            self,
+            solicitacao,
+    ):
+        """Atualiza uma solicitação."""
+
+        return self.service.atualizar(
+            solicitacao
+        )
+
+    def excluir(
+            self,
+            solicitacao_id: int,
+    ):
+        """Exclui uma solicitação."""
+
+        return self.service.excluir(
+            solicitacao_id
+        )

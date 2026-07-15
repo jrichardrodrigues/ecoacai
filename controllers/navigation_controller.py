@@ -77,6 +77,7 @@ class NavigationController:
         return SolicitacoesView(
             page=self.page,
             on_nova_solicitacao=self.abrir_nova_solicitacao,
+            on_editar_solicitacao=self.abrir_edicao_solicitacao,
         ).build()
 
     def abrir_cadastro(self) -> None:
@@ -116,6 +117,21 @@ class NavigationController:
 
         self.conteudo.content = SolicitacaoFormView(
             page=self.page,
+            on_cancelar=self.abrir_solicitacoes,
+            on_salvar_sucesso=self.abrir_solicitacoes,
+        ).build()
+
+        self.page.update()
+
+    def abrir_edicao_solicitacao(
+            self,
+            solicitacao,
+    ) -> None:
+        """Abre o formulário em modo de edição."""
+
+        self.conteudo.content = SolicitacaoFormView(
+            page=self.page,
+            solicitacao=solicitacao,
             on_cancelar=self.abrir_solicitacoes,
             on_salvar_sucesso=self.abrir_solicitacoes,
         ).build()

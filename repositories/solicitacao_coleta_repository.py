@@ -89,6 +89,63 @@ class SolicitacaoColetaRepository:
 
         return cadastrada
 
+    def atualizar(
+            self,
+            solicitacao: SolicitacaoColeta,
+    ) -> SolicitacaoColeta | None:
+        """Atualiza uma solicitação existente."""
+
+        with self.database.obter_conexao() as conexao:
+            conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    estabelecimento_id = ?,
+                    quantidade_sacas = ?,
+                    quantidade_kg = ?,
+                    data_agendada = ?,
+                    data_conclusao = ?,
+                    status = ?,
+                    prioridade = ?,
+                    observacao = ?,
+                    latitude = ?,
+                    longitude = ?
+                WHERE id = ?
+                """,
+                (
+                    solicitacao.estabelecimento_id,
+                    solicitacao.quantidade_sacas,
+                    solicitacao.quantidade_kg,
+                    solicitacao.data_agendada,
+                    solicitacao.data_conclusao,
+                    solicitacao.status,
+                    solicitacao.prioridade,
+                    solicitacao.observacao,
+                    solicitacao.latitude,
+                    solicitacao.longitude,
+                    solicitacao.id,
+                ),
+            )
+
+        return self.buscar_por_id(solicitacao.id)
+
+    def excluir(
+            self,
+            solicitacao_id: int,
+    ) -> bool:
+        """Exclui uma solicitação."""
+
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                DELETE FROM solicitacoes
+                WHERE id = ?
+                """,
+                (solicitacao_id,),
+            )
+
+            return cursor.rowcount > 0
+
     def buscar_por_id(
         self,
         solicitacao_id: int,
