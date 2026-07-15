@@ -107,7 +107,8 @@ class SolicitacaoCard(ft.Card):
         if on_maps is not None:
             botoes.append(
                 ft.IconButton(
-                    icon=ft.Icons.MAP_OUTLINED,
+                    icon=ft.Icons.LOCATION_ON,
+                    icon_color=ft.Colors.RED_700,
                     tooltip="Abrir no Google Maps",
                     on_click=on_maps,
                 ),

@@ -1,7 +1,8 @@
 from collections.abc import Callable
 
 import flet as ft
-
+import urllib.parse
+import webbrowser
 from components.cards import SolicitacaoCard
 from components.tables import Toolbar
 from controllers.estabelecimento_controller import (
@@ -325,10 +326,10 @@ class SolicitacoesView:
         )
 
     def abrir_maps(
-        self,
-        solicitacao_id: int | None,
+            self,
+            solicitacao_id: int | None,
     ) -> None:
-        """Ação temporária para integração com Google Maps."""
+        """Abre o estabelecimento no Google Maps."""
 
         if solicitacao_id is None:
             mostrar_erro(
@@ -337,11 +338,68 @@ class SolicitacoesView:
             )
             return
 
-        mostrar_erro(
-            self.page,
-            f"Google Maps da solicitação "
-            f"{solicitacao_id} será integrado.",
+        solicitacao = self.controller.buscar_por_id(
+            solicitacao_id
         )
+
+        if solicitacao is None:
+            mostrar_erro(
+                self.page,
+                "Solicitação não encontrada.",
+            )
+            return
+
+        estabelecimento = (
+            self.estabelecimento_controller
+            .buscar_estabelecimento_por_id(
+                solicitacao.estabelecimento_id
+            )
+        )
+
+        if estabelecimento is None:
+            mostrar_erro(
+                self.page,
+                "Estabelecimento não encontrado.",
+            )
+            return
+
+        consulta = " ".join(
+            filtro
+            for filtro in (
+                estabelecimento.nome,
+                estabelecimento.endereco,
+                estabelecimento.bairro,
+            )
+            if filtro
+        )
+
+        if not consulta.strip():
+            mostrar_erro(
+                self.page,
+                "O estabelecimento não possui endereço cadastrado.",
+            )
+            return
+
+        url = (
+                "https://www.google.com/maps/search/?api=1&query="
+                + urllib.parse.quote(consulta)
+        )
+
+        try:
+            webbrowser.open(url)
+
+            mostrar_sucesso(
+                self.page,
+                "Abrindo Google Maps...",
+            )
+
+        except Exception as erro:
+            print("Erro ao abrir Google Maps:", erro)
+
+            mostrar_erro(
+                self.page,
+                "Não foi possível abrir o Google Maps.",
+            )
 
     def abrir_whatsapp(
         self,
