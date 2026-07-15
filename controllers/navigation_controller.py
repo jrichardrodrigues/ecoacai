@@ -5,6 +5,8 @@ import flet as ft
 from models import Estabelecimento
 from views.cadastro_view import CadastroView
 from views.estabelecimentos_view import EstabelecimentosView
+from views.solicitacoes_view import SolicitacoesView
+from views.solicitacao_form_view import SolicitacaoFormView
 
 
 class NavigationController:
@@ -23,10 +25,7 @@ class NavigationController:
             0: self._home,
             1: self._cadastro,
             2: self._estabelecimentos,
-            3: lambda: self._tela_temporaria(
-                "Coletas",
-                "Aqui ficará a tela de solicitação de coletas.",
-            ),
+            3: self._solicitacoes,
             4: lambda: self._tela_temporaria(
                 "Painel",
                 "Aqui ficará o painel de solicitações ativas.",
@@ -72,6 +71,14 @@ class NavigationController:
             on_editar=self.abrir_edicao,
         ).build()
 
+    def _solicitacoes(self) -> ft.Control:
+        """Abre a lista de solicitações."""
+
+        return SolicitacoesView(
+            page=self.page,
+            on_nova_solicitacao=self.abrir_nova_solicitacao,
+        ).build()
+
     def abrir_cadastro(self) -> None:
         """Abre o formulário no modo de cadastro."""
 
@@ -96,6 +103,23 @@ class NavigationController:
         """Retorna à listagem e recarrega os dados."""
 
         self.conteudo.content = self._estabelecimentos()
+        self.page.update()
+
+    def abrir_solicitacoes(self) -> None:
+        """Retorna para a lista de solicitações."""
+
+        self.conteudo.content = self._solicitacoes()
+        self.page.update()
+
+    def abrir_nova_solicitacao(self) -> None:
+        """Abre o formulário de nova solicitação."""
+
+        self.conteudo.content = SolicitacaoFormView(
+            page=self.page,
+            on_cancelar=self.abrir_solicitacoes,
+            on_salvar_sucesso=self.abrir_solicitacoes,
+        ).build()
+
         self.page.update()
 
     def _tela_temporaria(
@@ -132,3 +156,5 @@ class NavigationController:
         )
 
         self.conteudo.content = construtor_tela()
+
+        self.page.update()

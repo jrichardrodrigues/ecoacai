@@ -5,3 +5,6 @@ __all__ = [
     "AuthController",
     "EstabelecimentoController",
 ]
+from .solicitacao_coleta_controller import (
+    SolicitacaoColetaController,
+)

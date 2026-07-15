@@ -14,3 +14,6 @@ from .estabelecimento_service import (
 from .estabelecimento_validation_service import (
     EstabelecimentoValidationService,
 )
+from .solicitacao_coleta_service import (
+    SolicitacaoColetaService,
+)
