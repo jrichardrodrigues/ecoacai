@@ -119,8 +119,8 @@ class SolicitacaoCard(ft.Card):
                 ft.Container(
                     content=ft.Image(
                         src="assets/icons/whatsapp.png",
-                        width=22,
-                        height=22,
+                        width=50,
+                        height=50,
                     ),
                     tooltip="Abrir WhatsApp",
                     ink=True,

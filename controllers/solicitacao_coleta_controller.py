@@ -15,6 +15,18 @@ class SolicitacaoColetaController:
 
         return self.service.obter_estatisticas()
 
+    def listar_ultimas(
+            self,
+            limite: int = 5,
+    ):
+        """
+        Retorna as últimas solicitações.
+        """
+
+        return self.service.listar_ultimas(
+            limite
+        )
+
     def buscar_por_id(
         self,
         solicitacao_id: int,

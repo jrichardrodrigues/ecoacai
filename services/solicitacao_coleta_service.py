@@ -21,6 +21,18 @@ class SolicitacaoColetaService:
 
         return self.repository.obter_estatisticas()
 
+    def listar_ultimas(
+            self,
+            limite: int = 5,
+    ) -> list[dict]:
+        """
+        Retorna as últimas solicitações.
+        """
+
+        return self.repository.listar_ultimas(
+            limite
+        )
+
     def buscar_por_id(
         self,
         solicitacao_id: int,

@@ -233,6 +233,38 @@ class SolicitacaoColetaRepository:
 
             return dict(row)
 
+    def listar_ultimas(
+            self,
+            limite: int = 5,
+    ) -> list[dict]:
+
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                SELECT
+                    s.codigo,
+                    e.nome AS estabelecimento,
+                    s.status,
+                    s.quantidade_sacas,
+                    s.quantidade_kg
+
+                FROM solicitacoes AS s
+
+                INNER JOIN estabelecimentos AS e
+                    ON e.id = s.estabelecimento_id
+
+                ORDER BY s.id DESC
+
+                LIMIT ?
+                """,
+                (limite,),
+            )
+
+            return [
+                dict(row)
+                for row in cursor.fetchall()
+            ]
+
     def buscar_por_id(
         self,
         solicitacao_id: int,
