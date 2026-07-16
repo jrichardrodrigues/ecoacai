@@ -1,13 +1,10 @@
-from .usuario_service import UsuarioService
 from .cpf_service import CpfService
 from .email_service import EmailService
-from .validation_service import UsuarioValidationService
 from .password_service import PasswordService
 from .auth_service import AuthService
 from .cep_service import CepService
 from .phone_service import PhoneService
 from .cadastro_conta_service import CadastroContaService
-from .auth_service import AuthService
 from .estabelecimento_service import (
     EstabelecimentoService,
 )
