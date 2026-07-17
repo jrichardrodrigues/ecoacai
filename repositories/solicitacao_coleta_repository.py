@@ -265,6 +265,21 @@ class SolicitacaoColetaRepository:
                 for row in cursor.fetchall()
             ]
 
+    def contar_agendadas_hoje(self) -> int:
+        """Retorna a quantidade de coletas agendadas para hoje."""
+
+        with self.database.obter_conexao() as conexao:
+            row = conexao.execute(
+                """
+                SELECT COUNT(*)
+                FROM solicitacoes
+                WHERE status = 'AGENDADA'
+                  AND DATE(data_agendada) = DATE('now', 'localtime')
+                """
+            ).fetchone()
+
+        return int(row[0] or 0)
+
     def buscar_por_id(
         self,
         solicitacao_id: int,

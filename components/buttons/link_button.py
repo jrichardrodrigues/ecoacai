@@ -4,7 +4,7 @@ from components.compatibility import criar_text_button
 from components.theme import Colors
 
 
-def LinkButton(
+def linkbutton(
     label: str,
     on_click=None,
     icon=None,

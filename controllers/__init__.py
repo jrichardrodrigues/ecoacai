@@ -8,3 +8,4 @@ __all__ = [
 from .solicitacao_coleta_controller import (
     SolicitacaoColetaController,
 )
+from .dashboard_controller import DashboardController

@@ -274,3 +274,9 @@ class SolicitacaoColetaService:
             "Status atualizado com sucesso.",
             atualizada,
         )
+
+    def contar_agendadas_hoje(self) -> int:
+        """Retorna a quantidade de coletas agendadas para hoje."""
+
+        return self.repository.contar_agendadas_hoje()
+
