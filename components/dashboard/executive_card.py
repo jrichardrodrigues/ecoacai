@@ -1,5 +1,6 @@
 import flet as ft
 
+from components.theme import Colors, Typography, Spacing, Radius, Shadows
 
 class ExecutiveCard(ft.Container):
     """Card compacto para indicadores do Dashboard Executivo."""
@@ -9,31 +10,27 @@ class ExecutiveCard(ft.Container):
         titulo: str,
         valor: str,
         icone: str = ft.Icons.ANALYTICS,
-        cor: str = ft.Colors.BLUE_700,
-        cor_fundo: str = ft.Colors.BLUE_50,
+        cor: str = Colors.Dashboard.REQUESTS,
+        cor_fundo: str = Colors.Dashboard.REQUESTS_BG,
         subtitulo: str = "",
         on_click=None,
     ) -> None:
         super().__init__()
 
         self.expand = True
-        self.padding = 16
-        self.border_radius = 16
+        self.padding = Spacing.LG
+        self.border_radius = Radius.XL
         self.bgcolor = cor_fundo
+
         self.border = ft.Border.all(
             1,
             ft.Colors.with_opacity(0.10, cor),
         )
-        self.shadow = ft.BoxShadow(
-            spread_radius=0,
-            blur_radius=8,
-            color=ft.Colors.with_opacity(
-                0.12,
-                ft.Colors.BLACK,
-            ),
-            offset=ft.Offset(0, 2),
-        )
+
+        self.shadow = Shadows.CARD
+
         self.on_click = on_click
+
         self.animate = ft.Animation(
             180,
             ft.AnimationCurve.EASE_OUT,
@@ -42,7 +39,7 @@ class ExecutiveCard(ft.Container):
         conteudo_inferior: list[ft.Control] = [
             ft.Text(
                 valor,
-                size=30,
+                size=Typography.H1,
                 weight=ft.FontWeight.BOLD,
                 color=ft.Colors.GREY_900,
             ),
@@ -52,7 +49,7 @@ class ExecutiveCard(ft.Container):
             conteudo_inferior.append(
                 ft.Text(
                     subtitulo,
-                    size=11,
+                    size=Typography.LABEL,
                     color=ft.Colors.GREY_700,
                     max_lines=1,
                     overflow=ft.TextOverflow.ELLIPSIS,
@@ -60,7 +57,7 @@ class ExecutiveCard(ft.Container):
             )
 
         self.content = ft.Column(
-            spacing=10,
+            spacing=Spacing.MD,
             controls=[
                 ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -68,7 +65,7 @@ class ExecutiveCard(ft.Container):
                     controls=[
                         ft.Text(
                             titulo,
-                            size=13,
+                            size=Typography.SMALL,
                             weight=ft.FontWeight.W_600,
                             color=ft.Colors.GREY_700,
                             max_lines=2,
@@ -76,9 +73,9 @@ class ExecutiveCard(ft.Container):
                             expand=True,
                         ),
                         ft.Container(
-                            width=44,
-                            height=44,
-                            border_radius=14,
+                            width=Spacing.ICON_CONTAINER,
+                            height=Spacing.ICON_CONTAINER,
+                            border_radius=Radius.LG,
                             bgcolor=ft.Colors.with_opacity(
                                 0.14,
                                 cor,
@@ -86,14 +83,14 @@ class ExecutiveCard(ft.Container):
                             alignment=ft.Alignment.CENTER,
                             content=ft.Icon(
                                 icone,
-                                size=25,
+                                size=Spacing.ICON_SIZE_MD,
                                 color=cor,
                             ),
                         ),
                     ],
                 ),
                 ft.Column(
-                    spacing=2,
+                    spacing=Spacing.XS,
                     controls=conteudo_inferior,
                 ),
             ],

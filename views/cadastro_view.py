@@ -14,6 +14,14 @@ from controllers.estabelecimento_controller import (
 )
 from models import Estabelecimento
 from utils.messages import mostrar_erro, mostrar_sucesso
+from components.theme import (
+    Typography,
+    Spacing,
+    Radius,
+    Colors,
+)
+from components.layout import PageHeader
+from components.buttons import PrimaryButton, SecondaryButton
 
 
 class CadastroView:
@@ -58,23 +66,23 @@ class CadastroView:
 
         self.endereco = ft.TextField(
             label="Endereço",
-            hint_text="Rua, travessa, avenida e número",
+            hint_text="Rua, Travessa, Avenida e Número",
             expand=True,
-            border_radius=10,
+            border_radius=Radius.INPUT,
         )
 
         self.bairro = ft.TextField(
             label="Bairro",
-            hint_text="Informe o bairro",
+            hint_text="Informe o Bairro",
             expand=True,
-            border_radius=10,
+            border_radius=Radius.INPUT,
         )
 
         self.setor = ft.Dropdown(
             label="Setor de recolhimento",
-            hint_text="Selecione o setor",
+            hint_text="Selecione o Setor",
             expand=True,
-            border_radius=10,
+            border_radius=Radius.INPUT,
             options=[
                 ft.dropdown.Option(setor)
                 for setor in SETORES
@@ -218,16 +226,10 @@ class CadastroView:
 
         return ft.Column(
             controls=[
-                ft.Text(
-                    titulo,
-                    size=28,
-                    weight=ft.FontWeight.BOLD,
+                PageHeader(
+                    title=titulo,
+                    subtitle=subtitulo,
                 ),
-                ft.Text(
-                    subtitulo,
-                    size=15,
-                ),
-                ft.Divider(),
 
                 ft.Row(
                     controls=[
@@ -240,7 +242,7 @@ class CadastroView:
                         self.cpf.container,
                         self.email.container,
                     ],
-                    spacing=15,
+                    spacing=Spacing.MD,
                 ),
 
                 ft.Row(
@@ -254,7 +256,7 @@ class CadastroView:
                         self.endereco,
                         self.bairro,
                     ],
-                    spacing=15,
+                    spacing=Spacing.MD,
                 ),
 
                 ft.Row(
@@ -267,23 +269,21 @@ class CadastroView:
 
                 ft.Row(
                     controls=[
-                        ft.ElevatedButton(
-                            content=texto_botao,
+                        PrimaryButton(
+                            label=texto_botao,
                             icon=icone_botao,
-                            bgcolor=COR_SUCESSO,
-                            color=ft.Colors.WHITE,
                             on_click=self.salvar,
                         ),
-                        ft.ElevatedButton(
-                            content="Limpar",
+                        SecondaryButton(
+                            label="Limpar",
                             icon=ft.Icons.CLEAR,
                             on_click=self.limpar_campos,
                         ),
                     ],
-                    spacing=10,
-                ),
+                    spacing=Spacing.SM,
+                )
             ],
-            spacing=15,
+            spacing=Spacing.MD,
             scroll=ft.ScrollMode.ADAPTIVE,
             expand=True,
         )

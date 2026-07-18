@@ -20,7 +20,7 @@ class PrimaryButton(ft.ElevatedButton):
             icon=icon,
             on_click=on_click,
             width=width,
-            height=48,
+            height=Spacing.BUTTON_HEIGHT,
             expand=expand,
             disabled=disabled,
             bgcolor=Colors.PRIMARY,
@@ -31,7 +31,7 @@ class PrimaryButton(ft.ElevatedButton):
                     vertical=Spacing.SM,
                 ),
                 shape=ft.RoundedRectangleBorder(
-                    radius=Radius.MD,
+                    radius=Radius.BUTTON,
                 ),
             ),
         )

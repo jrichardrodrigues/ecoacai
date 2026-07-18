@@ -20,7 +20,7 @@ class SecondaryButton(ft.OutlinedButton):
             icon=icon,
             on_click=on_click,
             width=width,
-            height=48,
+            height=Spacing.BUTTON_HEIGHT,
             expand=expand,
             disabled=disabled,
             style=ft.ButtonStyle(
@@ -34,7 +34,7 @@ class SecondaryButton(ft.OutlinedButton):
                     vertical=Spacing.SM,
                 ),
                 shape=ft.RoundedRectangleBorder(
-                    radius=Radius.MD,
+                    radius=Radius.BUTTON,
                 ),
             ),
         )

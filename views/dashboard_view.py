@@ -7,7 +7,14 @@ from components.dashboard import (
     ExecutiveHeader,
 )
 from controllers import DashboardController
-
+from components.theme import (
+    Colors,
+    Typography,
+    Spacing,
+    Radius,
+    Shadows,
+)
+from components.layout import Section, SectionHeader
 
 class DashboardView:
     """Dashboard com indicadores e gráficos das solicitações."""
@@ -38,18 +45,18 @@ class DashboardView:
         """Cria um item da legenda do gráfico."""
         return ft.Row(
             tight=True,
-            spacing=8,
+            spacing=Spacing.SM,
             controls=[
                 ft.Container(
                     width=12,
                     height=12,
-                    border_radius=6,
+                    border_radius=Radius.SM,
                     bgcolor=cor,
                 ),
                 ft.Text(
                     f"{texto}: {valor}",
-                    size=13,
-                    color=ft.Colors.GREY_700,
+                    size=Typography.SMALL,
+                    color=Colors.Text.SECONDARY,
                 ),
             ],
         )
@@ -100,7 +107,7 @@ class DashboardView:
 
         if total == 0:
             return ft.Container(
-                height=280,
+                height=Spacing.DASHBOARD_CARD_HEIGHT,
                 alignment=ft.Alignment.CENTER,
                 content=ft.Column(
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -158,12 +165,114 @@ class DashboardView:
         )
 
         return ft.Column(
-            spacing=18,
+            spacing=Spacing.LG,
             controls=[
-                ft.Container(height=280, content=grafico),
+                ft.Container(height=Spacing.DASHBOARD_CARD_HEIGHT, content=grafico),
                 legenda,
             ],
         )
+
+    def _obter_cards_status(
+            self,
+            total_solicitacoes: int,
+            total_estabelecimentos: int,
+            total_pendentes: int,
+            total_agendadas: int,
+            total_hoje: int,
+            total_em_coleta: int,
+            total_concluidas: int,
+    ) -> list[dict]:
+        return [
+            {
+                "titulo": "Solicitações",
+                "valor": self._formatar_numero(total_solicitacoes),
+                "icone": ft.Icons.ASSIGNMENT,
+                "cor": Colors.Dashboard.REQUESTS,
+                "cor_fundo": Colors.Dashboard.REQUESTS_BG,
+                "subtitulo": "Total de solicitações",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+            {
+                "titulo": "Estabelecimentos",
+                "valor": self._formatar_numero(total_estabelecimentos),
+                "icone": ft.Icons.STORE,
+                "cor": Colors.Dashboard.ESTABLISHMENTS,
+                "cor_fundo": Colors.Dashboard.ESTABLISHMENTS_BG,
+                "subtitulo": "Total cadastrados",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+            {
+                "titulo": "Pendentes",
+                "valor": self._formatar_numero(total_pendentes),
+                "icone": ft.Icons.PENDING_ACTIONS,
+                "cor": Colors.Dashboard.PENDING,
+                "cor_fundo": Colors.Dashboard.PENDING_BG,
+                "subtitulo": "Aguardando atendimento",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+            {
+                "titulo": "Agendadas",
+                "valor": self._formatar_numero(total_agendadas),
+                "icone": ft.Icons.EVENT_AVAILABLE,
+                "cor": Colors.Dashboard.SCHEDULED,
+                "cor_fundo": Colors.Dashboard.SCHEDULED_BG,
+                "subtitulo": "Coletas programadas",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+            {
+                "titulo": "Para hoje",
+                "valor": self._formatar_numero(total_hoje),
+                "icone": ft.Icons.TODAY,
+                "cor": Colors.Dashboard.TODAY,
+                "cor_fundo": Colors.Dashboard.TODAY_BG,
+                "subtitulo": "Coletas previstas hoje",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+            {
+                "titulo": "Em coleta",
+                "valor": self._formatar_numero(total_em_coleta),
+                "icone": ft.Icons.LOCAL_SHIPPING,
+                "cor": Colors.Dashboard.COLLECTING,
+                "cor_fundo": Colors.Dashboard.COLLECTING_BG,
+                "subtitulo": "Coletas em andamento",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+            {
+                "titulo": "Concluídas",
+                "valor": self._formatar_numero(total_concluidas),
+                "icone": ft.Icons.CHECK_CIRCLE,
+                "cor": Colors.Dashboard.COMPLETED,
+                "cor_fundo": Colors.Dashboard.COMPLETED_BG,
+                "subtitulo": "Coletas finalizadas",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
+        ]
+
+    def _obter_cards_totais(
+            self,
+            total_sacas: int,
+            total_kg: int,
+    ) -> list[dict]:
+        return [
+            {
+                "titulo": "Total de sacas",
+                "valor": f"{self._formatar_numero(total_sacas)} sacas",
+                "icone": ft.Icons.INVENTORY_2,
+                "cor": Colors.Dashboard.SACKS,
+                "cor_fundo": Colors.Dashboard.SACKS_BG,
+                "subtitulo": "Volume total registrado",
+                "col": {"sm": 12, "md": 6},
+            },
+            {
+                "titulo": "Peso coletado",
+                "valor": f"{self._formatar_numero(total_kg)} kg",
+                "icone": ft.Icons.SCALE,
+                "cor": Colors.Dashboard.WEIGHT,
+                "cor_fundo": Colors.Dashboard.WEIGHT_BG,
+                "subtitulo": "Peso acumulado das solicitações",
+                "col": {"sm": 12, "md": 6},
+            },
+        ]
 
     def build(self) -> ft.Control:
         """Constrói e retorna o Dashboard."""
@@ -181,91 +290,36 @@ class DashboardView:
 
         ultimas_solicitacoes = self.controller.listar_ultimas(limite=5)
 
+        cards_status_data = self._obter_cards_status(
+            total_solicitacoes=total,
+            total_estabelecimentos=total_estabelecimentos,
+            total_pendentes=pendentes,
+            total_agendadas=agendadas,
+            total_hoje=coletas_hoje,
+            total_em_coleta=em_coleta,
+            total_concluidas=concluidas,
+        )
+
         cards_status = ft.ResponsiveRow(
-            spacing=12,
-            run_spacing=12,
+            spacing=Spacing.MD,
+            run_spacing=Spacing.MD,
             controls=[
-                self._criar_container_card(
-                    "Total de solicitações",
-                    self._formatar_numero(total),
-                    ft.Icons.ASSIGNMENT,
-                    ft.Colors.BLUE_700,
-                    ft.Colors.BLUE_50,
-                    "Visão geral das solicitações",
-                ),
-                self._criar_container_card(
-                    "Estabelecimentos ativos",
-                    self._formatar_numero(total_estabelecimentos),
-                    ft.Icons.STORE,
-                    ft.Colors.TEAL_700,
-                    ft.Colors.TEAL_50,
-                    "Estabelecimentos cadastrados",
-                ),
-                self._criar_container_card(
-                    "Pendentes",
-                    self._formatar_numero(pendentes),
-                    ft.Icons.SCHEDULE,
-                    ft.Colors.AMBER_700,
-                    ft.Colors.AMBER_50,
-                    "Aguardando agendamento",
-                ),
-                self._criar_container_card(
-                    "Agendadas",
-                    self._formatar_numero(agendadas),
-                    ft.Icons.EVENT,
-                    ft.Colors.BLUE,
-                    ft.Colors.LIGHT_BLUE_50,
-                    "Coletas com data definida",
-                ),
-                self._criar_container_card(
-                    "Coletas de hoje",
-                    self._formatar_numero(coletas_hoje),
-                    ft.Icons.TODAY,
-                    ft.Colors.INDIGO_600,
-                    ft.Colors.INDIGO_50,
-                    "Programadas para hoje",
-                ),
-                self._criar_container_card(
-                    "Em coleta",
-                    self._formatar_numero(em_coleta),
-                    ft.Icons.LOCAL_SHIPPING,
-                    ft.Colors.ORANGE_700,
-                    ft.Colors.ORANGE_50,
-                    "Operações em andamento",
-                ),
-                self._criar_container_card(
-                    "Concluídas",
-                    self._formatar_numero(concluidas),
-                    ft.Icons.CHECK_CIRCLE,
-                    ft.Colors.GREEN_700,
-                    ft.Colors.GREEN_50,
-                    "Coletas finalizadas",
-                ),
+                self._criar_container_card(**card)
+                for card in cards_status_data
             ],
         )
 
+        cards_totais_data = self._obter_cards_totais(
+            total_sacas=total_sacas,
+            total_kg=total_kg,
+        )
+
         cards_totais = ft.ResponsiveRow(
-            spacing=12,
-            run_spacing=12,
+            spacing=Spacing.MD,
+            run_spacing=Spacing.MD,
             controls=[
-                self._criar_container_card(
-                    "Total de sacas",
-                    f"{self._formatar_numero(total_sacas)} sacas",
-                    ft.Icons.INVENTORY_2,
-                    ft.Colors.BROWN_600,
-                    ft.Colors.BROWN_50,
-                    "Volume total registrado",
-                    {"sm": 12, "md": 6},
-                ),
-                self._criar_container_card(
-                    "Peso coletado",
-                    f"{self._formatar_numero(total_kg)} kg",
-                    ft.Icons.SCALE,
-                    ft.Colors.PURPLE_600,
-                    ft.Colors.PURPLE_50,
-                    "Peso acumulado das solicitações",
-                    {"sm": 12, "md": 6},
-                ),
+                self._criar_container_card(**card)
+                for card in cards_totais_data
             ],
         )
 
@@ -279,9 +333,9 @@ class DashboardView:
         )
 
         grafico_status = ft.Container(
-            padding=20,
-            border_radius=12,
-            bgcolor=ft.Colors.BLUE_GREY_50,
+            padding=Spacing.CARD_PADDING,
+            border_radius=Radius.CARD,
+            bgcolor=Colors.Dashboard.CHART_BACKGROUND,
             border=ft.Border.all(1, ft.Colors.GREY_200),
             content=self._criar_grafico_status(
                 pendentes=pendentes,
@@ -294,31 +348,25 @@ class DashboardView:
         return ft.Column(
             controls=[
                 cabecalho_executivo,
-                ft.Container(height=4),
-                ft.Text(
-                    "Solicitações",
-                    size=18,
-                    weight=ft.FontWeight.BOLD,
+
+                Section(
+                    title="Solicitações",
+                    content=cards_status,
                 ),
-                cards_status,
-                ft.Divider(),
-                ft.Text(
-                    "Volumes registrados",
-                    size=18,
-                    weight=ft.FontWeight.BOLD,
+
+                Section(
+                    title="Volumes registrados",
+                    content=cards_totais,
                 ),
-                cards_totais,
-                ft.Divider(),
-                ft.Text(
-                    "Distribuição das solicitações",
-                    size=18,
-                    weight=ft.FontWeight.BOLD,
+
+                Section(
+                    title="Distribuição das solicitações",
+                    content=grafico_status,
                 ),
-                grafico_status,
-                ft.Divider(),
+
                 DashboardTable(solicitacoes=ultimas_solicitacoes),
             ],
-            spacing=15,
+            spacing=Spacing.LG,
             scroll=ft.ScrollMode.ADAPTIVE,
             expand=True,
         )

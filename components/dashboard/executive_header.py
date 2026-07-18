@@ -2,6 +2,8 @@ from datetime import datetime
 
 import flet as ft
 
+from components.theme import Colors, Typography, Spacing, Radius
+
 
 class ExecutiveHeader(ft.Container):
     """Cabeçalho executivo reutilizável do Dashboard."""
@@ -19,20 +21,19 @@ class ExecutiveHeader(ft.Container):
     ) -> None:
         super().__init__()
 
-        self.padding = 24
-        self.border_radius = 16
-        self.bgcolor = ft.Colors.GREEN_800
+        self.padding = Spacing.XL
+        self.border_radius = Radius.XL
+        self.bgcolor = Colors.Brand.PRIMARY
+
         self.content = ft.Column(
-            spacing=18,
+            spacing=Spacing.LG,
             controls=[
                 self._criar_linha_superior(
                     titulo=titulo,
                     descricao=descricao,
                 ),
                 self._criar_resumo(
-                    total_estabelecimentos=(
-                        total_estabelecimentos
-                    ),
+                    total_estabelecimentos=total_estabelecimentos,
                     total_solicitacoes=total_solicitacoes,
                     total_sacas=total_sacas,
                     total_kg=total_kg,
@@ -49,17 +50,17 @@ class ExecutiveHeader(ft.Container):
     ) -> ft.Control:
         return ft.Container(
             padding=ft.Padding.symmetric(
-                horizontal=14,
-                vertical=10,
+                horizontal=Spacing.LG,
+                vertical=Spacing.MD,
             ),
-            border_radius=10,
+            border_radius=Radius.LG,
             bgcolor=ft.Colors.with_opacity(
                 0.12,
-                ft.Colors.WHITE,
+                Colors.Text.ON_PRIMARY,
             ),
             content=ft.Row(
                 tight=True,
-                spacing=9,
+                spacing=Spacing.MD,
                 controls=[
                     ft.Icon(
                         icone,
@@ -68,18 +69,21 @@ class ExecutiveHeader(ft.Container):
                     ),
                     ft.Column(
                         tight=True,
-                        spacing=1,
+                        spacing=Spacing.XS,
                         controls=[
                             ft.Text(
                                 titulo,
-                                size=11,
-                                color=ft.Colors.WHITE70,
+                                size=Typography.LABEL,
+                                color=ft.Colors.with_opacity(
+                                    0.70,
+                                    Colors.Text.ON_PRIMARY,
+                                ),
                             ),
                             ft.Text(
                                 valor,
-                                size=17,
+                                size=Typography.H4,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.WHITE,
+                                color=Colors.Text.ON_PRIMARY,
                             ),
                         ],
                     ),
@@ -105,18 +109,21 @@ class ExecutiveHeader(ft.Container):
                         "md": 8,
                     },
                     content=ft.Column(
-                        spacing=4,
+                        spacing=Spacing.SM,
                         controls=[
                             ft.Text(
                                 titulo,
-                                size=27,
+                                size=Typography.H1,
                                 weight=ft.FontWeight.BOLD,
-                                color=ft.Colors.WHITE,
+                                color=Colors.Text.ON_PRIMARY,
                             ),
                             ft.Text(
                                 descricao,
-                                size=14,
-                                color=ft.Colors.WHITE70,
+                                size=Typography.BODY_SMALL,
+                                color=ft.Colors.with_opacity(
+                                    0.70,
+                                    Colors.Text.ON_PRIMARY,
+                                ),
                             ),
                         ],
                     ),
@@ -129,17 +136,23 @@ class ExecutiveHeader(ft.Container):
                     alignment=ft.Alignment.CENTER_RIGHT,
                     content=ft.Row(
                         alignment=ft.MainAxisAlignment.END,
-                        spacing=8,
+                        spacing=Spacing.MD,
                         controls=[
                             ft.Icon(
                                 ft.Icons.CALENDAR_MONTH,
-                                color=ft.Colors.WHITE70,
+                                color=ft.Colors.with_opacity(
+                                    0.70,
+                                    Colors.Text.ON_PRIMARY,
+                                ),
                                 size=18,
                             ),
                             ft.Text(
                                 data_hora,
-                                size=13,
-                                color=ft.Colors.WHITE70,
+                                size=Typography.SMALL,
+                                color=ft.Colors.with_opacity(
+                                    0.70,
+                                    Colors.Text.ON_PRIMARY,
+                                ),
                             ),
                         ],
                     ),
@@ -159,31 +172,31 @@ class ExecutiveHeader(ft.Container):
                 "Estabelecimentos",
                 total_estabelecimentos,
                 ft.Icons.STORE,
-                ft.Colors.CYAN_100,
+                Colors.Dashboard.ESTABLISHMENTS_BG,
             ),
             (
                 "Solicitações",
                 total_solicitacoes,
                 ft.Icons.ASSIGNMENT,
-                ft.Colors.BLUE_100,
+                Colors.Dashboard.REQUESTS_BG,
             ),
             (
                 "Sacas",
                 total_sacas,
                 ft.Icons.INVENTORY_2,
-                ft.Colors.AMBER_100,
+                Colors.Dashboard.SACKS_BG,
             ),
             (
                 "Peso registrado",
                 f"{total_kg} kg",
                 ft.Icons.SCALE,
-                ft.Colors.GREEN_100,
+                Colors.Dashboard.WEIGHT_BG,
             ),
         ]
 
         return ft.ResponsiveRow(
-            spacing=10,
-            run_spacing=10,
+            spacing=Spacing.MD,
+            run_spacing=Spacing.MD,
             controls=[
                 ft.Container(
                     col={
