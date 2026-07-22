@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <g opacity="0.08">
+    <!-- Left leaf -->
+    <path d="M310 700 C120 560 120 220 340 110 C490 240 490 560 310 700 Z"
+          fill="#781946"/>
+    <path d="M332 635 C310 500 330 365 400 170"
+          fill="none" stroke="white" stroke-width="18" stroke-linecap="round"/>
+
+    <!-- Right leaf -->
+    <path d="M590 700 C780 560 780 220 560 110 C410 240 410 560 590 700 Z"
+          fill="#2E7D32"/>
+    <path d="M568 635 C590 500 570 365 500 170"
+          fill="none" stroke="white" stroke-width="18" stroke-linecap="round"/>
+
+    <!-- Top leaf -->
+    <path d="M450 40 C390 105 390 300 450 405 C510 300 510 105 450 40 Z"
+          fill="#781946"/>
+    <path d="M450 40 C510 105 510 300 450 405 C450 275 450 150 450 40 Z"
+          fill="#2E7D32"/>
+    <line x1="450" y1="62" x2="450" y2="385"
+          stroke="white" stroke-width="10" stroke-linecap="round"/>
+
+    <!-- Flow dots -->
+    <g fill="#781946">
+      <circle cx="150" cy="210" r="15"/>
+      <circle cx="200" cy="165" r="12"/>
+      <circle cx="260" cy="130" r="9"/>
+      <circle cx="325" cy="105" r="6"/>
+    </g>
+    <g fill="#2E7D32">
+      <circle cx="750" cy="210" r="15"/>
+      <circle cx="700" cy="165" r="12"/>
+      <circle cx="640" cy="130" r="9"/>
+      <circle cx="575" cy="105" r="6"/>
+    </g>
+  </g>
+</svg>

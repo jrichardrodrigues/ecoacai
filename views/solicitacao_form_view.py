@@ -20,6 +20,7 @@ class SolicitacaoFormView:
             self,
             page: ft.Page,
             solicitacao=None,
+            estabelecimento_id: int | None = None,
             on_cancelar: Callable[[], None] | None = None,
             on_salvar_sucesso: Callable[[], None] | None = None,
     ) -> None:
@@ -28,10 +29,10 @@ class SolicitacaoFormView:
         self.on_cancelar = on_cancelar
         self.on_salvar_sucesso = on_salvar_sucesso
         self.solicitacao = solicitacao
+        self.estabelecimento_id = estabelecimento_id
+
         self.controller = SolicitacaoColetaController()
-        self.estabelecimento_controller = (
-            EstabelecimentoController()
-        )
+        self.estabelecimento_controller = EstabelecimentoController()
 
         self.estabelecimentos = (
             self.estabelecimento_controller
@@ -60,6 +61,10 @@ class SolicitacaoFormView:
         if self.solicitacao is not None:
             self.estabelecimento.value = str(
                 self.solicitacao.estabelecimento_id
+            )
+        elif self.estabelecimento_id is not None:
+            self.estabelecimento.value = str(
+                self.estabelecimento_id
             )
 
         self.quantidade_sacas = ft.TextField(
@@ -97,8 +102,8 @@ class SolicitacaoFormView:
                 else ""
             ),
             multiline=True,
-            min_lines=3,
-            max_lines=5,
+            min_lines=4,
+            max_lines=6,
             border_radius=10,
         )
 
@@ -118,13 +123,23 @@ class SolicitacaoFormView:
             visible=True,
         )
 
+        estabelecimento_selecionado_id = None
+
         if self.solicitacao is not None:
+            estabelecimento_selecionado_id = (
+                self.solicitacao.estabelecimento_id
+            )
+        elif self.estabelecimento_id is not None:
+            estabelecimento_selecionado_id = (
+                self.estabelecimento_id
+            )
+
+        if estabelecimento_selecionado_id is not None:
             estabelecimento = next(
                 (
                     item
                     for item in self.estabelecimentos
-                    if item.id
-                       == self.solicitacao.estabelecimento_id
+                    if item.id == estabelecimento_selecionado_id
                 ),
                 None,
             )

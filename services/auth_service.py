@@ -15,6 +15,13 @@ class AuthService:
         cpf: str,
         senha: str,
     ) -> tuple[bool, str, Usuario | None]:
+        """
+        Autentica um usuário utilizando CPF e senha.
+
+        Retorna:
+            (sucesso, mensagem, usuario)
+        """
+
         usuario = self.repository.buscar_por_cpf(cpf)
 
         if usuario is None:
@@ -30,12 +37,10 @@ class AuthService:
                 None,
             )
 
-        senha_valida = self.password_service.verificar(
+        if not self.password_service.verificar(
             senha,
             usuario.senha_hash,
-        )
-
-        if not senha_valida:
+        ):
             return False, "Senha incorreta.", None
 
         return True, "Login realizado com sucesso.", usuario

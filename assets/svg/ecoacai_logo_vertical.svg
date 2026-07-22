@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900" viewBox="0 0 700 900">
+<style>
+.title{font-family:Arial,sans-serif;font-size:88px;font-weight:bold}
+.subtitle{font-family:Arial,sans-serif;font-size:24px}
+</style>
+
+<g transform="translate(165,60)">
+  <path d="M120,330 C20,250 20,90 140,40 C220,110 220,260 120,330 Z" fill="#781946"/>
+  <path d="M132,300 C120,225 132,165 168,75" fill="none" stroke="white" stroke-width="10" stroke-linecap="round"/>
+
+  <path d="M250,330 C350,250 350,90 230,40 C150,110 150,260 250,330 Z" fill="#2E7D32"/>
+  <path d="M238,300 C250,225 238,165 202,75" fill="none" stroke="white" stroke-width="10" stroke-linecap="round"/>
+
+  <path d="M185,0 C155,35 155,120 185,165 C215,120 215,35 185,0 Z" fill="#781946"/>
+  <path d="M185,0 C215,35 215,120 185,165 C185,115 185,55 185,0 Z" fill="#2E7D32"/>
+  <line x1="185" y1="12" x2="185" y2="155" stroke="white" stroke-width="5"/>
+
+  <g fill="#781946">
+    <circle cx="55" cy="85" r="8"/>
+    <circle cx="80" cy="62" r="7"/>
+    <circle cx="110" cy="45" r="5"/>
+    <circle cx="145" cy="34" r="4"/>
+  </g>
+  <g fill="#2E7D32">
+    <circle cx="315" cy="85" r="8"/>
+    <circle cx="290" cy="62" r="7"/>
+    <circle cx="260" cy="45" r="5"/>
+    <circle cx="225" cy="34" r="4"/>
+  </g>
+</g>
+
+<text x="350" y="560" text-anchor="middle" class="title">
+<tspan fill="#2E7D32">ECO</tspan><tspan fill="#781946">AÇAÍ</tspan>
+</text>
+
+<text x="350" y="610" text-anchor="middle" class="subtitle" fill="#444">
+PLATAFORMA INTELIGENTE
+</text>
+<text x="350" y="645" text-anchor="middle" class="subtitle" fill="#444">
+DE GESTÃO AMBIENTAL
+</text>
+</svg>

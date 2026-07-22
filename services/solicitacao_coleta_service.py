@@ -13,6 +13,52 @@ class SolicitacaoColetaService:
     def __init__(self):
         self.repository = SolicitacaoColetaRepository()
 
+    def _erro_operacao(
+            self,
+            operacao: str,
+            erro: Exception,
+    ) -> tuple:
+        """Padroniza o tratamento de erros inesperados."""
+
+        print(
+            f"Erro ao {operacao} solicitação:",
+            erro,
+        )
+
+        return (
+            False,
+            f"Não foi possível {operacao} a solicitação.",
+            None,
+        )
+
+    def _validar_solicitacao(
+            self,
+            estabelecimento_id: int,
+            quantidade_sacas: int,
+            quantidade_kg: float,
+    ) -> tuple[bool, str]:
+        """Valida os dados básicos de uma solicitação."""
+
+        if estabelecimento_id <= 0:
+            return (
+                False,
+                "Selecione um estabelecimento.",
+            )
+
+        if quantidade_sacas <= 0:
+            return (
+                False,
+                "A quantidade de sacas deve ser maior que zero.",
+            )
+
+        if quantidade_kg < 0:
+            return (
+                False,
+                "A quantidade em quilos não pode ser negativa.",
+            )
+
+        return True, ""
+
     def listar(self):
         return self.repository.listar()
 
@@ -50,24 +96,16 @@ class SolicitacaoColetaService:
     ) -> tuple[bool, str, SolicitacaoColeta | None]:
         """Valida e cadastra uma solicitação."""
 
-        if estabelecimento_id <= 0:
-            return (
-                False,
-                "Selecione um estabelecimento.",
-                None,
-            )
+        valido, mensagem = self._validar_solicitacao(
+            estabelecimento_id,
+            quantidade_sacas,
+            quantidade_kg,
+        )
 
-        if quantidade_sacas <= 0:
+        if not valido:
             return (
                 False,
-                "A quantidade de sacas deve ser maior que zero.",
-                None,
-            )
-
-        if quantidade_kg < 0:
-            return (
-                False,
-                "A quantidade em quilos não pode ser negativa.",
+                mensagem,
                 None,
             )
 
@@ -87,14 +125,9 @@ class SolicitacaoColetaService:
                 solicitacao,
             )
         except Exception as erro:
-            print(
-                "Erro ao cadastrar solicitação:",
+            return self._erro_operacao(
+        "cadastrar",
                 erro,
-            )
-            return (
-                False,
-                "Não foi possível cadastrar a solicitação.",
-                None,
             )
 
         return (
@@ -116,17 +149,16 @@ class SolicitacaoColetaService:
                 None,
             )
 
-        if solicitacao.estabelecimento_id <= 0:
-            return (
-                False,
-                "Selecione um estabelecimento.",
-                None,
-            )
+        valido, mensagem = self._validar_solicitacao(
+            solicitacao.estabelecimento_id,
+            solicitacao.quantidade_sacas,
+            solicitacao.quantidade_kg,
+        )
 
-        if solicitacao.quantidade_sacas <= 0:
+        if not valido:
             return (
                 False,
-                "A quantidade de sacas deve ser maior que zero.",
+                mensagem,
                 None,
             )
 
@@ -142,16 +174,15 @@ class SolicitacaoColetaService:
                 solicitacao
             )
 
-        except Exception as erro:
-            print(
-                "Erro ao atualizar solicitação:",
-                erro,
-            )
 
-            return (
-                False,
-                "Não foi possível atualizar a solicitação.",
-                None,
+        except Exception as erro:
+
+            return self._erro_operacao(
+
+                "atualizar",
+
+                erro,
+
             )
 
         return (
@@ -258,15 +289,12 @@ class SolicitacaoColetaService:
 
         except Exception as erro:
 
-            print(
-                "Erro ao alterar status:",
-                erro,
-            )
+            return self._erro_operacao(
 
-            return (
-                False,
-                "Não foi possível alterar o status.",
-                None,
+                "alterar o status de",
+
+                erro,
+
             )
 
         return (
@@ -280,3 +308,7 @@ class SolicitacaoColetaService:
 
         return self.repository.contar_agendadas_hoje()
 
+    def listar_com_estabelecimento(self):
+        """Lista as solicitações juntamente com o nome do estabelecimento."""
+
+        return self.repository.listar_com_estabelecimento()

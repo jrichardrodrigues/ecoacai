@@ -2,12 +2,11 @@
 Constantes da aplicação.
 """
 
-APP_NAME = "EcoAçaí"
-APP_VERSION = "0.4.0"
+APP_NAME = "ECOAÇAÍ"
+APP_VERSION = "1.0.0"
 
 APP_SUBTITLE = (
-    "Plataforma de Gestão de Recolhimento "
-    "de Caroço de Açaí"
+    "Plataforma Inteligente de Gestão Ambiental"
 )
 
 COR_PRIMARIA = "#781946"
@@ -20,7 +19,6 @@ COR_TEXTO = "#2D1B25"
 COR_SUCESSO = "#2E7D32"
 COR_ERRO = "#C62828"
 COR_ALERTA = "#F9A825"
-APP_VERSION = "1.0.0"
 
 SETORES = [
     "Guamá",

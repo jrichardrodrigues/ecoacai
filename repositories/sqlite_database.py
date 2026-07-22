@@ -628,3 +628,19 @@ class SQLiteDatabase:
             ON solicitacoes(data_agendada)
             """
         )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_solicitacoes_data_solicitacao
+            ON solicitacoes(data_solicitacao)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_solicitacoes_data_solicitacao
+            ON solicitacoes(data_solicitacao)
+            """
+        )

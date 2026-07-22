@@ -18,14 +18,16 @@ class EstabelecimentosView:
     """Tela de listagem e gerenciamento de estabelecimentos."""
 
     def __init__(
-        self,
-        page: ft.Page,
-        on_novo: Callable[[], None] | None = None,
-        on_editar: Callable[[Estabelecimento], None] | None = None,
+            self,
+            page: ft.Page,
+            on_novo: Callable[[], None] | None = None,
+            on_editar: Callable[[Estabelecimento], None] | None = None,
+            on_solicitar_coleta: Callable[[int], None] | None = None,
     ) -> None:
         self.page = page
         self.on_novo = on_novo
         self.on_editar = on_editar
+        self.on_solicitar_coleta = on_solicitar_coleta
 
         self.controller = EstabelecimentoController()
 
@@ -208,10 +210,10 @@ class EstabelecimentosView:
         )
 
     def solicitar_coleta(
-        self,
-        estabelecimento_id: int | None,
+            self,
+            estabelecimento_id: int | None,
     ) -> None:
-        """Ação temporária para a futura solicitação de coleta."""
+        """Abre uma nova solicitação para o estabelecimento."""
 
         if estabelecimento_id is None:
             mostrar_erro(
@@ -220,11 +222,14 @@ class EstabelecimentosView:
             )
             return
 
-        mostrar_erro(
-            self.page,
-            "A solicitação de coleta será implementada "
-            "na Sprint v0.6.0.",
-        )
+        if self.on_solicitar_coleta is None:
+            mostrar_erro(
+                self.page,
+                "Não foi possível abrir a solicitação de coleta.",
+            )
+            return
+
+        self.on_solicitar_coleta(estabelecimento_id)
 
     def build(self) -> ft.Control:
         """Constrói e retorna a tela."""

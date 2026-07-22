@@ -237,6 +237,7 @@ class SolicitacaoColetaRepository:
             self,
             limite: int = 5,
     ) -> list[dict]:
+        """Retorna as últimas solicitações."""
 
         with self.database.obter_conexao() as conexao:
             cursor = conexao.execute(
@@ -246,15 +247,20 @@ class SolicitacaoColetaRepository:
                     e.nome AS estabelecimento,
                     s.status,
                     s.quantidade_sacas,
-                    s.quantidade_kg
-
+                    s.quantidade_kg,
+                
+                    strftime(
+                        '%d/%m/%Y %H:%M',
+                        s.data_solicitacao
+                    ) AS data_solicitacao
+                
                 FROM solicitacoes AS s
-
+                
                 INNER JOIN estabelecimentos AS e
                     ON e.id = s.estabelecimento_id
-
+                
                 ORDER BY s.id DESC
-
+                
                 LIMIT ?
                 """,
                 (limite,),
@@ -302,3 +308,35 @@ class SolicitacaoColetaRepository:
                 return None
 
             return SolicitacaoColeta.from_row(row)
+
+    def listar_com_estabelecimento(self) -> list[dict]:
+        """
+        Lista as solicitações trazendo também o nome do estabelecimento.
+        """
+
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                SELECT
+                    s.id,
+                    s.codigo,
+                    s.estabelecimento_id,
+                    e.nome AS estabelecimento,
+                    s.quantidade_sacas,
+                    s.quantidade_kg,
+                    s.data_solicitacao,
+                    s.data_agendada,
+                    s.data_conclusao,
+                    s.status,
+                    s.prioridade
+                FROM solicitacoes AS s
+                INNER JOIN estabelecimentos AS e
+                    ON e.id = s.estabelecimento_id
+                ORDER BY s.id DESC
+                """
+            )
+
+            return [
+                dict(row)
+                for row in cursor.fetchall()
+            ]

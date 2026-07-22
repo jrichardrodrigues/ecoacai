@@ -16,6 +16,23 @@ class EstabelecimentoService:
             or EstabelecimentoRepository()
         )
 
+    def _erro_operacao(
+            self,
+            operacao: str,
+            erro: Exception,
+    ) -> tuple[bool, str]:
+        """Padroniza o tratamento de erros inesperados."""
+
+        print(
+            f"Erro inesperado ao {operacao} estabelecimento:",
+            erro,
+        )
+
+        return (
+            False,
+            f"Não foi possível {operacao} o estabelecimento.",
+        )
+
     def listar(
         self,
         pesquisa: str = "",
@@ -102,16 +119,15 @@ class EstabelecimentoService:
         except ValueError as erro:
             return False, str(erro)
 
+
         except Exception as erro:
-            print(
-                "Erro inesperado ao cadastrar "
-                "estabelecimento:",
+
+            return self._erro_operacao(
+
+                "cadastrar",
+
                 erro,
-            )
-            return (
-                False,
-                "Não foi possível cadastrar "
-                "o estabelecimento.",
+
             )
 
         return (
@@ -133,16 +149,15 @@ class EstabelecimentoService:
         except ValueError as erro:
             return False, str(erro)
 
+
         except Exception as erro:
-            print(
-                "Erro inesperado ao atualizar "
-                "estabelecimento:",
+
+            return self._erro_operacao(
+
+                "atualizar",
+
                 erro,
-            )
-            return (
-                False,
-                "Não foi possível atualizar "
-                "o estabelecimento.",
+
             )
 
         return (
@@ -161,16 +176,15 @@ class EstabelecimentoService:
                 estabelecimento_id,
             )
 
+
         except Exception as erro:
-            print(
-                "Erro inesperado ao excluir "
-                "estabelecimento:",
+
+            return self._erro_operacao(
+
+                "excluir",
+
                 erro,
-            )
-            return (
-                False,
-                "Não foi possível excluir "
-                "o estabelecimento.",
+
             )
 
         if not excluido:
@@ -195,16 +209,15 @@ class EstabelecimentoService:
                 estabelecimento_id,
             )
 
+
         except Exception as erro:
-            print(
-                "Erro inesperado ao reativar "
-                "estabelecimento:",
+
+            return self._erro_operacao(
+
+                "reativar",
+
                 erro,
-            )
-            return (
-                False,
-                "Não foi possível reativar "
-                "o estabelecimento.",
+
             )
 
         if not reativado:

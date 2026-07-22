@@ -1,6 +1,6 @@
 import flet as ft
 
-from components.theme import Colors, Radius, Spacing
+from components.theme import Colors, Radius
 
 
 class SecondaryButton(ft.OutlinedButton):
@@ -16,25 +16,27 @@ class SecondaryButton(ft.OutlinedButton):
         disabled: bool = False,
     ):
         super().__init__(
-            content=label,
+            content=ft.Text(label),
             icon=icon,
             on_click=on_click,
             width=width,
-            height=Spacing.BUTTON_HEIGHT,
+            height=48,
             expand=expand,
             disabled=disabled,
             style=ft.ButtonStyle(
                 color=Colors.PRIMARY,
                 side=ft.BorderSide(
-                    width=1.5,
+                    width=1,
                     color=Colors.PRIMARY,
                 ),
-                padding=ft.Padding.symmetric(
-                    horizontal=Spacing.LG,
-                    vertical=Spacing.SM,
+                padding=ft.Padding(
+                    left=16,
+                    top=10,
+                    right=16,
+                    bottom=10,
                 ),
                 shape=ft.RoundedRectangleBorder(
-                    radius=Radius.BUTTON,
+                    radius=Radius.MD,
                 ),
             ),
         )

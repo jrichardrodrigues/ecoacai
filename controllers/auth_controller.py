@@ -7,26 +7,38 @@ class AuthController:
 
     def __init__(self) -> None:
         self.auth_service = AuthService()
-        self.usuario_logado: Usuario | None = None
+        self._usuario_logado: Usuario | None = None
+
+    @property
+    def usuario_logado(self) -> Usuario | None:
+        """Retorna o usuário atualmente autenticado."""
+
+        return self._usuario_logado
 
     def entrar(
         self,
         cpf: str,
         senha: str,
     ) -> tuple[bool, str]:
+        """Autentica um usuário."""
+
         sucesso, mensagem, usuario = (
             self.auth_service.autenticar(cpf, senha)
         )
 
         if sucesso:
-            self.usuario_logado = usuario
+            self._usuario_logado = usuario
         else:
-            self.usuario_logado = None
+            self._usuario_logado = None
 
         return sucesso, mensagem
 
     def sair(self) -> None:
-        self.usuario_logado = None
+        """Encerra a sessão do usuário autenticado."""
+
+        self._usuario_logado = None
 
     def esta_autenticado(self) -> bool:
-        return self.usuario_logado is not None
+        """Informa se existe um usuário autenticado."""
+
+        return self._usuario_logado is not None

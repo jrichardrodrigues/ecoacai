@@ -11,14 +11,14 @@ from components.cards import FormCard
 from components.fields import CpfField, PasswordField
 from components.headers import PageHeader
 from components.theme import Colors
-from config import APP_NAME
+from config import APP_NAME, APP_SUBTITLE
 from controllers.auth_controller import AuthController
 from models import Usuario
 from utils.messages import mostrar_erro
 
 
 class LoginView:
-    """Tela de autenticação do Açaí Coleta."""
+    """Tela de autenticação da plataforma ECOAÇAÍ."""
 
     def __init__(
         self,
@@ -93,10 +93,7 @@ class LoginView:
                 controls=[
                     PageHeader(
                         title=APP_NAME,
-                        subtitle=(
-                            "Plataforma Inteligente de Recolhimento\n"
-                            "de Caroço de Açaí"
-                        ),
+                        subtitle=APP_SUBTITLE,
                         icon=ft.Icons.ECO,
                     ),
                     self.cpf.container,

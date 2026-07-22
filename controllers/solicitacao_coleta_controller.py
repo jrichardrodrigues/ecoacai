@@ -78,3 +78,8 @@ class SolicitacaoColetaController:
         return self.service.alterar_status(
             solicitacao_id
         )
+
+    def listar_com_estabelecimento(self):
+        """Lista as solicitações juntamente com o nome do estabelecimento."""
+
+        return self.service.listar_com_estabelecimento()

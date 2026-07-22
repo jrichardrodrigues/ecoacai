@@ -49,9 +49,11 @@ class ExecutiveHeader(ft.Container):
         cor: str,
     ) -> ft.Control:
         return ft.Container(
-            padding=ft.Padding.symmetric(
-                horizontal=Spacing.LG,
-                vertical=Spacing.MD,
+            padding=ft.Padding(
+                left=16,
+                top=10,
+                right=16,
+                bottom=10,
             ),
             border_radius=Radius.LG,
             bgcolor=ft.Colors.with_opacity(

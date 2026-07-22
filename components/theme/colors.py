@@ -111,6 +111,15 @@ class Colors:
 
         CHART_BACKGROUND = "#F7F9FA"
 
+        class Dashboard:
+            REQUESTS = "#1976D2"  # Azul
+            ESTABLISHMENTS = "#00ACC1"  # Ciano
+            PENDING = "#F9A825"  # Âmbar
+            SCHEDULED = "#8E24AA"  # Roxo
+            TODAY = "#3949AB"  # Índigo
+            COLLECTING = "#F4511E"  # Laranja
+            COMPLETED = "#43A047"  # Verde
+
     # ==========================================================
     # SOMBRAS E SOBREPOSIÇÕES
     # ==========================================================

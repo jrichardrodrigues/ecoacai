@@ -20,18 +20,20 @@ class PrimaryButton(ft.ElevatedButton):
             icon=icon,
             on_click=on_click,
             width=width,
-            height=Spacing.BUTTON_HEIGHT,
+            height=48,
             expand=expand,
             disabled=disabled,
             bgcolor=Colors.PRIMARY,
             color=ft.Colors.WHITE,
             style=ft.ButtonStyle(
-                padding=ft.Padding.symmetric(
-                    horizontal=Spacing.LG,
-                    vertical=Spacing.SM,
+                padding=ft.Padding(
+                    left=16,
+                    top=10,
+                    right=16,
+                    bottom=10,
                 ),
                 shape=ft.RoundedRectangleBorder(
-                    radius=Radius.BUTTON,
+                    radius=Radius.MD,
                 ),
             ),
         )

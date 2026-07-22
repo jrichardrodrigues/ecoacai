@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="520" viewBox="0 0 420 520">
+  <g fill="#7B1748" fill-opacity="0.11">
+    <!-- folha esquerda -->
+    <path d="M62 244
+             C58 318 82 380 145 414
+             C177 431 199 454 207 500
+             C211 431 196 368 163 319
+             C135 278 101 255 62 244 Z"/>
+
+    <!-- recorte da folha esquerda -->
+    <path d="M128 332
+             C155 350 181 379 198 420
+             C180 388 159 366 139 352
+             C134 345 131 338 128 332 Z"
+          fill="#FFFFFF" fill-opacity="0.94"/>
+
+    <!-- folha direita -->
+    <path d="M215 407
+             C222 334 256 277 326 253
+             C349 245 371 245 392 249
+             C390 322 359 373 302 402
+             C269 419 237 432 216 455
+             C214 438 214 422 215 407 Z"/>
+
+    <!-- recorte da folha direita -->
+    <path d="M274 367
+             C303 342 332 315 355 283
+             C335 320 312 350 284 376
+             C276 389 269 402 264 416
+             C265 397 268 381 274 367 Z"
+          fill="#FFFFFF" fill-opacity="0.94"/>
+
+    <!-- folha superior -->
+    <path d="M274 92
+             C277 55 300 31 339 29
+             C341 64 326 92 294 111
+             C283 118 274 127 268 140
+             C267 120 269 104 274 92 Z"/>
+
+    <!-- recorte da folha superior -->
+    <path d="M296 94
+             C307 78 319 61 331 44
+             C322 65 312 83 300 100
+             C292 111 285 121 280 132
+             C283 117 288 104 296 94 Z"
+          fill="#FFFFFF" fill-opacity="0.94"/>
+
+    <!-- arco de pontos -->
+    <circle cx="131" cy="106" r="5"/>
+    <circle cx="153" cy="111" r="5.5"/>
+    <circle cx="176" cy="121" r="6"/>
+    <circle cx="198" cy="136" r="6"/>
+    <circle cx="218" cy="155" r="5.5"/>
+    <circle cx="236" cy="178" r="5"/>
+    <circle cx="250" cy="203" r="4.5"/>
+  </g>
+</svg>

@@ -9,29 +9,18 @@ class EstabelecimentoController:
     """Coordena as operações dos estabelecimentos."""
 
     def __init__(self) -> None:
-        self.estabelecimento_service = (
-            EstabelecimentoService()
-        )
+        self.estabelecimento_service = EstabelecimentoService()
 
-        self.validation_service = (
-            EstabelecimentoValidationService(
-                self.estabelecimento_service,
-            )
+        self.validation_service = EstabelecimentoValidationService(
+            self.estabelecimento_service,
         )
-
-    # def listar_estabelecimentos(
-    #     self,
-    # ) -> list[Estabelecimento]:
-    #     """Retorna os estabelecimentos ativos."""
-    #
-    #     return self.estabelecimento_service.listar()
 
     def listar_estabelecimentos(
-            self,
-            pesquisa: str = "",
-            somente_ativos: bool = True,
-            limite: int | None = None,
-            pagina: int | None = None,
+        self,
+        pesquisa: str = "",
+        somente_ativos: bool = True,
+        limite: int | None = None,
+        pagina: int | None = None,
     ) -> list[Estabelecimento]:
         """Lista os estabelecimentos."""
 
@@ -79,6 +68,21 @@ class EstabelecimentoController:
             estabelecimento,
         )
 
+    def _atualizar_dados(
+        self,
+        estabelecimento: Estabelecimento,
+        dados: dict,
+    ) -> None:
+        """Atualiza os dados de um estabelecimento."""
+
+        estabelecimento.nome = dados["nome"]
+        estabelecimento.cpf = dados["cpf"]
+        estabelecimento.email = dados["email"]
+        estabelecimento.celular = dados["celular"]
+        estabelecimento.endereco = dados["endereco"]
+        estabelecimento.bairro = dados["bairro"]
+        estabelecimento.setor = dados["setor"]
+
     def atualizar_estabelecimento(
         self,
         estabelecimento_id: int,
@@ -105,25 +109,19 @@ class EstabelecimentoController:
         if not sucesso:
             return False, mensagem
 
-        estabelecimento.nome = dados_normalizados["nome"]
-        estabelecimento.cpf = dados_normalizados["cpf"]
-        estabelecimento.email = dados_normalizados["email"]
-        estabelecimento.celular = (
-            dados_normalizados["celular"]
-        )
-        estabelecimento.endereco = (
-            dados_normalizados["endereco"]
-        )
-        estabelecimento.bairro = (
-            dados_normalizados["bairro"]
-        )
-        estabelecimento.setor = (
-            dados_normalizados["setor"]
+        self._atualizar_dados(
+            estabelecimento,
+            dados_normalizados,
         )
 
         return self.estabelecimento_service.atualizar(
             estabelecimento,
         )
+
+    def quantidade_estabelecimentos(self) -> int:
+        """Retorna a quantidade de estabelecimentos."""
+
+        return self.estabelecimento_service.quantidade()
 
     def excluir_estabelecimento(
         self,
