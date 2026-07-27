@@ -36,16 +36,22 @@ class SolicitacaoColetaController:
         )
 
     def criar(
-        self,
-        estabelecimento_id: int,
-        quantidade_sacas: int,
-        quantidade_kg: float = 0,
-        observacao: str = "",
+            self,
+            estabelecimento_id: int,
+            quantidade_sacas: int,
+            quantidade_kg: float = 0,
+            data_agendada: str = "",
+            motorista: str = "",
+            veiculo: str = "",
+            observacao: str = "",
     ):
         return self.service.criar(
             estabelecimento_id=estabelecimento_id,
             quantidade_sacas=quantidade_sacas,
             quantidade_kg=quantidade_kg,
+            data_agendada=data_agendada,
+            motorista=motorista,
+            veiculo=veiculo,
             observacao=observacao,
         )
 

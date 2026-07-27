@@ -11,3 +11,5 @@ from .solicitacao_coleta import (
     STATUS_PENDENTE,
     SolicitacaoColeta,
 )
+from .motorista import Motorista
+from .veiculo import Veiculo

@@ -2,14 +2,16 @@ from collections.abc import Callable
 
 import flet as ft
 
-from models import Estabelecimento, Solicitacao
+from models import Estabelecimento, Motorista, Solicitacao, Veiculo
 from views.cadastro_view import CadastroView
 from views.estabelecimentos_view import EstabelecimentosView
 from views.solicitacoes_view import SolicitacoesView
 from views.solicitacao_form_view import SolicitacaoFormView
 from views.dashboard_view import DashboardView
 from views.home_page import HomeView
-
+from views.motorista_form_view import MotoristaFormView
+from views.motoristas_view import MotoristasView
+from views.veiculos_view import VeiculosView
 
 class NavigationController:
     """Controla a troca do conteúdo principal da aplicação."""
@@ -28,11 +30,16 @@ class NavigationController:
             1: self._cadastro,
             2: self._estabelecimentos,
             3: self._solicitacoes,
-            4: lambda: self._tela_temporaria(
+            4: self._motoristas,
+            5: self._veiculos,
+            6: lambda: self._tela_temporaria(
                 "Coletas Ativas",
-                "Acompanhe em tempo real as coletas pendentes, agendadas e em andamento.",
+                (
+                    "Acompanhe em tempo real as coletas pendentes, "
+                    "agendadas e em andamento."
+                ),
             ),
-            5: self._dashboard,
+            7: self._dashboard,
         }
 
     def _mostrar(self, controle: ft.Control) -> None:
@@ -63,6 +70,23 @@ class NavigationController:
             on_novo=self.abrir_cadastro,
             on_editar=self.abrir_edicao,
             on_solicitar_coleta=self.abrir_nova_solicitacao_para_estabelecimento,
+        ).build()
+
+    def _motoristas(self) -> ft.Control:
+        """Abre a lista de motoristas."""
+
+        return MotoristasView(
+            page=self.page,
+            on_novo=self.abrir_cadastro_motorista,
+            on_editar=self.abrir_edicao_motorista,
+        ).construir()
+
+    def _veiculos(self) -> ft.Control:
+        """Abre a lista de veículos."""
+
+        return VeiculosView(
+            page=self.page,
+            ao_voltar=self._home,
         ).build()
 
     def _solicitacoes(self) -> ft.Control:
@@ -143,6 +167,74 @@ class NavigationController:
         )
 
         self._mostrar(formulario.build())
+
+    def abrir_motoristas(self) -> None:
+        """Retorna à listagem de motoristas."""
+
+        self._mostrar(
+            self._motoristas(),
+        )
+
+    def abrir_veiculos(self) -> None:
+        """Retorna à listagem de veículos."""
+
+        self._mostrar(
+            self._veiculos(),
+        )
+
+    def abrir_cadastro_motorista(self) -> None:
+        """Abre o formulário de cadastro de motorista."""
+
+        formulario = MotoristaFormView(
+            page=self.page,
+            on_salvar_sucesso=self.abrir_motoristas,
+        )
+
+        self._mostrar(
+            formulario.construir(),
+        )
+
+    def abrir_cadastro_veiculo(self) -> None:
+        formulario = VeiculoFormView(
+            page=self.page,
+            ao_salvar=self.abrir_veiculos,
+            ao_cancelar=self.abrir_veiculos,
+        )
+
+        self._mostrar(
+            formulario.build(),
+        )
+
+    def abrir_edicao_motorista(
+            self,
+            motorista: Motorista,
+    ) -> None:
+        """Abre o formulário de motorista no modo de edição."""
+
+        formulario = MotoristaFormView(
+            page=self.page,
+            motorista=motorista,
+            on_salvar_sucesso=self.abrir_motoristas,
+        )
+
+        self._mostrar(
+            formulario.construir(),
+        )
+
+    def abrir_edicao_veiculo(
+            self,
+            veiculo: Veiculo,
+    ) -> None:
+        formulario = VeiculoFormView(
+            page=self.page,
+            veiculo=veiculo,
+            ao_salvar=self.abrir_veiculos,
+            ao_cancelar=self.abrir_veiculos,
+        )
+
+        self._mostrar(
+            formulario.build(),
+        )
 
     def _tela_temporaria(
         self,

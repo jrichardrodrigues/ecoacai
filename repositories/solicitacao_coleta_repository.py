@@ -43,10 +43,12 @@ class SolicitacaoColetaRepository:
                     status,
                     prioridade,
                     observacao,
+                    motorista,
+                    veiculo,
                     latitude,
                     longitude
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     None,
@@ -59,6 +61,8 @@ class SolicitacaoColetaRepository:
                     solicitacao.status,
                     solicitacao.prioridade,
                     solicitacao.observacao,
+                    solicitacao.motorista,
+                    solicitacao.veiculo,
                     solicitacao.latitude,
                     solicitacao.longitude,
                 ),
@@ -108,6 +112,8 @@ class SolicitacaoColetaRepository:
                     status = ?,
                     prioridade = ?,
                     observacao = ?,
+                    motorista = ?,
+                    veiculo = ?,
                     latitude = ?,
                     longitude = ?
                 WHERE id = ?
@@ -121,6 +127,8 @@ class SolicitacaoColetaRepository:
                     solicitacao.status,
                     solicitacao.prioridade,
                     solicitacao.observacao,
+                    solicitacao.motorista,
+                    solicitacao.veiculo,
                     solicitacao.latitude,
                     solicitacao.longitude,
                     solicitacao.id,

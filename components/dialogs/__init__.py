@@ -1,5 +1,9 @@
 from .confirm_dialog import ConfirmDialog
 
+__all__ = [
+    "ConfirmDialog",
+]
+
 
 def confirmar_exclusao(
     page,

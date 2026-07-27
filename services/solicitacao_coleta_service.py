@@ -92,6 +92,9 @@ class SolicitacaoColetaService:
             estabelecimento_id: int,
             quantidade_sacas: int,
             quantidade_kg: float = 0,
+            data_agendada: str = "",
+            motorista: str = "",
+            veiculo: str = "",
             observacao: str = "",
     ) -> tuple[bool, str, SolicitacaoColeta | None]:
         """Valida e cadastra uma solicitação."""
@@ -113,7 +116,10 @@ class SolicitacaoColetaService:
             estabelecimento_id=estabelecimento_id,
             quantidade_sacas=quantidade_sacas,
             quantidade_kg=quantidade_kg,
-            observacao=observacao.strip(),
+            data_agendada=(data_agendada or "").strip(),
+            motorista=(motorista or "").strip(),
+            veiculo=(veiculo or "").strip(),
+            observacao=(observacao or "").strip(),
             status=STATUS_PENDENTE,
             data_solicitacao=datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S",

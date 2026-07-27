@@ -103,11 +103,15 @@ class PhoneField(BaseValidatedField):
                 return
 
         if (
-            self.usuario_service is not None
-            and self.usuario_service.celular_existe(
-                celular_formatado,
-                ignorar_id=self.ignorar_id,
-            )
+                self.usuario_service is not None
+                and hasattr(
+            self.usuario_service,
+            "celular_existe",
+        )
+                and self.usuario_service.celular_existe(
+            celular_formatado,
+            ignorar_id=self.ignorar_id,
+        )
         ):
             self.erro("Celular já cadastrado.")
             return

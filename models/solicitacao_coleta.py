@@ -31,6 +31,9 @@ class SolicitacaoColeta:
 
     observacao: str = ""
 
+    motorista: str = ""
+    veiculo: str = ""
+
     latitude: float | None = None
     longitude: float | None = None
 
@@ -66,6 +69,8 @@ class SolicitacaoColeta:
             "status": self.status,
             "prioridade": self.prioridade,
             "observacao": self.observacao,
+            "motorista": self.motorista,
+            "veiculo": self.veiculo,
             "latitude": self.latitude,
             "longitude": self.longitude,
             "criado_em": self.criado_em,
@@ -96,6 +101,8 @@ class SolicitacaoColeta:
             status=row["status"],
             prioridade=row["prioridade"],
             observacao=row["observacao"],
+            motorista=row["motorista"],
+            veiculo=row["veiculo"],
             latitude=row["latitude"],
             longitude=row["longitude"],
             criado_em=row["criado_em"],

@@ -5,12 +5,15 @@ def criar_menu(on_change):
     return ft.NavigationRail(
         selected_index=0,
         label_type=ft.NavigationRailLabelType.ALL,
-        min_width=90,
+        min_width=100,
         min_extended_width=220,
-        leading=ft.Icon(
-            ft.Icons.LOCAL_SHIPPING,
-            size=40,
+
+        leading=ft.Container(
+            height=20,
         ),
+
+        group_alignment=-1.0,
+
         destinations=[
             ft.NavigationRailDestination(
                 icon=ft.Icons.HOME_OUTLINED,
@@ -31,6 +34,17 @@ def criar_menu(on_change):
                 icon=ft.Icons.LOCAL_SHIPPING_OUTLINED,
                 selected_icon=ft.Icons.LOCAL_SHIPPING,
                 label="Coletas",
+            ),
+            ft.NavigationRailDestination(
+                icon=ft.Icons.BADGE_OUTLINED,
+                selected_icon=ft.Icons.BADGE,
+                label="Motoristas",
+            ),
+            ft.NavigationRailDestination(
+                # ft.Icons.LOCAL_SHIPPING,
+                ft.Icons.FIRE_TRUCK,
+                selected_icon=ft.Icons.DIRECTIONS_CAR,
+                label="Veículos",
             ),
             ft.NavigationRailDestination(
                 icon=ft.Icons.LIST_ALT_OUTLINED,

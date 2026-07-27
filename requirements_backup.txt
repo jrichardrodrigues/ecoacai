@@ -8,9 +8,9 @@ charset-normalizer==3.4.9
 click==8.4.2
 cookiecutter==2.7.1
 cryptography==49.0.0
-flet==0.85.3
-flet-cli==0.85.3
-flet-desktop==0.85.3
+flet==0.86.0
+flet-cli==0.86.0
+flet-desktop==0.86.0
 google-auth==2.55.2
 google-auth-oauthlib==1.4.0
 gspread==6.2.1

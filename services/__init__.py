@@ -14,3 +14,5 @@ from .estabelecimento_validation_service import (
 from .solicitacao_coleta_service import (
     SolicitacaoColetaService,
 )
+from .motorista_service import MotoristaService
+from .veiculo_service import VeiculoService

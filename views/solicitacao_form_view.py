@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import datetime
 
 import flet as ft
 
@@ -13,26 +14,30 @@ from utils.messages import (
     mostrar_sucesso,
 )
 
+
 class SolicitacaoFormView:
-    """Formulário para criar uma solicitação de coleta."""
+    """Formulário para criar ou editar uma solicitação de coleta."""
 
     def __init__(
-            self,
-            page: ft.Page,
-            solicitacao=None,
-            estabelecimento_id: int | None = None,
-            on_cancelar: Callable[[], None] | None = None,
-            on_salvar_sucesso: Callable[[], None] | None = None,
+        self,
+        page: ft.Page,
+        solicitacao=None,
+        estabelecimento_id: int | None = None,
+        on_cancelar: Callable[[], None] | None = None,
+        on_salvar_sucesso: Callable[[], None] | None = None,
     ) -> None:
         self.page = page
 
         self.on_cancelar = on_cancelar
         self.on_salvar_sucesso = on_salvar_sucesso
+
         self.solicitacao = solicitacao
         self.estabelecimento_id = estabelecimento_id
 
         self.controller = SolicitacaoColetaController()
-        self.estabelecimento_controller = EstabelecimentoController()
+        self.estabelecimento_controller = (
+            EstabelecimentoController()
+        )
 
         self.estabelecimentos = (
             self.estabelecimento_controller
@@ -58,23 +63,10 @@ class SolicitacaoFormView:
             self.ao_selecionar_estabelecimento
         )
 
-        if self.solicitacao is not None:
-            self.estabelecimento.value = str(
-                self.solicitacao.estabelecimento_id
-            )
-        elif self.estabelecimento_id is not None:
-            self.estabelecimento.value = str(
-                self.estabelecimento_id
-            )
-
         self.quantidade_sacas = ft.TextField(
             label="Quantidade de sacas",
             hint_text="Ex.: 10",
-            value=(
-                str(solicitacao.quantidade_sacas)
-                if solicitacao
-                else "1"
-            ),
+            value="1",
             keyboard_type=ft.KeyboardType.NUMBER,
             border_radius=10,
             expand=True,
@@ -83,12 +75,47 @@ class SolicitacaoFormView:
         self.quantidade_kg = ft.TextField(
             label="Quantidade em kg",
             hint_text="Ex.: 250",
-            value=(
-                str(solicitacao.quantidade_kg)
-                if solicitacao
-                else "0"
-            ),
+            value="0",
             keyboard_type=ft.KeyboardType.NUMBER,
+            border_radius=10,
+            expand=True,
+        )
+
+        self.seletor_data = ft.DatePicker(
+            entry_mode=ft.DatePickerEntryMode.CALENDAR,
+            date_picker_mode=ft.DatePickerMode.DAY,
+            help_text="Selecione a data da coleta",
+            cancel_text="Cancelar",
+            confirm_text="Confirmar",
+            on_change=self.ao_selecionar_data,
+        )
+
+        self.data_agendada = ft.TextField(
+            label="Data da coleta",
+            hint_text="dd/mm/aaaa",
+            value="",
+            read_only=True,
+            border_radius=10,
+            expand=True,
+            suffix=ft.IconButton(
+                icon=ft.Icons.CALENDAR_MONTH,
+                tooltip="Selecionar data",
+                on_click=self.abrir_calendario,
+            ),
+        )
+
+        self.motorista = ft.TextField(
+            label="Motorista",
+            hint_text="Nome do motorista",
+            value="",
+            border_radius=10,
+            expand=True,
+        )
+
+        self.veiculo = ft.TextField(
+            label="Veículo",
+            hint_text="Placa ou identificação",
+            value="",
             border_radius=10,
             expand=True,
         )
@@ -96,11 +123,7 @@ class SolicitacaoFormView:
         self.observacao = ft.TextField(
             label="Observação",
             hint_text="Informações adicionais sobre a coleta",
-            value=(
-                solicitacao.observacao
-                if solicitacao
-                else ""
-            ),
+            value="",
             multiline=True,
             min_lines=4,
             max_lines=6,
@@ -123,57 +146,99 @@ class SolicitacaoFormView:
             visible=True,
         )
 
-        estabelecimento_selecionado_id = None
+        self._carregar_solicitacao()
 
-        if self.solicitacao is not None:
-            estabelecimento_selecionado_id = (
-                self.solicitacao.estabelecimento_id
-            )
-        elif self.estabelecimento_id is not None:
-            estabelecimento_selecionado_id = (
-                self.estabelecimento_id
-            )
+        self._atualizar_resumo_estabelecimento(
+            self._obter_estabelecimento_selecionado_id(),
+            atualizar_pagina=False,
+        )
 
-        if estabelecimento_selecionado_id is not None:
-            estabelecimento = next(
-                (
-                    item
-                    for item in self.estabelecimentos
-                    if item.id == estabelecimento_selecionado_id
-                ),
-                None,
-            )
+    def _carregar_solicitacao(self) -> None:
+        """
+        Preenche os campos do formulário.
 
-            if estabelecimento is not None:
-                self.resumo_estabelecimento.content = ft.Column(
-                    controls=[
-                        ft.Text(
-                            estabelecimento.nome,
-                            size=16,
-                            weight=ft.FontWeight.BOLD,
-                        ),
-                        ft.Text(
-                            f"Bairro: {estabelecimento.bairro}",
-                        ),
-                        ft.Text(
-                            f"Setor: {estabelecimento.setor}",
-                        ),
-                        ft.Text(
-                            f"Celular: {estabelecimento.celular}",
-                        ),
-                    ],
-                    spacing=5,
+        Quando existe uma solicitação, carrega seus dados para edição.
+        Quando não existe, mantém os valores iniciais do novo cadastro.
+        """
+
+        if self.solicitacao is None:
+            if self.estabelecimento_id is not None:
+                self.estabelecimento.value = str(
+                    self.estabelecimento_id
                 )
 
-    def ao_selecionar_estabelecimento(
+            return
+
+        self.estabelecimento.value = str(
+            self.solicitacao.estabelecimento_id
+        )
+
+        self.quantidade_sacas.value = str(
+            self.solicitacao.quantidade_sacas
+        )
+
+        self.quantidade_kg.value = str(
+            self.solicitacao.quantidade_kg
+        )
+
+        data_agendada = self._converter_data(
+            self.solicitacao.data_agendada
+        )
+
+        if data_agendada is not None:
+            self.data_agendada.value = (
+                data_agendada.strftime("%d/%m/%Y")
+            )
+        else:
+            self.data_agendada.value = (
+                    self.solicitacao.data_agendada or ""
+            )
+
+        self.motorista.value = (
+                self.solicitacao.motorista or ""
+        )
+
+        self.veiculo.value = (
+                self.solicitacao.veiculo or ""
+        )
+
+        self.observacao.value = (
+                self.solicitacao.observacao or ""
+        )
+
+    def _obter_estabelecimento_selecionado_id(
         self,
-        e: ft.ControlEvent,
+    ) -> int | None:
+        """
+        Retorna o ID do estabelecimento inicialmente selecionado.
+
+        Na edição, utiliza o estabelecimento da solicitação.
+        No cadastro, utiliza o ID recebido pelo construtor.
+        """
+
+        if self.solicitacao is not None:
+            return self.solicitacao.estabelecimento_id
+
+        return self.estabelecimento_id
+
+    def _atualizar_resumo_estabelecimento(
+        self,
+        estabelecimento_id: int | None,
+        atualizar_pagina: bool = True,
     ) -> None:
-        """Atualiza o resumo do estabelecimento selecionado."""
+        """
+        Atualiza o resumo do estabelecimento selecionado.
 
-        valor = e.control.value
+        Args:
+            estabelecimento_id:
+                ID do estabelecimento que deverá ser exibido.
 
-        if not valor:
+            atualizar_pagina:
+                Define se a página deve ser atualizada após
+                a alteração do conteúdo.
+        """
+
+        if estabelecimento_id is None:
             self.resumo_estabelecimento.content = ft.Column(
                 controls=[
                     ft.Text(
@@ -184,10 +249,10 @@ class SolicitacaoFormView:
                 spacing=5,
             )
 
-            self.page.update()
-            return
+            if atualizar_pagina:
+                self.page.update()
 
-        estabelecimento_id = int(valor)
+            return
 
         estabelecimento = next(
             (
@@ -204,7 +269,9 @@ class SolicitacaoFormView:
                 color=ft.Colors.RED,
             )
 
-            self.page.update()
+            if atualizar_pagina:
+                self.page.update()
+
             return
 
         self.resumo_estabelecimento.content = ft.Column(
@@ -227,7 +294,108 @@ class SolicitacaoFormView:
             spacing=5,
         )
 
-        self.page.update()
+        if atualizar_pagina:
+            self.page.update()
+
+    @staticmethod
+    def _converter_data(
+            valor: str | None,
+    ) -> datetime | None:
+        """
+        Converte uma data textual para datetime.
+
+        Formatos aceitos:
+        - dd/mm/aaaa
+        - ddmmaaaa
+        - aaaa-mm-dd
+        """
+
+        texto = (valor or "").strip()
+
+        if not texto:
+            return None
+
+        formatos = (
+            "%d/%m/%Y",
+            "%d%m%Y",
+            "%Y-%m-%d",
+        )
+
+        for formato in formatos:
+            try:
+                return datetime.strptime(
+                    texto,
+                    formato,
+                )
+
+            except ValueError:
+                continue
+
+        return None
+
+    def abrir_calendario(
+            self,
+            e: ft.ControlEvent,
+    ) -> None:
+        """Abre o calendário da data de coleta."""
+
+        data_atual = self._converter_data(
+            self.data_agendada.value
+        )
+
+        if data_atual is not None:
+            self.seletor_data.value = data_atual
+
+        self.page.show_dialog(
+            self.seletor_data
+        )
+
+    def ao_selecionar_data(
+            self,
+            e: ft.ControlEvent,
+    ) -> None:
+        """Exibe no formulário a data escolhida."""
+
+        data_selecionada = self.seletor_data.value
+
+        if data_selecionada is None:
+            return
+
+        self.data_agendada.value = (
+            data_selecionada.strftime("%d/%m/%Y")
+        )
+
+        self.data_agendada.update()
+
+    def ao_selecionar_estabelecimento(
+        self,
+        e: ft.ControlEvent,
+    ) -> None:
+        """Atualiza o resumo do estabelecimento selecionado."""
+
+        valor = e.control.value
+
+        if not valor:
+            self._atualizar_resumo_estabelecimento(
+                estabelecimento_id=None,
+            )
+            return
+
+        try:
+            estabelecimento_id = int(valor)
+
+        except (TypeError, ValueError):
+            self.resumo_estabelecimento.content = ft.Text(
+                "Estabelecimento inválido.",
+                color=ft.Colors.RED,
+            )
+
+            self.page.update()
+            return
+
+        self._atualizar_resumo_estabelecimento(
+            estabelecimento_id=estabelecimento_id,
+        )
 
     def cancelar(
         self,
@@ -238,88 +406,206 @@ class SolicitacaoFormView:
         if self.on_cancelar is not None:
             self.on_cancelar()
 
+    def _obter_dados_formulario(
+            self,
+    ) -> tuple[dict | None, str | None]:
+        """
+        Lê, converte e valida os dados informados no formulário.
+
+        Returns:
+            Uma tupla contendo:
+            - dicionário com os dados convertidos, quando válidos;
+            - mensagem de erro, quando algum dado for inválido.
+        """
+
+        estabelecimento_valor = (
+            self.estabelecimento.value
+        )
+
+        if not estabelecimento_valor:
+            return (
+                None,
+                "Selecione um estabelecimento.",
+            )
+
+        try:
+            estabelecimento_id = int(
+                estabelecimento_valor
+            )
+
+        except (TypeError, ValueError):
+            return (
+                None,
+                "Estabelecimento inválido.",
+            )
+
+        try:
+            quantidade_sacas = int(
+                self.quantidade_sacas.value or ""
+            )
+
+        except (TypeError, ValueError):
+            return (
+                None,
+                "Quantidade de sacas inválida.",
+            )
+
+        if quantidade_sacas <= 0:
+            return (
+                None,
+                "Informe pelo menos uma saca.",
+            )
+
+        quantidade_kg_texto = (
+                self.quantidade_kg.value or "0"
+        ).strip()
+
+        try:
+            quantidade_kg = float(
+                quantidade_kg_texto.replace(",", ".")
+            )
+
+        except (TypeError, ValueError):
+            return (
+                None,
+                "Quantidade em kg inválida.",
+            )
+
+        if quantidade_kg < 0:
+            return (
+                None,
+                "A quantidade em kg não pode ser negativa.",
+            )
+
+        dados = {
+            "estabelecimento_id": estabelecimento_id,
+            "quantidade_sacas": quantidade_sacas,
+            "quantidade_kg": quantidade_kg,
+            "data_agendada": (
+                    self.data_agendada.value or ""
+            ).strip(),
+            "motorista": (
+                    self.motorista.value or ""
+            ).strip(),
+            "veiculo": (
+                    self.veiculo.value or ""
+            ).strip(),
+            "observacao": (
+                    self.observacao.value or ""
+            ).strip(),
+        }
+
+        return dados, None
+
+    def _atualizar_solicitacao(
+            self,
+            dados: dict,
+    ) -> tuple[bool, str]:
+        """Atualiza a solicitação existente com os dados do formulário."""
+
+        if self.solicitacao is None:
+            return (
+                False,
+                "Solicitação não disponível para atualização.",
+            )
+
+        self.solicitacao.estabelecimento_id = (
+            dados["estabelecimento_id"]
+        )
+
+        self.solicitacao.quantidade_sacas = (
+            dados["quantidade_sacas"]
+        )
+
+        self.solicitacao.quantidade_kg = (
+            dados["quantidade_kg"]
+        )
+
+        self.solicitacao.data_agendada = (
+            dados["data_agendada"]
+        )
+
+        self.solicitacao.motorista = (
+            dados["motorista"]
+        )
+
+        self.solicitacao.veiculo = (
+            dados["veiculo"]
+        )
+
+        self.solicitacao.observacao = (
+            dados["observacao"]
+        )
+
+        sucesso, mensagem, _ = (
+            self.controller.atualizar(
+                self.solicitacao
+            )
+        )
+
+        return sucesso, mensagem
+
+    def _criar_solicitacao(
+            self,
+            dados: dict,
+    ) -> tuple[bool, str]:
+        """Cadastra uma nova solicitação com os dados do formulário."""
+
+        sucesso, mensagem, _ = self.controller.criar(
+            estabelecimento_id=dados[
+                "estabelecimento_id"
+            ],
+            quantidade_sacas=dados[
+                "quantidade_sacas"
+            ],
+            quantidade_kg=dados[
+                "quantidade_kg"
+            ],
+            data_agendada=dados[
+                "data_agendada"
+            ],
+            motorista=dados[
+                "motorista"
+            ],
+            veiculo=dados[
+                "veiculo"
+            ],
+            observacao=dados[
+                "observacao"
+            ],
+        )
+
+        return sucesso, mensagem
+
     def salvar(
             self,
             e: ft.ControlEvent,
     ) -> None:
-        """Valida e salva a solicitação."""
+        """Salva uma nova solicitação ou atualiza uma existente."""
 
-        if not self.estabelecimento.value:
+        dados, mensagem_erro = (
+            self._obter_dados_formulario()
+        )
+
+        if dados is None:
             mostrar_erro(
                 self.page,
-                "Selecione um estabelecimento.",
-            )
-            return
-
-        try:
-            quantidade_sacas = int(
-                self.quantidade_sacas.value
-            )
-        except (TypeError, ValueError):
-            mostrar_erro(
-                self.page,
-                "Quantidade de sacas inválida.",
-            )
-            return
-
-        if quantidade_sacas <= 0:
-            mostrar_erro(
-                self.page,
-                "Informe pelo menos uma saca.",
-            )
-            return
-
-        try:
-            quantidade_kg = float(
-                (self.quantidade_kg.value or "0")
-                .replace(",", ".")
-            )
-        except ValueError:
-            mostrar_erro(
-                self.page,
-                "Quantidade em kg inválida.",
-            )
-            return
-
-        if quantidade_kg < 0:
-            mostrar_erro(
-                self.page,
-                "A quantidade em kg não pode ser negativa.",
+                mensagem_erro
+                or "Não foi possível validar os dados.",
             )
             return
 
         if self.solicitacao is None:
-
-            sucesso, mensagem, _ = self.controller.criar(
-                estabelecimento_id=int(
-                    self.estabelecimento.value
-                ),
-                quantidade_sacas=quantidade_sacas,
-                quantidade_kg=quantidade_kg,
-                observacao=self.observacao.value or "",
+            sucesso, mensagem = (
+                self._criar_solicitacao(
+                    dados
+                )
             )
 
         else:
-
-            self.solicitacao.estabelecimento_id = int(
-                self.estabelecimento.value
-            )
-
-            self.solicitacao.quantidade_sacas = (
-                quantidade_sacas
-            )
-
-            self.solicitacao.quantidade_kg = (
-                quantidade_kg
-            )
-
-            self.solicitacao.observacao = (
-                    self.observacao.value or ""
-            )
-
-            sucesso, mensagem, _ = (
-                self.controller.atualizar(
-                    self.solicitacao
+            sucesso, mensagem = (
+                self._atualizar_solicitacao(
+                    dados
                 )
             )
 
@@ -376,6 +662,20 @@ class SolicitacaoFormView:
                         spacing=15,
                     ),
 
+                    ft.Row(
+                        controls=[
+                            self.data_agendada,
+                        ],
+                    ),
+
+                    ft.Row(
+                        controls=[
+                            self.motorista,
+                            self.veiculo,
+                        ],
+                        spacing=15,
+                    ),
+
                     self.observacao,
 
                     ft.Divider(),
@@ -408,4 +708,3 @@ class SolicitacaoFormView:
             padding=0,
             expand=True,
         )
-

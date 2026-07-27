@@ -63,13 +63,17 @@ class SQLiteDatabase:
             self._criar_tabela_codigos_verificacao(conexao)
             self._criar_tabela_estabelecimentos(conexao)
 
-            # Detecta e migra a estrutura antiga de solicitações.
+            self._garantir_tabela_motoristas(conexao)
+            self._garantir_tabela_veiculos(conexao)
+
             self._garantir_tabela_solicitacoes(conexao)
 
     @staticmethod
     def _criar_tabela_usuarios(
-        conexao: sqlite3.Connection,
+            conexao: sqlite3.Connection,
     ) -> None:
+        """Cria a tabela de usuários."""
+
         conexao.execute(
             """
             CREATE TABLE IF NOT EXISTS usuarios (
@@ -107,6 +111,526 @@ class SQLiteDatabase:
 
                 atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
+            """
+        )
+
+    # ==========================================================
+    # MOTORISTAS
+    # ==========================================================
+
+    @classmethod
+    def _garantir_tabela_motoristas(
+        cls,
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria ou migra a tabela de motoristas."""
+
+        if not cls._tabela_existe(
+            conexao,
+            "motoristas",
+        ):
+            cls._criar_tabela_motoristas(conexao)
+            cls._criar_indices_motoristas(conexao)
+            return
+
+        colunas = cls._obter_colunas(
+            conexao,
+            "motoristas",
+        )
+
+        colunas_atuais = {
+            "id",
+            "nome",
+            "telefone",
+            "cnh",
+            "categoria_cnh",
+            "ativo",
+            "criado_em",
+            "atualizado_em",
+        }
+
+        colunas_legadas = {
+            "cpf",
+            "email",
+            "observacao",
+        }
+
+        estrutura_legada = bool(
+            colunas.intersection(colunas_legadas)
+        )
+
+        estrutura_incompleta = not colunas_atuais.issubset(
+            colunas,
+        )
+
+        if estrutura_legada or estrutura_incompleta:
+            cls._migrar_tabela_motoristas(
+                conexao,
+                colunas,
+            )
+
+        cls._criar_indices_motoristas(conexao)
+
+    @staticmethod
+    def _criar_tabela_motoristas(
+        conexao: sqlite3.Connection,
+        nome_tabela: str = "motoristas",
+    ) -> None:
+        """Cria a estrutura atual da tabela de motoristas."""
+
+        conexao.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {nome_tabela} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                nome TEXT NOT NULL,
+
+                telefone TEXT NOT NULL DEFAULT '',
+
+                cnh TEXT NOT NULL DEFAULT '',
+
+                categoria_cnh TEXT NOT NULL DEFAULT '',
+
+                ativo INTEGER NOT NULL DEFAULT 1
+                    CHECK (ativo IN (0, 1)),
+
+                criado_em TEXT NOT NULL
+                    DEFAULT CURRENT_TIMESTAMP,
+
+                atualizado_em TEXT NOT NULL
+                    DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+    @classmethod
+    def _migrar_tabela_motoristas(
+        cls,
+        conexao: sqlite3.Connection,
+        colunas_antigas: set[str],
+    ) -> None:
+        """
+        Reconstrói a tabela de motoristas na estrutura atual.
+
+        CPF, e-mail e observação pertenciam à estrutura anterior e
+        são descartados. Os campos compatíveis são preservados.
+        """
+
+        conexao.execute(
+            "DROP TABLE IF EXISTS motoristas_nova"
+        )
+
+        cls._criar_tabela_motoristas(
+            conexao,
+            nome_tabela="motoristas_nova",
+        )
+
+        id_coluna = (
+            "id"
+            if "id" in colunas_antigas
+            else "NULL"
+        )
+
+        nome = (
+            "COALESCE(nome, '')"
+            if "nome" in colunas_antigas
+            else "''"
+        )
+
+        telefone = (
+            "COALESCE(telefone, '')"
+            if "telefone" in colunas_antigas
+            else "''"
+        )
+
+        cnh = (
+            "COALESCE(cnh, '')"
+            if "cnh" in colunas_antigas
+            else "''"
+        )
+
+        categoria_cnh = (
+            "COALESCE(categoria_cnh, '')"
+            if "categoria_cnh" in colunas_antigas
+            else "''"
+        )
+
+        ativo = (
+            "CASE WHEN ativo = 0 THEN 0 ELSE 1 END"
+            if "ativo" in colunas_antigas
+            else "1"
+        )
+
+        criado_em = (
+            "COALESCE(criado_em, CURRENT_TIMESTAMP)"
+            if "criado_em" in colunas_antigas
+            else "CURRENT_TIMESTAMP"
+        )
+
+        atualizado_em = (
+            "COALESCE(atualizado_em, CURRENT_TIMESTAMP)"
+            if "atualizado_em" in colunas_antigas
+            else "CURRENT_TIMESTAMP"
+        )
+
+        conexao.execute(
+            f"""
+            INSERT INTO motoristas_nova (
+                id,
+                nome,
+                telefone,
+                cnh,
+                categoria_cnh,
+                ativo,
+                criado_em,
+                atualizado_em
+            )
+            SELECT
+                {id_coluna},
+                {nome},
+                {telefone},
+                {cnh},
+                {categoria_cnh},
+                {ativo},
+                {criado_em},
+                {atualizado_em}
+            FROM motoristas
+            """
+        )
+
+        conexao.execute(
+            "DROP TABLE motoristas"
+        )
+
+        conexao.execute(
+            """
+            ALTER TABLE motoristas_nova
+            RENAME TO motoristas
+            """
+        )
+
+    @staticmethod
+    def _criar_indices_motoristas(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria índices de consulta e unicidade dos motoristas."""
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_motoristas_nome
+            ON motoristas(nome)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_motoristas_ativo
+            ON motoristas(ativo)
+            """
+        )
+
+        # Índices parciais preservam registros legados vazios,
+        # mas impedem duplicidade em novos dados válidos.
+        conexao.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_motoristas_telefone_unico
+            ON motoristas(telefone)
+            WHERE TRIM(telefone) <> ''
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_motoristas_cnh_unica
+            ON motoristas(cnh)
+            WHERE TRIM(cnh) <> ''
+            """
+        )
+
+    # ==========================================================
+    # VEÍCULOS
+    # ==========================================================
+
+    @classmethod
+    def _garantir_tabela_veiculos(
+            cls,
+            conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria ou migra a tabela de veículos."""
+
+        if not cls._tabela_existe(
+                conexao,
+                "veiculos",
+        ):
+            cls._criar_tabela_veiculos(conexao)
+            cls._criar_indices_veiculos(conexao)
+            return
+
+        colunas = cls._obter_colunas(
+            conexao,
+            "veiculos",
+        )
+
+        colunas_atuais = {
+            "id",
+            "placa",
+            "marca",
+            "modelo",
+            "ano",
+            "tipo",
+            "capacidade",
+            "motorista_id",
+            "status",
+            "ativo",
+            "criado_em",
+            "atualizado_em",
+        }
+
+        estrutura_incompleta = not colunas_atuais.issubset(colunas)
+
+        if estrutura_incompleta:
+            cls._migrar_tabela_veiculos(
+                conexao,
+                colunas,
+            )
+
+        cls._criar_indices_veiculos(conexao)
+
+    @staticmethod
+    def _criar_tabela_veiculos(
+            conexao: sqlite3.Connection,
+            nome_tabela: str = "veiculos",
+    ) -> None:
+        """Cria a estrutura atual da tabela de veículos."""
+
+        conexao.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {nome_tabela} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                placa TEXT NOT NULL,
+
+                marca TEXT NOT NULL,
+
+                modelo TEXT NOT NULL,
+
+                ano INTEGER,
+
+                tipo TEXT NOT NULL,
+
+                capacidade REAL NOT NULL DEFAULT 0,
+
+                motorista_id INTEGER,
+
+                status TEXT NOT NULL DEFAULT 'DISPONIVEL',
+
+                ativo INTEGER NOT NULL DEFAULT 1
+                    CHECK (ativo IN (0, 1)),
+
+                criado_em TEXT NOT NULL
+                    DEFAULT CURRENT_TIMESTAMP,
+
+                atualizado_em TEXT NOT NULL
+                    DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (motorista_id)
+                    REFERENCES motoristas(id)
+                    ON DELETE SET NULL
+            )
+            """
+        )
+
+    @classmethod
+    def _migrar_tabela_veiculos(
+            cls,
+            conexao: sqlite3.Connection,
+            colunas_antigas: set[str],
+    ) -> None:
+        """
+        Reconstrói a tabela de veículos na estrutura atual.
+        """
+
+        conexao.execute(
+            "DROP TABLE IF EXISTS veiculos_nova"
+        )
+
+        cls._criar_tabela_veiculos(
+            conexao,
+            nome_tabela="veiculos_nova",
+        )
+
+        id_coluna = (
+            "id"
+            if "id" in colunas_antigas
+            else "NULL"
+        )
+
+        placa = (
+            "COALESCE(placa, '')"
+            if "placa" in colunas_antigas
+            else "''"
+        )
+
+        marca = (
+            "COALESCE(marca, '')"
+            if "marca" in colunas_antigas
+            else "''"
+        )
+
+        modelo = (
+            "COALESCE(modelo, '')"
+            if "modelo" in colunas_antigas
+            else "''"
+        )
+
+        ano = (
+            "ano"
+            if "ano" in colunas_antigas
+            else "NULL"
+        )
+
+        tipo = (
+            "COALESCE(tipo, '')"
+            if "tipo" in colunas_antigas
+            else "''"
+        )
+
+        capacidade = (
+            "COALESCE(capacidade, 0)"
+            if "capacidade" in colunas_antigas
+            else "0"
+        )
+
+        motorista_id = (
+            "motorista_id"
+            if "motorista_id" in colunas_antigas
+            else "NULL"
+        )
+
+        status = (
+            "COALESCE(status, 'DISPONIVEL')"
+            if "status" in colunas_antigas
+            else "'DISPONIVEL'"
+        )
+
+        ativo = (
+            "CASE WHEN ativo = 0 THEN 0 ELSE 1 END"
+            if "ativo" in colunas_antigas
+            else "1"
+        )
+
+        criado_em = (
+            "COALESCE(criado_em, CURRENT_TIMESTAMP)"
+            if "criado_em" in colunas_antigas
+            else "CURRENT_TIMESTAMP"
+        )
+
+        atualizado_em = (
+            "COALESCE(atualizado_em, CURRENT_TIMESTAMP)"
+            if "atualizado_em" in colunas_antigas
+            else "CURRENT_TIMESTAMP"
+        )
+
+        conexao.execute(
+            f"""
+            INSERT INTO veiculos_nova (
+                id,
+                placa,
+                marca,
+                modelo,
+                ano,
+                tipo,
+                capacidade,
+                motorista_id,
+                status,
+                ativo,
+                criado_em,
+                atualizado_em
+            )
+            SELECT
+                {id_coluna},
+                {placa},
+                {marca},
+                {modelo},
+                {ano},
+                {tipo},
+                {capacidade},
+                {motorista_id},
+                {status},
+                {ativo},
+                {criado_em},
+                {atualizado_em}
+            FROM veiculos
+            """
+        )
+
+        conexao.execute(
+            "DROP TABLE veiculos"
+        )
+
+        conexao.execute(
+            """
+            ALTER TABLE veiculos_nova
+            RENAME TO veiculos
+            """
+        )
+
+    @staticmethod
+    def _criar_indices_veiculos(
+            conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria os índices da tabela de veículos."""
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_veiculos_marca
+            ON veiculos(marca)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_veiculos_modelo
+            ON veiculos(modelo)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_veiculos_motorista
+            ON veiculos(motorista_id)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_veiculos_status
+            ON veiculos(status)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS
+                idx_veiculos_ativo
+            ON veiculos(ativo)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_veiculos_placa_unica
+            ON veiculos(placa)
+            WHERE TRIM(placa) <> ''
             """
         )
 
@@ -235,6 +759,8 @@ class SQLiteDatabase:
             "status",
             "prioridade",
             "observacao",
+            "motorista",
+            "veiculo",
             "latitude",
             "longitude",
             "criado_em",
@@ -345,6 +871,10 @@ class SQLiteDatabase:
 
                 observacao TEXT NOT NULL DEFAULT '',
 
+                motorista_id,
+                
+                veiculo_id,
+                
                 latitude REAL,
 
                 longitude REAL,
@@ -436,6 +966,18 @@ class SQLiteDatabase:
                 else "''"
             )
 
+            motorista = (
+                "motorista"
+                if "motorista" in colunas_antigas
+                else "NULL"
+            )
+
+            veiculo = (
+                "veiculo"
+                if "veiculo" in colunas_antigas
+                else "NULL"
+            )
+
             latitude = (
                 "latitude"
                 if "latitude" in colunas_antigas
@@ -490,6 +1032,8 @@ class SQLiteDatabase:
                     status,
                     prioridade,
                     observacao,
+                    motorista,
+                    veiculo,
                     latitude,
                     longitude,
                     criado_em,
@@ -507,6 +1051,8 @@ class SQLiteDatabase:
                     {status},
                     {prioridade},
                     {observacao},
+                    {motorista},
+                    {veiculo},
                     {latitude},
                     {longitude},
                     {criado_em},
@@ -555,6 +1101,8 @@ class SQLiteDatabase:
             "observacao": (
                 "TEXT NOT NULL DEFAULT ''"
             ),
+            "motorista": "TEXT",
+            "veiculo": "TEXT",
             "latitude": "REAL",
             "longitude": "REAL",
             "criado_em": "TEXT",
@@ -637,10 +1185,3 @@ class SQLiteDatabase:
             """
         )
 
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_data_solicitacao
-            ON solicitacoes(data_solicitacao)
-            """
-        )

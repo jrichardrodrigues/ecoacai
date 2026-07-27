@@ -50,3 +50,66 @@ STATUS_SOLICITACAO = [
     "CONCLUÍDA",
     "CANCELADA",
 ]
+
+# ============================
+# STATUS DOS VEÍCULOS
+# ============================
+
+STATUS_VEICULO_DISPONIVEL = "DISPONIVEL"
+STATUS_VEICULO_EM_COLETA = "EM_COLETA"
+STATUS_VEICULO_MANUTENCAO = "MANUTENCAO"
+STATUS_VEICULO_INATIVO = "INATIVO"
+
+STATUS_VEICULOS = [
+    (STATUS_VEICULO_DISPONIVEL, "Disponível"),
+    (STATUS_VEICULO_EM_COLETA, "Em coleta"),
+    (STATUS_VEICULO_MANUTENCAO, "Manutenção"),
+    (STATUS_VEICULO_INATIVO, "Inativo"),
+]
+
+# ===========================
+# VEÍCULOS
+# ===========================
+
+MARCAS_VEICULOS = [
+    "Volkswagen",
+    "Mercedes-Benz",
+    "Volvo",
+    "Scania",
+    "Iveco",
+    "DAF",
+    "JAC",
+    "BYD",
+    "Agrale",
+    "Outra",
+]
+
+TIPOS_VEICULOS = [
+    "Toco",
+    "Truck",
+    "Bitruck",
+    "Carreta",
+]
+
+CAPACIDADES_VEICULOS = [
+    6,
+    8,
+    10,
+    12,
+    15,
+    18,
+    20,
+    25,
+    30,
+]
+
+from datetime import datetime
+
+ANOS_VEICULOS = [
+    str(ano)
+    for ano in range(
+        datetime.now().year,
+        1989,
+        -1,
+    )
+]

@@ -18,4 +18,4 @@ sucesso, mensagem, dados_normalizados = validation_service.validar(dados)
 
 print("Sucesso:", sucesso)
 print("Mensagem:", mensagem)
-print("Dados:", dados_normalizados)
+# print("Dados:", dados_normalizados)
