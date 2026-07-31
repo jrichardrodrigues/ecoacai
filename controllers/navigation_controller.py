@@ -12,6 +12,7 @@ from views.home_page import HomeView
 from views.motorista_form_view import MotoristaFormView
 from views.motoristas_view import MotoristasView
 from views.veiculos_view import VeiculosView
+from views.coletas_agendadas_view import ColetasAgendadasView
 
 class NavigationController:
     """Controla a troca do conteúdo principal da aplicação."""
@@ -32,13 +33,7 @@ class NavigationController:
             3: self._solicitacoes,
             4: self._motoristas,
             5: self._veiculos,
-            6: lambda: self._tela_temporaria(
-                "Coletas Ativas",
-                (
-                    "Acompanhe em tempo real as coletas pendentes, "
-                    "agendadas e em andamento."
-                ),
-            ),
+            6: self._coletas_agendadas,
             7: self._dashboard,
         }
 
@@ -167,6 +162,13 @@ class NavigationController:
         )
 
         self._mostrar(formulario.build())
+
+    def _coletas_agendadas(self) -> ft.Control:
+        """Abre a tela de coletas agendadas."""
+
+        return ColetasAgendadasView(
+            page=self.page,
+        ).build()
 
     def abrir_motoristas(self) -> None:
         """Retorna à listagem de motoristas."""

@@ -48,7 +48,7 @@ def criar_menu(on_change):
             ft.NavigationRailDestination(
                 icon=ft.Icons.LIST_ALT_OUTLINED,
                 selected_icon=ft.Icons.LIST_ALT,
-                label="Painel",
+                label="Coletas Agendadas",
             ),
             ft.NavigationRailDestination(
                 icon=ft.Icons.BAR_CHART_OUTLINED,
