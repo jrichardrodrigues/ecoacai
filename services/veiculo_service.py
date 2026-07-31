@@ -302,10 +302,12 @@ class VeiculoService:
             veiculo.status.strip().upper()
         )
 
-        if (
-            veiculo.status
-            not in STATUS_VEICULOS
-        ):
+        status_validos = {
+            valor
+            for valor, _ in STATUS_VEICULOS
+        }
+
+        if veiculo.status not in status_validos:
             raise ValueError(
                 "Status do veículo inválido."
             )

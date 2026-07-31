@@ -86,22 +86,22 @@ class MotoristaRepository:
 
     @staticmethod
     def _validar_dados_obrigatorios(
-        motorista: Motorista,
+        motorista_id: Motorista,
     ) -> None:
         """Valida os campos obrigatórios do motorista."""
 
-        if not str(motorista.nome or "").strip():
+        if not str(motorista_id.nome or "").strip():
             raise ValueError(
                 "O nome do motorista é obrigatório.",
             )
 
-        if not str(motorista.cnh or "").strip():
+        if not str(motorista_id.cnh or "").strip():
             raise ValueError(
                 "A CNH do motorista é obrigatória.",
             )
 
         if not str(
-            motorista.categoria_cnh or "",
+            motorista_id.categoria_cnh or "",
         ).strip():
             raise ValueError(
                 "A categoria da CNH é obrigatória.",
@@ -123,28 +123,28 @@ class MotoristaRepository:
 
     def cadastrar(
         self,
-        motorista: Motorista,
+        motorista_id: Motorista,
     ) -> Motorista:
         """Cadastra um novo motorista."""
 
         self._validar_dados_obrigatorios(
-            motorista,
+            motorista_id,
         )
 
         nome = str(
-            motorista.nome,
+            motorista_id.nome,
         ).strip()
 
         telefone = self._validar_telefone(
-            motorista.telefone,
+            motorista_id.telefone,
         )
 
         cnh = self._normalizar_cnh(
-            motorista.cnh,
+            motorista_id.cnh,
         )
 
         categoria_cnh = str(
-            motorista.categoria_cnh,
+            motorista_id.categoria_cnh,
         ).strip().upper()
 
         try:
@@ -165,11 +165,11 @@ class MotoristaRepository:
                         telefone,
                         cnh,
                         categoria_cnh,
-                        int(motorista.ativo),
+                        int(motorista_id.ativo),
                     ),
                 )
 
-                motorista.id = cursor.lastrowid
+                motorista_id = cursor.lastrowid
 
         except sqlite3.IntegrityError as erro:
             mensagem = str(
@@ -194,7 +194,7 @@ class MotoristaRepository:
             ) from erro
 
         motorista_salvo = self.buscar_por_id(
-            motorista.id,
+            motorista_id,
         )
 
         if motorista_salvo is None:

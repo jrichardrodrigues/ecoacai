@@ -1,6 +1,6 @@
 import flet as ft
 
-from components.layout import SectionHeader
+from .section_header import SectionHeader
 from components.theme import Spacing
 
 

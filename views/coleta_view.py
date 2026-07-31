@@ -108,10 +108,10 @@ class ColetasView:
 
         for solicitacao in solicitacoes:
 
-            if solicitacao.quantidade_kg > 0:
-                quantidade = f"{solicitacao.quantidade_kg:.1f} kg"
+            if solicitacao.quantidade_kg_previsto > 0:
+                quantidade = f"{solicitacao.quantidade_kg_previsto:.1f} kg"
             else:
-                quantidade = f"{solicitacao.quantidade_sacas} sacas"
+                quantidade = f"{solicitacao.quantidade_sacas_prevista} sacas"
 
             self.tabela.rows.append(
                 ft.DataRow(

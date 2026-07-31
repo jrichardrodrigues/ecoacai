@@ -6,11 +6,11 @@ from collections.abc import Callable
 import flet as ft
 
 from components.chips import StatusChip
+from components.layout import PageHeader
+from components.dialogs import ConfirmDialog
 from controllers.veiculo_controller import VeiculoController
-from components.chips import StatusChip
 from models import Veiculo
 from views.veiculo_form_view import VeiculoFormView
-
 
 
 class VeiculosView:
@@ -208,19 +208,12 @@ class VeiculosView:
         return ft.Row(
             controls=[
                 self.voltar_button,
-                ft.Column(
-                    controls=[
-                        ft.Text(
-                            "Veículos",
-                            size=26,
-                            weight=ft.FontWeight.BOLD,
-                        ),
-                        ft.Text(
-                            "Cadastro e gerenciamento da frota.",
-                            color=ft.Colors.ON_SURFACE_VARIANT,
-                        ),
-                    ],
-                    spacing=2,
+                ft.Container(
+                    content=PageHeader(
+                        title="Veículos",
+                        subtitle="Cadastro e gerenciamento da frota.",
+                        show_divider=False,
+                    ),
                     expand=True,
                 ),
                 self.atualizar_button,
@@ -471,13 +464,19 @@ class VeiculosView:
         )
 
         if veiculo.ativo:
-            situacao_button = ft.IconButton(
-                icon=ft.Icons.BLOCK,
-                tooltip="Desativar veículo",
-                on_click=lambda event, item=veiculo: (
-                    self._confirmar_desativacao(
-                        item
-                    )
+            situacao_button = ft.GestureDetector(
+                mouse_cursor=ft.MouseCursor.CLICK,
+                on_tap=lambda e, item=veiculo: (
+                    self._confirmar_desativacao(item)
+                ),
+                content=ft.Container(
+                    content=ft.Image(
+                        src="icons/veiculo_desativar.png",
+                        width=55,
+                        height=55,
+                    ),
+                    tooltip="Desativar veículo",
+                    padding=4,
                 ),
             )
         else:
@@ -485,9 +484,7 @@ class VeiculosView:
                 icon=ft.Icons.RESTORE,
                 tooltip="Reativar veículo",
                 on_click=lambda event, item=veiculo: (
-                    self._confirmar_reativacao(
-                        item
-                    )
+                    self._confirmar_reativacao(item)
                 ),
             )
 
@@ -662,49 +659,24 @@ class VeiculosView:
     # ==========================================================
 
     def _confirmar_desativacao(
-        self,
-        veiculo: Veiculo,
+            self,
+            veiculo: Veiculo,
     ) -> None:
-        dialogo = ft.AlertDialog(
-            modal=True,
-            title=ft.Text(
-                "Desativar veículo"
-            ),
-            content=ft.Text(
+        ConfirmDialog(
+            page=self.page,
+            titulo="Desativar veículo",
+            mensagem=(
                 f"Deseja realmente desativar o veículo "
                 f"{veiculo.placa}?"
             ),
-            actions=[
-                ft.TextButton(
-                    content="Cancelar",
-                    on_click=lambda event: (
-                        self._fechar_dialogo(
-                            dialogo
-                        )
-                    ),
-                ),
-                ft.Button(
-                    content="Desativar",
-                    icon=ft.Icons.BLOCK,
-                    on_click=lambda event: (
-                        self._desativar(
-                            veiculo,
-                            dialogo,
-                        )
-                    ),
-                ),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        self.page.show_dialog(
-            dialogo
-        )
+            texto_confirmar="Desativar",
+            cor_confirmar=ft.Colors.RED_700,
+            on_confirm=lambda: self._desativar(veiculo),
+        ).abrir()
 
     def _desativar(
-        self,
-        veiculo: Veiculo,
-        dialogo: ft.AlertDialog,
+            self,
+            veiculo: Veiculo,
     ) -> None:
         try:
             if veiculo.id is None:
@@ -721,10 +693,6 @@ class VeiculosView:
                     "O veículo não foi desativado."
                 )
 
-            self._fechar_dialogo(
-                dialogo
-            )
-
             self._mostrar_mensagem(
                 "Veículo desativado com sucesso."
             )
@@ -732,60 +700,31 @@ class VeiculosView:
             self._carregar_veiculos()
 
         except Exception as erro:
-            self._fechar_dialogo(
-                dialogo
-            )
-
             self._mostrar_mensagem(
                 str(erro),
                 erro=True,
             )
 
     def _confirmar_reativacao(
-        self,
-        veiculo: Veiculo,
+            self,
+            veiculo: Veiculo,
     ) -> None:
-        dialogo = ft.AlertDialog(
-            modal=True,
-            title=ft.Text(
-                "Reativar veículo"
-            ),
-            content=ft.Text(
+        ConfirmDialog(
+            page=self.page,
+            titulo="Reativar veículo",
+            mensagem=(
                 f"Deseja realmente reativar o veículo "
                 f"{veiculo.placa}?"
             ),
-            actions=[
-                ft.TextButton(
-                    content="Cancelar",
-                    on_click=lambda event: (
-                        self._fechar_dialogo(
-                            dialogo
-                        )
-                    ),
-                ),
-                ft.Button(
-                    content="Reativar",
-                    icon=ft.Icons.RESTORE,
-                    on_click=lambda event: (
-                        self._reativar(
-                            veiculo,
-                            dialogo,
-                        )
-                    ),
-                ),
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        self.page.show_dialog(
-            dialogo
-        )
+            texto_confirmar="Reativar",
+            cor_confirmar=ft.Colors.GREEN_700,
+            on_confirm=lambda: self._reativar(veiculo),
+        ).abrir()
 
     def _reativar(
-        self,
-        veiculo: Veiculo,
-        dialogo: ft.AlertDialog,
-    ) -> None:
+    self,
+    veiculo: Veiculo,
+) -> None:
         try:
             if veiculo.id is None:
                 raise ValueError(
@@ -800,11 +739,6 @@ class VeiculosView:
                 raise ValueError(
                     "O veículo não foi reativado."
                 )
-
-            self._fechar_dialogo(
-                dialogo
-            )
-
             self._mostrar_mensagem(
                 "Veículo reativado com sucesso."
             )
@@ -812,10 +746,6 @@ class VeiculosView:
             self._carregar_veiculos()
 
         except Exception as erro:
-            self._fechar_dialogo(
-                dialogo
-            )
-
             self._mostrar_mensagem(
                 str(erro),
                 erro=True,
@@ -876,16 +806,6 @@ class VeiculosView:
             )
 
         return f"{texto} kg"
-
-    def _fechar_dialogo(
-        self,
-        dialogo: ft.AlertDialog,
-    ) -> None:
-        try:
-            self.page.pop_dialog()
-        except (AttributeError, RuntimeError):
-            dialogo.open = False
-            self._atualizar_pagina()
 
     def _mostrar_mensagem(
         self,

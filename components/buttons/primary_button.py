@@ -1,6 +1,6 @@
 import flet as ft
 
-from components.theme import Colors, Radius, Spacing
+from components.theme import Colors, Radius
 
 
 class PrimaryButton(ft.ElevatedButton):
@@ -16,7 +16,7 @@ class PrimaryButton(ft.ElevatedButton):
         disabled: bool = False,
     ):
         super().__init__(
-            content=label,
+            content=ft.Text(label),
             icon=icon,
             on_click=on_click,
             width=width,

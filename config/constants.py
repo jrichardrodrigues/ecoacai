@@ -44,11 +44,42 @@ SETORES = [
     "Curió-Utinga",
 ]
 
-STATUS_SOLICITACAO = [
-    "PENDENTE",
-    "EM COLETA",
-    "CONCLUÍDA",
-    "CANCELADA",
+# ============================
+# STATUS DAS SOLICITAÇÕES
+# ============================
+
+STATUS_SOLICITACAO_PENDENTE = "PENDENTE"
+STATUS_SOLICITACAO_AGENDADA = "AGENDADA"
+STATUS_SOLICITACAO_EM_DESLOCAMENTO = "EM_DESLOCAMENTO"
+STATUS_SOLICITACAO_EM_COLETA = "EM_COLETA"
+STATUS_SOLICITACAO_CONCLUIDA = "CONCLUIDA"
+STATUS_SOLICITACAO_CANCELADA = "CANCELADA"
+
+STATUS_SOLICITACOES = [
+    (
+        STATUS_SOLICITACAO_PENDENTE,
+        "Pendente",
+    ),
+    (
+        STATUS_SOLICITACAO_AGENDADA,
+        "Agendada",
+    ),
+    (
+        STATUS_SOLICITACAO_EM_DESLOCAMENTO,
+        "Em deslocamento",
+    ),
+    (
+        STATUS_SOLICITACAO_EM_COLETA,
+        "Em coleta",
+    ),
+    (
+        STATUS_SOLICITACAO_CONCLUIDA,
+        "Concluída",
+    ),
+    (
+        STATUS_SOLICITACAO_CANCELADA,
+        "Cancelada",
+    ),
 ]
 
 # ============================

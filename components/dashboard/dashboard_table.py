@@ -229,7 +229,7 @@ class DashboardTable(ft.Container):
                                 content=ft.Text(
                                     str(
                                         solicitacao.get(
-                                            "quantidade_sacas",
+                                            "quantidade_sacas_prevista",
                                             0,
                                         )
                                     ),

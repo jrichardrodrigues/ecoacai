@@ -10,7 +10,7 @@ controller = SolicitacaoColetaController()
 
 sucesso, mensagem, solicitacao = controller.criar(
     estabelecimento_id=1,
-    quantidade_sacas=10,
+    quantidade_sacas_prevista=10,
     quantidade_kg=250,
     observacao="Coleta de teste",
 )

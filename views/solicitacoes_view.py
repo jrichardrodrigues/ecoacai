@@ -475,8 +475,8 @@ class SolicitacoesView:
             f"{mensagens.get(solicitacao.status, '')}\n\n"
             f"Solicitação: {solicitacao.numero}\n"
             f"Status: {solicitacao.status.replace('_', ' ')}\n"
-            f"Sacas: {solicitacao.quantidade_sacas}\n"
-            f"Peso: {solicitacao.quantidade_kg:.1f} kg\n\n"
+            f"Sacas: {solicitacao.quantidade_sacas_prevista}\n"
+            f"Peso: {solicitacao.quantidade_kg_previsto:.1f} kg\n\n"
             f"Equipe EcoAçaí 🌱"
         )
 

@@ -13,6 +13,8 @@ from utils.messages import (
     mostrar_erro,
     mostrar_sucesso,
 )
+from controllers.motorista_controller import MotoristaController
+from controllers.veiculo_controller import VeiculoController
 
 
 class SolicitacaoFormView:
@@ -44,6 +46,12 @@ class SolicitacaoFormView:
             .listar_estabelecimentos()
         )
 
+        self.motorista_controller = MotoristaController()
+        self.veiculo_controller = VeiculoController()
+
+        self.motoristas = self.motorista_controller.listar_ativos()
+        self.veiculos = self.veiculo_controller.listar_ativos()
+
         self.estabelecimento = ft.Dropdown(
             label="Estabelecimento",
             hint_text="Selecione o estabelecimento",
@@ -63,7 +71,7 @@ class SolicitacaoFormView:
             self.ao_selecionar_estabelecimento
         )
 
-        self.quantidade_sacas = ft.TextField(
+        self.quantidade_sacas_prevista = ft.TextField(
             label="Quantidade de sacas",
             hint_text="Ex.: 10",
             value="1",
@@ -72,7 +80,7 @@ class SolicitacaoFormView:
             expand=True,
         )
 
-        self.quantidade_kg = ft.TextField(
+        self.quantidade_kg_previsto = ft.TextField(
             label="Quantidade em kg",
             hint_text="Ex.: 250",
             value="0",
@@ -104,20 +112,36 @@ class SolicitacaoFormView:
             ),
         )
 
-        self.motorista = ft.TextField(
+        self.motorista = ft.Dropdown(
             label="Motorista",
-            hint_text="Nome do motorista",
-            value="",
+            hint_text="Selecione o motorista",
             border_radius=10,
             expand=True,
+            options=[
+                ft.dropdown.Option(
+                    key=str(motorista.id),
+                    text=motorista.nome,
+                )
+                for motorista in self.motoristas
+                if motorista.id is not None
+            ],
         )
 
-        self.veiculo = ft.TextField(
+        self.motorista.on_select = self.ao_selecionar_motorista
+
+        self.veiculo = ft.Dropdown(
             label="Veículo",
-            hint_text="Placa ou identificação",
-            value="",
+            hint_text="Selecione o veículo",
             border_radius=10,
             expand=True,
+            options=[
+                ft.dropdown.Option(
+                    key=str(veiculo.id),
+                    text=f"{veiculo.marca} {veiculo.modelo} • {veiculo.placa}",
+                )
+                for veiculo in self.veiculos
+                if veiculo.id is not None
+            ],
         )
 
         self.observacao = ft.TextField(
@@ -146,12 +170,50 @@ class SolicitacaoFormView:
             visible=True,
         )
 
+        self.status_titulo = ft.Text(
+            "Status da Solicitação",
+            weight=ft.FontWeight.BOLD,
+            size=15,
+        )
+
+        self.status_texto = ft.Text(
+            "PENDENTE",
+            size=18,
+            weight=ft.FontWeight.BOLD,
+            color=ft.Colors.AMBER_900,
+        )
+
+        self.status_container = ft.Container(
+            expand=True,
+            padding=12,
+            border_radius=10,
+            bgcolor=ft.Colors.AMBER_50,
+            content=ft.Column(
+                controls=[
+                    self.status_titulo,
+                    self.status_texto,
+                ],
+                spacing=5,
+            ),
+        )
+
+        self.botao_operacao = ft.FilledButton(
+            content="Agendar Coleta",
+            icon=ft.Icons.CALENDAR_MONTH,
+            visible=False,
+            expand=True,
+            on_click=self.executar_operacao,
+        )
+
         self._carregar_solicitacao()
 
         self._atualizar_resumo_estabelecimento(
             self._obter_estabelecimento_selecionado_id(),
             atualizar_pagina=False,
         )
+
+        self._atualizar_status_visual()
+        self._atualizar_campos()
 
     def _carregar_solicitacao(self) -> None:
         """
@@ -173,16 +235,16 @@ class SolicitacaoFormView:
             self.solicitacao.estabelecimento_id
         )
 
-        self.quantidade_sacas.value = str(
-            self.solicitacao.quantidade_sacas
+        self.quantidade_sacas_prevista.value = str(
+            self.solicitacao.quantidade_sacas_prevista
         )
 
-        self.quantidade_kg.value = str(
-            self.solicitacao.quantidade_kg
+        self.quantidade_kg_previsto.value = str(
+            self.solicitacao.quantidade_kg_previsto
         )
 
         data_agendada = self._converter_data(
-            self.solicitacao.data_agendada
+            self.solicitacao.data_hora_agendada
         )
 
         if data_agendada is not None:
@@ -191,19 +253,23 @@ class SolicitacaoFormView:
             )
         else:
             self.data_agendada.value = (
-                    self.solicitacao.data_agendada or ""
+                    self.solicitacao.data_hora_agendada or ""
             )
 
         self.motorista.value = (
-                self.solicitacao.motorista or ""
+            str(self.solicitacao.motorista_id)
+            if self.solicitacao.motorista_id is not None
+            else None
         )
 
         self.veiculo.value = (
-                self.solicitacao.veiculo or ""
+            str(self.solicitacao.veiculo_id)
+            if self.solicitacao.veiculo_id is not None
+            else None
         )
 
         self.observacao.value = (
-                self.solicitacao.observacao or ""
+                self.solicitacao.observacao_cliente or ""
         )
 
     def _obter_estabelecimento_selecionado_id(
@@ -296,6 +362,129 @@ class SolicitacaoFormView:
 
         if atualizar_pagina:
             self.page.update()
+
+    def _atualizar_status_visual(self) -> None:
+        """Atualiza o painel visual de status da solicitação."""
+
+        # Nova solicitação ainda não possui operação disponível.
+        if self.solicitacao is None:
+            self.botao_operacao.visible = False
+
+            self.status_texto.value = "🟡 PENDENTE"
+            self.status_texto.color = ft.Colors.AMBER_900
+            self.status_container.bgcolor = ft.Colors.AMBER_50
+
+            return
+
+        status = self.solicitacao.status
+
+        self.botao_operacao.visible = True
+
+        if status == "PENDENTE":
+            self.status_texto.value = "🟡 PENDENTE"
+            self.status_texto.color = ft.Colors.AMBER_900
+            self.status_container.bgcolor = ft.Colors.AMBER_50
+
+            self.botao_operacao.content = "Agendar Coleta"
+            self.botao_operacao.icon = ft.Icons.CALENDAR_MONTH
+
+        elif status == "AGENDADA":
+            self.status_texto.value = "🟢 AGENDADA"
+            self.status_texto.color = ft.Colors.GREEN_800
+            self.status_container.bgcolor = ft.Colors.GREEN_50
+
+            self.botao_operacao.content = "Iniciar Deslocamento"
+            self.botao_operacao.icon = ft.Icons.LOCAL_SHIPPING
+
+        elif status == "EM_DESLOCAMENTO":
+            self.status_texto.value = "🚛 EM DESLOCAMENTO"
+            self.status_texto.color = ft.Colors.BLUE_800
+            self.status_container.bgcolor = ft.Colors.BLUE_50
+
+            self.botao_operacao.content = "Cheguei ao Estabelecimento"
+            self.botao_operacao.icon = ft.Icons.LOCATION_ON
+
+        elif status == "EM_COLETA":
+            self.status_texto.value = "♻️ EM COLETA"
+            self.status_texto.color = ft.Colors.ORANGE_900
+            self.status_container.bgcolor = ft.Colors.ORANGE_50
+
+            self.botao_operacao.content = "Concluir Coleta"
+            self.botao_operacao.icon = ft.Icons.CHECK_CIRCLE
+
+        elif status == "CONCLUÍDA":
+            self.status_texto.value = "✅ CONCLUÍDA"
+            self.status_texto.color = ft.Colors.TEAL_800
+            self.status_container.bgcolor = ft.Colors.TEAL_50
+
+            self.botao_operacao.visible = False
+
+        else:
+            self.status_texto.value = status
+            self.status_texto.color = ft.Colors.GREY_800
+            self.status_container.bgcolor = ft.Colors.GREY_100
+
+            self.botao_operacao.visible = False
+
+    def _atualizar_campos(self) -> None:
+        """Habilita ou bloqueia os campos conforme o status."""
+
+        # Nova solicitação
+        if self.solicitacao is None:
+            for campo in (
+                    self.estabelecimento,
+                    self.quantidade_sacas_prevista,
+                    self.quantidade_kg_previsto,
+                    self.data_agendada,
+                    self.motorista,
+                    self.veiculo,
+                    self.observacao,
+            ):
+                campo.disabled = False
+
+            return
+
+        status = self.solicitacao.status
+
+        # Todos habilitados
+        for campo in (
+                self.estabelecimento,
+                self.quantidade_sacas_prevista,
+                self.quantidade_kg_previsto,
+                self.data_agendada,
+                self.motorista,
+                self.veiculo,
+                self.observacao,
+        ):
+            campo.disabled = False
+
+        # AGENDADA
+        if status == "AGENDADA":
+            self.estabelecimento.disabled = True
+            self.quantidade_sacas_prevista.disabled = True
+            self.quantidade_kg_previsto.disabled = True
+
+        # EM_DESLOCAMENTO
+        elif status == "EM_DESLOCAMENTO":
+            self.estabelecimento.disabled = True
+            self.quantidade_sacas_prevista.disabled = True
+            self.quantidade_kg_previsto.disabled = True
+            self.data_agendada.disabled = True
+            self.motorista.disabled = True
+            self.veiculo.disabled = True
+
+        # CONCLUÍDA
+        elif status == "CONCLUÍDA":
+            for campo in (
+                    self.estabelecimento,
+                    self.quantidade_sacas_prevista,
+                    self.quantidade_kg_previsto,
+                    self.data_agendada,
+                    self.motorista,
+                    self.veiculo,
+                    self.observacao,
+            ):
+                campo.disabled = True
 
     @staticmethod
     def _converter_data(
@@ -397,6 +586,41 @@ class SolicitacaoFormView:
             estabelecimento_id=estabelecimento_id,
         )
 
+    def ao_selecionar_motorista(
+            self,
+            e: ft.ControlEvent,
+    ) -> None:
+        """Atualiza a lista de veículos do motorista."""
+
+        motorista_id = e.control.value
+
+        if not motorista_id:
+            return
+
+        veiculos = self.veiculo_controller.listar_por_motorista(
+            int(motorista_id)
+        )
+
+        self.veiculo.options = [
+            ft.dropdown.Option(
+                key=str(veiculo.id),
+                text=(
+                    f"{veiculo.marca} "
+                    f"{veiculo.modelo} • "
+                    f"{veiculo.placa}"
+                ),
+            )
+            for veiculo in veiculos
+            if veiculo.id is not None
+        ]
+
+        if len(veiculos) == 1:
+            self.veiculo.value = str(veiculos[0].id)
+        else:
+            self.veiculo.value = None
+
+        self.veiculo.update()
+
     def cancelar(
         self,
         e: ft.ControlEvent,
@@ -440,8 +664,8 @@ class SolicitacaoFormView:
             )
 
         try:
-            quantidade_sacas = int(
-                self.quantidade_sacas.value or ""
+            quantidade_sacas_prevista = int(
+                self.quantidade_sacas_prevista.value or ""
             )
 
         except (TypeError, ValueError):
@@ -450,19 +674,19 @@ class SolicitacaoFormView:
                 "Quantidade de sacas inválida.",
             )
 
-        if quantidade_sacas <= 0:
+        if quantidade_sacas_prevista <= 0:
             return (
                 None,
                 "Informe pelo menos uma saca.",
             )
 
-        quantidade_kg_texto = (
-                self.quantidade_kg.value or "0"
+        quantidade_kg_previsto_texto = (
+                self.quantidade_kg_previsto.value or "0"
         ).strip()
 
         try:
-            quantidade_kg = float(
-                quantidade_kg_texto.replace(",", ".")
+            quantidade_kg_previsto = float(
+                quantidade_kg_previsto_texto.replace(",", ".")
             )
 
         except (TypeError, ValueError):
@@ -471,26 +695,48 @@ class SolicitacaoFormView:
                 "Quantidade em kg inválida.",
             )
 
-        if quantidade_kg < 0:
+        if quantidade_kg_previsto < 0:
             return (
                 None,
                 "A quantidade em kg não pode ser negativa.",
             )
 
+        motorista_texto = (
+                self.motorista.value or ""
+        ).strip()
+
+        veiculo_texto = (
+                self.veiculo.value or ""
+        ).strip()
+
+        try:
+            motorista_id = (
+                int(motorista_texto)
+                if motorista_texto
+                else None
+            )
+        except ValueError:
+            return None, "Motorista inválido."
+
+        try:
+            veiculo_id = (
+                int(veiculo_texto)
+                if veiculo_texto
+                else None
+            )
+        except ValueError:
+            return None, "Veículo inválido."
+
         dados = {
             "estabelecimento_id": estabelecimento_id,
-            "quantidade_sacas": quantidade_sacas,
-            "quantidade_kg": quantidade_kg,
-            "data_agendada": (
+            "quantidade_sacas_prevista": quantidade_sacas_prevista,
+            "quantidade_kg_previsto": quantidade_kg_previsto,
+            "data_hora_agendada": (
                     self.data_agendada.value or ""
             ).strip(),
-            "motorista": (
-                    self.motorista.value or ""
-            ).strip(),
-            "veiculo": (
-                    self.veiculo.value or ""
-            ).strip(),
-            "observacao": (
+            "motorista_id": motorista_id,
+            "veiculo_id": veiculo_id,
+            "observacao_cliente": (
                     self.observacao.value or ""
             ).strip(),
         }
@@ -513,28 +759,28 @@ class SolicitacaoFormView:
             dados["estabelecimento_id"]
         )
 
-        self.solicitacao.quantidade_sacas = (
-            dados["quantidade_sacas"]
+        self.solicitacao.quantidade_sacas_prevista = (
+            dados["quantidade_sacas_prevista"]
         )
 
-        self.solicitacao.quantidade_kg = (
-            dados["quantidade_kg"]
+        self.solicitacao.quantidade_kg_previsto = (
+            dados["quantidade_kg_previsto"]
         )
 
-        self.solicitacao.data_agendada = (
-            dados["data_agendada"]
+        self.solicitacao.data_hora_agendada = (
+            dados["data_hora_agendada"]
         )
 
-        self.solicitacao.motorista = (
-            dados["motorista"]
+        self.solicitacao.motorista_id = (
+            dados["motorista_id"]
         )
 
-        self.solicitacao.veiculo = (
-            dados["veiculo"]
+        self.solicitacao.veiculo_id = (
+            dados["veiculo_id"]
         )
 
-        self.solicitacao.observacao = (
-            dados["observacao"]
+        self.solicitacao.observacao_cliente = (
+            dados["observacao_cliente"]
         )
 
         sucesso, mensagem, _ = (
@@ -555,27 +801,61 @@ class SolicitacaoFormView:
             estabelecimento_id=dados[
                 "estabelecimento_id"
             ],
-            quantidade_sacas=dados[
-                "quantidade_sacas"
+            quantidade_sacas_prevista=dados[
+                "quantidade_sacas_prevista"
             ],
-            quantidade_kg=dados[
-                "quantidade_kg"
+            quantidade_kg_previsto=dados[
+                "quantidade_kg_previsto"
             ],
-            data_agendada=dados[
-                "data_agendada"
+            data_hora_agendada=dados[
+                "data_hora_agendada"
             ],
-            motorista=dados[
-                "motorista"
+            motorista_id=dados[
+                "motorista_id"
             ],
-            veiculo=dados[
-                "veiculo"
+            veiculo_id=dados[
+                "veiculo_id"
             ],
-            observacao=dados[
-                "observacao"
+            observacao_cliente=dados[
+                "observacao_cliente"
             ],
         )
 
         return sucesso, mensagem
+
+    def executar_operacao(
+            self,
+            e: ft.ControlEvent,
+    ) -> None:
+        """Executa a próxima operação da solicitação."""
+
+        if self.solicitacao is None:
+            return
+
+        sucesso, mensagem, solicitacao = (
+            self.controller.alterar_status(
+                self.solicitacao.id
+            )
+        )
+
+        if not sucesso:
+            mostrar_erro(
+                self.page,
+                mensagem,
+            )
+            return
+
+        self.solicitacao = solicitacao
+
+        self._atualizar_status_visual()
+        self._atualizar_campos()
+
+        self.page.update()
+
+        mostrar_sucesso(
+            self.page,
+            mensagem,
+        )
 
     def salvar(
             self,
@@ -654,10 +934,18 @@ class SolicitacaoFormView:
 
                     self.resumo_estabelecimento,
 
+                    self.status_container,
+
                     ft.Row(
                         controls=[
-                            self.quantidade_sacas,
-                            self.quantidade_kg,
+                            self.botao_operacao,
+                        ],
+                    ),
+
+                    ft.Row(
+                        controls=[
+                            self.quantidade_sacas_prevista,
+                            self.quantidade_kg_previsto,
                         ],
                         spacing=15,
                     ),

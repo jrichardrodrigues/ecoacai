@@ -41,9 +41,8 @@ def criar_menu(on_change):
                 label="Motoristas",
             ),
             ft.NavigationRailDestination(
-                # ft.Icons.LOCAL_SHIPPING,
-                ft.Icons.FIRE_TRUCK,
-                selected_icon=ft.Icons.DIRECTIONS_CAR,
+                icon=ft.Icons.FIRE_TRUCK_OUTLINED,
+                selected_icon=ft.Icons.FIRE_TRUCK,
                 label="Veículos",
             ),
             ft.NavigationRailDestination(

@@ -79,27 +79,25 @@ class SolicitacaoCard(ft.Card):
                 weight=ft.FontWeight.W_500,
             ),
             ft.Text(
-                f"📦 {solicitacao.quantidade_sacas} sacas",
+                f"📦 {solicitacao.quantidade_sacas_prevista} sacas",
             ),
             ft.Text(
-                f"⚖ {solicitacao.quantidade_kg:.1f} kg",
+                f"⚖️ {solicitacao.quantidade_kg_previsto:.1f} kg",
             ),
         ]
 
-        if solicitacao.data_agendada:
+        if solicitacao.data_hora_agendada:
             detalhes.append(
                 ft.Text(
-                    f"📅 Agendada: {solicitacao.data_agendada}",
+                    f"📅 Agendada: {solicitacao.data_hora_agendada}",
                 ),
             )
 
-        if solicitacao.observacao:
+        if solicitacao.observacao_cliente:
             detalhes.append(
                 ft.Text(
-                    solicitacao.observacao,
-                    italic=True,
-                    color=ft.Colors.GREY_700,
-                ),
+                    f"📝 {solicitacao.observacao_cliente}",
+                )
             )
 
         botoes: list[ft.Control] = []
@@ -119,8 +117,8 @@ class SolicitacaoCard(ft.Card):
                 ft.Container(
                     content=ft.Image(
                         src="assets/icons/whatsapp.png",
-                        width=50,
-                        height=50,
+                        width=25,
+                        height=25,
                     ),
                     tooltip="Abrir WhatsApp",
                     ink=True,

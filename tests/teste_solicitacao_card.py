@@ -10,8 +10,8 @@ def main(page: ft.Page):
 
     solicitacao = SolicitacaoColeta(
         id=1,
-        quantidade_sacas=15,
-        quantidade_kg=320,
+        quantidade_sacas_prevista=15,
+        quantidade_kg_previsto=320,
         status="PENDENTE",
     )
 

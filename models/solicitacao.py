@@ -8,7 +8,7 @@ class Solicitacao:
 
     estabelecimento_id: int = 0
 
-    quantidade_sacas: int = 1
+    quantidade_sacas_prevista: int = 1
     quantidade_kg: float = 0.0
 
     data_solicitacao: str = ""
