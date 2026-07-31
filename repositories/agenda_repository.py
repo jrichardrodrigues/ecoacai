@@ -217,6 +217,138 @@ class AgendaRepository:
             for registro in registros
         ]
 
+    def agenda_hoje(
+            self,
+            *,
+            status: str | None = None,
+    ) -> list[dict]:
+        """
+        Retorna as solicitações agendadas para a data atual.
+
+        Opcionalmente, filtra por status.
+        """
+
+        consulta = self._consulta_base()
+
+        consulta += """
+            WHERE s.ativo = 1
+              AND DATE(s.data_hora_agendada) = DATE('now', 'localtime')
+        """
+
+        parametros: list[object] = []
+
+        if status and status.strip():
+            status_normalizado = self._normalizar_status(
+                status
+            )
+
+            consulta += """
+                AND s.status = ?
+            """
+
+            parametros.append(
+                status_normalizado
+            )
+
+        consulta += self._ordenacao_padrao()
+
+        with self.database.obter_conexao() as conexao:
+            registros = conexao.execute(
+                consulta,
+                parametros,
+            ).fetchall()
+
+        return [
+            dict(registro)
+            for registro in registros
+        ]
+
+    def agenda_periodo(
+            self,
+            data_inicial: str,
+            data_final: str,
+            *,
+            status: str | None = None,
+            motorista_id: int | None = None,
+            veiculo_id: int | None = None,
+    ) -> list[dict]:
+        """
+        Retorna as solicitações agendadas em um intervalo de datas.
+
+        As datas devem ser informadas no formato AAAA-MM-DD.
+        """
+
+        data_inicial_normalizada = data_inicial.strip()
+        data_final_normalizada = data_final.strip()
+
+        if (
+                not data_inicial_normalizada
+                or not data_final_normalizada
+        ):
+            return []
+
+        if data_inicial_normalizada > data_final_normalizada:
+            raise ValueError(
+                "A data inicial não pode ser maior que a data final."
+            )
+
+        consulta = self._consulta_base()
+
+        consulta += """
+            WHERE s.ativo = 1
+              AND DATE(s.data_hora_agendada)
+                  BETWEEN DATE(?) AND DATE(?)
+        """
+
+        parametros: list[object] = [
+            data_inicial_normalizada,
+            data_final_normalizada,
+        ]
+
+        if status and status.strip():
+            status_normalizado = self._normalizar_status(
+                status
+            )
+
+            consulta += """
+                AND s.status = ?
+            """
+
+            parametros.append(
+                status_normalizado
+            )
+
+        if motorista_id is not None:
+            consulta += """
+                AND s.motorista_id = ?
+            """
+
+            parametros.append(
+                motorista_id
+            )
+
+        if veiculo_id is not None:
+            consulta += """
+                AND s.veiculo_id = ?
+            """
+
+            parametros.append(
+                veiculo_id
+            )
+
+        consulta += self._ordenacao_padrao()
+
+        with self.database.obter_conexao() as conexao:
+            registros = conexao.execute(
+                consulta,
+                parametros,
+            ).fetchall()
+
+        return [
+            dict(registro)
+            for registro in registros
+        ]
+
     # ==========================================================
     # OPERAÇÕES
     # ==========================================================
@@ -776,8 +908,100 @@ class AgendaRepository:
     # DASHBOARD
     # ==========================================================
 
-    # Os métodos de totais e indicadores serão implementados
-    # depois das operações da agenda.
+    def total_por_status(
+            self,
+            *,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> dict[str, int]:
+        """
+        Retorna a quantidade de solicitações agrupadas por status.
+
+        Quando um período é informado, considera a data da solicitação.
+        Sem período, contabiliza todas as solicitações ativas.
+        """
+
+        totais: dict[str, int] = {
+            status: 0
+            for status in self._STATUS_VALIDOS
+        }
+
+        consulta = """
+            SELECT
+                status,
+                COUNT(*) AS total
+            FROM solicitacoes
+            WHERE ativo = 1
+        """
+
+        parametros: list[object] = []
+
+        inicio = (
+            data_inicial.strip()
+            if data_inicial and data_inicial.strip()
+            else None
+        )
+
+        fim = (
+            data_final.strip()
+            if data_final and data_final.strip()
+            else None
+        )
+
+        if inicio and fim:
+            if inicio > fim:
+                raise ValueError(
+                    "A data inicial não pode ser maior que a data final."
+                )
+
+            consulta += """
+                AND DATE(data_solicitacao)
+                    BETWEEN DATE(?) AND DATE(?)
+            """
+
+            parametros.extend([
+                inicio,
+                fim,
+            ])
+
+        elif inicio:
+            consulta += """
+                AND DATE(data_solicitacao) >= DATE(?)
+            """
+
+            parametros.append(
+                inicio
+            )
+
+        elif fim:
+            consulta += """
+                AND DATE(data_solicitacao) <= DATE(?)
+            """
+
+            parametros.append(
+                fim
+            )
+
+        consulta += """
+            GROUP BY status
+        """
+
+        with self.database.obter_conexao() as conexao:
+            registros = conexao.execute(
+                consulta,
+                parametros,
+            ).fetchall()
+
+        for registro in registros:
+            status = str(
+                registro["status"]
+            ).strip().upper()
+
+            totais[status] = int(
+                registro["total"]
+            )
+
+        return totais
 
     # ==========================================================
     # MÉTODOS INTERNOS
