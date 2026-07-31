@@ -343,6 +343,90 @@ class AgendaRepository:
 
             return cursor.rowcount > 0
 
+    def reagendar(
+            self,
+            solicitacao_id: int,
+            nova_data_hora: str,
+            motorista_id: int | None = None,
+            veiculo_id: int | None = None,
+    ) -> bool:
+        """
+        Reagenda uma solicitação que já está com status AGENDADA.
+
+        Opcionalmente, atualiza o motorista e o veículo vinculados.
+        """
+
+        solicitacao = self.obter_por_id(
+            solicitacao_id
+        )
+
+        if solicitacao is None:
+            return False
+
+        status_atual = str(
+            solicitacao["status"]
+        ).strip().upper()
+
+        if status_atual != "AGENDADA":
+            return False
+
+        return self.agendar(
+            solicitacao_id=solicitacao_id,
+            data_hora_agendada=nova_data_hora,
+            motorista_id=motorista_id,
+            veiculo_id=veiculo_id,
+        )
+
+    def iniciar_coleta(
+            self,
+            solicitacao_id: int,
+    ) -> bool:
+        """
+        Inicia uma coleta agendada.
+
+        Altera o status para EM_COLETA e registra
+        a data e a hora de início.
+        """
+
+        return self._atualizar_status(
+            solicitacao_id=solicitacao_id,
+            novo_status="EM_COLETA",
+            campo_data="data_hora_inicio",
+        )
+
+    def concluir_coleta(
+            self,
+            solicitacao_id: int,
+    ) -> bool:
+        """
+        Conclui uma coleta em andamento.
+
+        Altera o status para CONCLUIDA e registra
+        a data e a hora de conclusão.
+        """
+
+        return self._atualizar_status(
+            solicitacao_id=solicitacao_id,
+            novo_status="CONCLUIDA",
+            campo_data="data_hora_conclusao",
+        )
+
+    def cancelar_coleta(
+            self,
+            solicitacao_id: int,
+    ) -> bool:
+        """
+        Cancela uma solicitação pendente ou agendada.
+
+        Não registra data específica de cancelamento,
+        pois a tabela ainda não possui esse campo.
+        """
+
+        return self._atualizar_status(
+            solicitacao_id=solicitacao_id,
+            novo_status="CANCELADA",
+        )
+
     # ==========================================================
     # DISPONIBILIDADE
     # ==========================================================

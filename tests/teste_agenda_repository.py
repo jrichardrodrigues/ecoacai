@@ -43,3 +43,20 @@ for coleta in coletas_agendadas:
         coleta["data_hora_agendada"],
         coleta["status"],
     )
+
+print("\n=== REAGENDAR COLETA ===")
+
+resultado = repository.reagendar(
+    solicitacao_id=13,
+    nova_data_hora="2026-08-05 08:30:00",
+)
+
+print("Resultado:", resultado)
+
+coleta = repository.obter_por_id(13)
+
+print(
+    coleta["codigo"],
+    coleta["data_hora_agendada"],
+    coleta["status"],
+)
