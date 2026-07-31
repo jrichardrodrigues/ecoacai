@@ -431,8 +431,346 @@ class AgendaRepository:
     # DISPONIBILIDADE
     # ==========================================================
 
-    # Os métodos motorista_disponivel() e veiculo_disponivel()
-    # serão implementados na próxima versão.
+    def motorista_disponivel(
+            self,
+            motorista_id: int,
+            data_hora_agendada: str,
+            *,
+            solicitacao_ignorada_id: int | None = None,
+            janela_minutos: int = 60,
+    ) -> dict:
+        """
+        Verifica se um motorista está disponível no horário informado.
+
+        A busca considera solicitações AGENDADAS ou EM_COLETA dentro
+        da janela de conflito estabelecida.
+
+        Args:
+            motorista_id:
+                Identificador do motorista.
+
+            data_hora_agendada:
+                Data e hora no formato AAAA-MM-DD HH:MM:SS.
+
+            solicitacao_ignorada_id:
+                Solicitação que deve ser desconsiderada na busca.
+                É útil durante um reagendamento.
+
+            janela_minutos:
+                Quantidade de minutos antes e depois do horário
+                considerada como conflito.
+
+        Returns:
+            Dicionário com a disponibilidade e, quando houver,
+            os dados da solicitação conflitante.
+        """
+
+        if motorista_id <= 0:
+            return {
+                "disponivel": False,
+                "mensagem": "Motorista inválido.",
+                "conflito": None,
+            }
+
+        data_hora_normalizada = data_hora_agendada.strip()
+
+        if not data_hora_normalizada:
+            return {
+                "disponivel": False,
+                "mensagem": "Data e hora não informadas.",
+                "conflito": None,
+            }
+
+        if janela_minutos < 0:
+            raise ValueError(
+                "A janela de conflito não pode ser negativa."
+            )
+
+        consulta = """
+            SELECT
+                s.id,
+                s.codigo,
+                s.data_hora_agendada,
+                s.status,
+
+                s.estabelecimento_id,
+                e.nome AS estabelecimento_nome,
+
+                s.motorista_id,
+                m.nome AS motorista_nome
+
+            FROM solicitacoes AS s
+
+            INNER JOIN estabelecimentos AS e
+                ON e.id = s.estabelecimento_id
+
+            LEFT JOIN motoristas AS m
+                ON m.id = s.motorista_id
+
+            WHERE s.ativo = 1
+              AND s.motorista_id = ?
+              AND s.status IN (
+                  'AGENDADA',
+                  'EM_COLETA'
+              )
+              AND s.data_hora_agendada IS NOT NULL
+              AND TRIM(s.data_hora_agendada) <> ''
+              AND DATETIME(s.data_hora_agendada)
+                  BETWEEN DATETIME(
+                      ?,
+                      '-' || ? || ' minutes'
+                  )
+                  AND DATETIME(
+                      ?,
+                      '+' || ? || ' minutes'
+                  )
+        """
+
+        parametros: list[object] = [
+            motorista_id,
+            data_hora_normalizada,
+            janela_minutos,
+            data_hora_normalizada,
+            janela_minutos,
+        ]
+
+        if solicitacao_ignorada_id is not None:
+            consulta += """
+                AND s.id <> ?
+            """
+
+            parametros.append(
+                solicitacao_ignorada_id
+            )
+
+        consulta += """
+            ORDER BY
+                ABS(
+                    STRFTIME(
+                        '%s',
+                        s.data_hora_agendada
+                    )
+                    -
+                    STRFTIME(
+                        '%s',
+                        ?
+                    )
+                ) ASC,
+                s.id ASC
+
+            LIMIT 1
+        """
+
+        parametros.append(
+            data_hora_normalizada
+        )
+
+        with self.database.obter_conexao() as conexao:
+            motorista = conexao.execute(
+                """
+                SELECT id, nome
+                FROM motoristas
+                WHERE id = ?
+                  AND ativo = 1
+                LIMIT 1
+                """,
+                (motorista_id,),
+            ).fetchone()
+
+            if motorista is None:
+                return {
+                    "disponivel": False,
+                    "mensagem": "Motorista não encontrado ou inativo.",
+                    "conflito": None,
+                }
+
+            conflito = conexao.execute(
+                consulta,
+                parametros,
+            ).fetchone()
+
+        if conflito is None:
+            return {
+                "disponivel": True,
+                "mensagem": "Motorista disponível.",
+                "conflito": None,
+            }
+
+        conflito_dict = dict(conflito)
+
+        return {
+            "disponivel": False,
+            "mensagem": (
+                "Motorista indisponível. "
+                f"Conflito com a coleta "
+                f"{conflito_dict['codigo']}."
+            ),
+            "conflito": conflito_dict,
+        }
+
+    def veiculo_disponivel(
+            self,
+            veiculo_id: int,
+            data_hora_agendada: str,
+            *,
+            solicitacao_ignorada_id: int | None = None,
+            janela_minutos: int = 60,
+    ) -> dict:
+        """
+        Verifica se um veículo está disponível no horário informado.
+
+        A busca considera solicitações AGENDADAS ou EM_COLETA dentro
+        da janela de conflito estabelecida.
+        """
+
+        if veiculo_id <= 0:
+            return {
+                "disponivel": False,
+                "mensagem": "Veículo inválido.",
+                "conflito": None,
+            }
+
+        data_hora_normalizada = data_hora_agendada.strip()
+
+        if not data_hora_normalizada:
+            return {
+                "disponivel": False,
+                "mensagem": "Data e hora não informadas.",
+                "conflito": None,
+            }
+
+        if janela_minutos < 0:
+            raise ValueError(
+                "A janela de conflito não pode ser negativa."
+            )
+
+        consulta = """
+            SELECT
+                s.id,
+                s.codigo,
+                s.data_hora_agendada,
+                s.status,
+
+                s.estabelecimento_id,
+                e.nome AS estabelecimento_nome,
+
+                s.veiculo_id,
+                v.placa AS veiculo_placa,
+                v.marca AS veiculo_marca,
+                v.modelo AS veiculo_modelo
+
+            FROM solicitacoes AS s
+
+            INNER JOIN estabelecimentos AS e
+                ON e.id = s.estabelecimento_id
+
+            LEFT JOIN veiculos AS v
+                ON v.id = s.veiculo_id
+
+            WHERE s.ativo = 1
+              AND s.veiculo_id = ?
+              AND s.status IN (
+                  'AGENDADA',
+                  'EM_COLETA'
+              )
+              AND s.data_hora_agendada IS NOT NULL
+              AND TRIM(s.data_hora_agendada) <> ''
+              AND DATETIME(s.data_hora_agendada)
+                  BETWEEN DATETIME(
+                      ?,
+                      '-' || ? || ' minutes'
+                  )
+                  AND DATETIME(
+                      ?,
+                      '+' || ? || ' minutes'
+                  )
+        """
+
+        parametros: list[object] = [
+            veiculo_id,
+            data_hora_normalizada,
+            janela_minutos,
+            data_hora_normalizada,
+            janela_minutos,
+        ]
+
+        if solicitacao_ignorada_id is not None:
+            consulta += """
+                AND s.id <> ?
+            """
+
+            parametros.append(
+                solicitacao_ignorada_id
+            )
+
+        consulta += """
+            ORDER BY
+                ABS(
+                    STRFTIME(
+                        '%s',
+                        s.data_hora_agendada
+                    )
+                    -
+                    STRFTIME(
+                        '%s',
+                        ?
+                    )
+                ) ASC,
+                s.id ASC
+
+            LIMIT 1
+        """
+
+        parametros.append(
+            data_hora_normalizada
+        )
+
+        with self.database.obter_conexao() as conexao:
+            veiculo = conexao.execute(
+                """
+                SELECT
+                    id,
+                    placa,
+                    marca,
+                    modelo
+                FROM veiculos
+                WHERE id = ?
+                  AND ativo = 1
+                LIMIT 1
+                """,
+                (veiculo_id,),
+            ).fetchone()
+
+            if veiculo is None:
+                return {
+                    "disponivel": False,
+                    "mensagem": "Veículo não encontrado ou inativo.",
+                    "conflito": None,
+                }
+
+            conflito = conexao.execute(
+                consulta,
+                parametros,
+            ).fetchone()
+
+        if conflito is None:
+            return {
+                "disponivel": True,
+                "mensagem": "Veículo disponível.",
+                "conflito": None,
+            }
+
+        conflito_dict = dict(conflito)
+
+        return {
+            "disponivel": False,
+            "mensagem": (
+                "Veículo indisponível. "
+                f"Conflito com a coleta "
+                f"{conflito_dict['codigo']}."
+            ),
+            "conflito": conflito_dict,
+        }
 
     # ==========================================================
     # DASHBOARD
