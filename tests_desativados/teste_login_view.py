@@ -1,18 +1,31 @@
-import flet as ft
+# import flet as ft
+#
+# from views.login_view import LoginView
+#
+#
+# def main(page: ft.Page):
+#
+#     page.title = "EcoAçaí"
+#
+#     page.add(
+#
+#         LoginView(page).build()
+#
+#     )
+#
+#
+# if __name__ == "__main__":
+#     ft.run(main)
 
-from views.login_view import LoginView
+from controllers.solicitacao_coleta_controller import (
+    SolicitacaoColetaController,
+)
 
+controller = SolicitacaoColetaController()
 
-def main(page: ft.Page):
+solicitacoes = controller.listar_com_estabelecimento()
 
-    page.title = "EcoAçaí"
+print(type(solicitacoes))
 
-    page.add(
-
-        LoginView(page).build()
-
-    )
-
-
-if __name__ == "__main__":
-    ft.run(main)
+for solicitacao in solicitacoes:
+    print(solicitacao)
