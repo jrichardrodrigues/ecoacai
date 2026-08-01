@@ -1,6 +1,21 @@
 """
-Constantes da aplicação.
+config/constants.py
+
+Constantes compartilhadas pela plataforma ECOAÇAÍ.
+
+Todas as constantes utilizadas pela aplicação devem ser
+centralizadas neste arquivo.
+
+Plataforma: ZELURBIS
+Projeto: EcoAçaí
+Versão: 2.0.0
 """
+
+from datetime import datetime
+
+###############################################################################
+# IDENTIDADE DA APLICAÇÃO
+###############################################################################
 
 APP_NAME = "ECOAÇAÍ"
 APP_VERSION = "1.0.0"
@@ -8,6 +23,10 @@ APP_VERSION = "1.0.0"
 APP_SUBTITLE = (
     "Plataforma Inteligente de Gestão Ambiental"
 )
+
+###############################################################################
+# IDENTIDADE VISUAL
+###############################################################################
 
 COR_PRIMARIA = "#781946"
 COR_SECUNDARIA = "#A42B69"
@@ -19,6 +38,10 @@ COR_TEXTO = "#2D1B25"
 COR_SUCESSO = "#2E7D32"
 COR_ERRO = "#C62828"
 COR_ALERTA = "#F9A825"
+
+###############################################################################
+# DOMÍNIO
+###############################################################################
 
 SETORES = [
     "Guamá",
@@ -44,63 +67,81 @@ SETORES = [
     "Curió-Utinga",
 ]
 
-# ============================
+###############################################################################
 # STATUS DAS SOLICITAÇÕES
-# ============================
+###############################################################################
 
-STATUS_SOLICITACAO_PENDENTE = "PENDENTE"
-STATUS_SOLICITACAO_AGENDADA = "AGENDADA"
-STATUS_SOLICITACAO_EM_DESLOCAMENTO = "EM_DESLOCAMENTO"
-STATUS_SOLICITACAO_EM_COLETA = "EM_COLETA"
-STATUS_SOLICITACAO_CONCLUIDA = "CONCLUIDA"
-STATUS_SOLICITACAO_CANCELADA = "CANCELADA"
+class StatusSolicitacao:
+    PENDENTE = "PENDENTE"
+    AGENDADA = "AGENDADA"
+    EM_DESLOCAMENTO = "EM_DESLOCAMENTO"
+    EM_COLETA = "EM_COLETA"
+    CONCLUIDA = "CONCLUIDA"
+    CANCELADA = "CANCELADA"
 
-STATUS_SOLICITACOES = [
-    (
-        STATUS_SOLICITACAO_PENDENTE,
-        "Pendente",
-    ),
-    (
-        STATUS_SOLICITACAO_AGENDADA,
-        "Agendada",
-    ),
-    (
-        STATUS_SOLICITACAO_EM_DESLOCAMENTO,
-        "Em deslocamento",
-    ),
-    (
-        STATUS_SOLICITACAO_EM_COLETA,
-        "Em coleta",
-    ),
-    (
-        STATUS_SOLICITACAO_CONCLUIDA,
-        "Concluída",
-    ),
-    (
-        STATUS_SOLICITACAO_CANCELADA,
-        "Cancelada",
-    ),
-]
+    OPCOES = [
+        (PENDENTE, "Pendente"),
+        (AGENDADA, "Agendada"),
+        (EM_DESLOCAMENTO, "Em deslocamento"),
+        (EM_COLETA, "Em coleta"),
+        (CONCLUIDA, "Concluída"),
+        (CANCELADA, "Cancelada"),
+    ]
 
-# ============================
+    @classmethod
+    def descricao(cls, status: str) -> str:
+        descricoes = dict(cls.OPCOES)
+        return descricoes.get(status, status)
+
+###############################################################################
+# STATUS DAS COLETAS
+###############################################################################
+
+class StatusColeta:
+    PENDENTE = "PENDENTE"
+    AGENDADA = "AGENDADA"
+    EM_COLETA = "EM_COLETA"
+    CONCLUIDA = "CONCLUIDA"
+    CANCELADA = "CANCELADA"
+
+    OPCOES = [
+        (PENDENTE, "Pendente"),
+        (AGENDADA, "Agendada"),
+        (EM_COLETA, "Em coleta"),
+        (CONCLUIDA, "Concluída"),
+        (CANCELADA, "Cancelada"),
+    ]
+
+    @classmethod
+    def descricao(cls, status: str) -> str:
+        descricoes = dict(cls.OPCOES)
+        return descricoes.get(status, status)
+
+###############################################################################
 # STATUS DOS VEÍCULOS
-# ============================
+###############################################################################
 
-STATUS_VEICULO_DISPONIVEL = "DISPONIVEL"
-STATUS_VEICULO_EM_COLETA = "EM_COLETA"
-STATUS_VEICULO_MANUTENCAO = "MANUTENCAO"
-STATUS_VEICULO_INATIVO = "INATIVO"
+class StatusVeiculo:
+    DISPONIVEL = "DISPONIVEL"
+    EM_COLETA = "EM_COLETA"
+    MANUTENCAO = "MANUTENCAO"
+    INATIVO = "INATIVO"
 
-STATUS_VEICULOS = [
-    (STATUS_VEICULO_DISPONIVEL, "Disponível"),
-    (STATUS_VEICULO_EM_COLETA, "Em coleta"),
-    (STATUS_VEICULO_MANUTENCAO, "Manutenção"),
-    (STATUS_VEICULO_INATIVO, "Inativo"),
-]
+    OPCOES = [
+        (DISPONIVEL, "Disponível"),
+        (EM_COLETA, "Em coleta"),
+        (MANUTENCAO, "Manutenção"),
+        (INATIVO, "Inativo"),
+    ]
 
-# ===========================
-# VEÍCULOS
-# ===========================
+    @classmethod
+    def descricao(cls, status: str) -> str:
+        descricoes = dict(cls.OPCOES)
+        return descricoes.get(status, status)
+
+###############################################################################
+# CATÁLOGO DE VEÍCULOS
+###############################################################################
 
 MARCAS_VEICULOS = [
     "Volkswagen",
@@ -133,8 +174,6 @@ CAPACIDADES_VEICULOS = [
     25,
     30,
 ]
-
-from datetime import datetime
 
 ANOS_VEICULOS = [
     str(ano)

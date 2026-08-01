@@ -13,6 +13,7 @@ from controllers.veiculo_controller import VeiculoController
 from controllers.solicitacao_coleta_controller import (
     SolicitacaoColetaController,
 )
+from config.constants import StatusColeta
 
 
 class ColetasAgendadasView:
@@ -28,11 +29,11 @@ class ColetasAgendadasView:
     """
 
     _STATUS = (
-        "PENDENTE",
-        "AGENDADA",
-        "EM_COLETA",
-        "CONCLUIDA",
-        "CANCELADA",
+        StatusColeta.PENDENTE,
+        StatusColeta.AGENDADA,
+        StatusColeta.EM_COLETA,
+        StatusColeta.CONCLUIDA,
+        StatusColeta.CANCELADA,
     )
 
     def __init__(
@@ -95,23 +96,23 @@ class ColetasAgendadasView:
                     text="Todos",
                 ),
                 ft.DropdownOption(
-                    key="PENDENTE",
+                    key=StatusColeta.PENDENTE,
                     text="Pendente",
                 ),
                 ft.DropdownOption(
-                    key="AGENDADA",
+                    key=StatusColeta.AGENDADA,
                     text="Agendada",
                 ),
                 ft.DropdownOption(
-                    key="EM_COLETA",
+                    key=StatusColeta.EM_COLETA,
                     text="Em coleta",
                 ),
                 ft.DropdownOption(
-                    key="CONCLUIDA",
+                    key=StatusColeta.CONCLUIDA,
                     text="Concluída",
                 ),
                 ft.DropdownOption(
-                    key="CANCELADA",
+                    key=StatusColeta.CANCELADA,
                     text="Cancelada",
                 ),
             ],
@@ -720,23 +721,23 @@ class ColetasAgendadasView:
         totais = resultado.dados or {}
 
         self.texto_total_pendentes.value = str(
-            totais.get("PENDENTE", 0)
+            totais.get(StatusColeta.PENDENTE, 0)
         )
 
         self.texto_total_agendadas.value = str(
-            totais.get("AGENDADA", 0)
+            totais.get(StatusColeta.AGENDADA, 0)
         )
 
         self.texto_total_em_coleta.value = str(
-            totais.get("EM_COLETA", 0)
+            totais.get(StatusColeta.EM_COLETA, 0)
         )
 
         self.texto_total_concluidas.value = str(
-            totais.get("CONCLUIDA", 0)
+            totais.get(StatusColeta.CONCLUIDA, 0)
         )
 
         self.texto_total_canceladas.value = str(
-            totais.get("CANCELADA", 0)
+            totais.get(StatusColeta.CANCELADA, 0)
         )
 
     def _carregar_tabela(self) -> None:
@@ -878,7 +879,7 @@ class ColetasAgendadasView:
                     solicitacao.get("status") or ""
                 ).strip().upper()
 
-                if status != "PENDENTE":
+                if status != StatusColeta.PENDENTE:
                     continue
 
                 solicitacao_id = solicitacao.get("id")
@@ -1130,10 +1131,9 @@ class ColetasAgendadasView:
     ) -> ft.Control:
         """Cria o marcador visual de status."""
 
-        texto = status.replace(
-            "_",
-            " ",
-        ).title()
+        texto = StatusColeta.descricao(
+            status
+        )
 
         return ft.Container(
             content=ft.Text(
@@ -1169,7 +1169,7 @@ class ColetasAgendadasView:
             ),
         ]
 
-        if status == "PENDENTE":
+        if status == StatusColeta.PENDENTE:
             itens.extend([
                 ft.PopupMenuItem(
                     content=ft.Text("Agendar"),
@@ -1183,7 +1183,7 @@ class ColetasAgendadasView:
                 ),
             ])
 
-        elif status == "AGENDADA":
+        elif status == StatusColeta.AGENDADA:
             itens.extend([
                 ft.PopupMenuItem(
                     content=ft.Text("Reagendar"),
@@ -1202,7 +1202,8 @@ class ColetasAgendadasView:
                 ),
             ])
 
-        elif status == "EM_COLETA":
+
+        elif status == StatusColeta.EM_COLETA:
             itens.append(
                 ft.PopupMenuItem(
                     content=ft.Text("Concluir coleta"),
@@ -1330,7 +1331,7 @@ class ColetasAgendadasView:
             self._mostrar_mensagem(
                 f"{coleta['codigo']} — "
                 f"{coleta['estabelecimento_nome']} — "
-                f"{coleta['status']}"
+                f"{StatusColeta.descricao(coleta['status'])}"
             )
 
         self._atualizar_pagina()

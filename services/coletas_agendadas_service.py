@@ -5,6 +5,7 @@ from typing import Any
 
 from repositories.agenda_repository import AgendaRepository
 from repositories.repository_result import RepositoryResult
+from config.constants import StatusColeta
 
 
 class ColetasAgendadasService:
@@ -312,8 +313,8 @@ class ColetasAgendadasService:
         )
 
         if status_atual not in {
-            "PENDENTE",
-            "AGENDADA",
+            StatusColeta.PENDENTE,
+            StatusColeta.AGENDADA,
         }:
             return self._falha(
                 "Somente solicitações pendentes ou agendadas "
@@ -391,8 +392,8 @@ class ColetasAgendadasService:
             )
 
         if self._normalizar_texto(
-            solicitacao.get("status")
-        ) != "AGENDADA":
+                solicitacao.get("status")
+        ) != StatusColeta.AGENDADA:
             return self._falha(
                 "Somente coletas agendadas podem ser reagendadas."
             )
@@ -457,7 +458,7 @@ class ColetasAgendadasService:
 
         validacao = self._validar_status_atual(
             solicitacao_id=solicitacao_id,
-            status_esperado="AGENDADA",
+            status_esperado=StatusColeta.AGENDADA,
             mensagem=(
                 "Somente coletas agendadas podem ser iniciadas."
             ),
@@ -498,7 +499,7 @@ class ColetasAgendadasService:
 
         validacao = self._validar_status_atual(
             solicitacao_id=solicitacao_id,
-            status_esperado="EM_COLETA",
+            status_esperado=StatusColeta.EM_COLETA,
             mensagem=(
                 "Somente coletas em andamento podem ser concluídas."
             ),
@@ -556,8 +557,8 @@ class ColetasAgendadasService:
         )
 
         if status_atual not in {
-            "PENDENTE",
-            "AGENDADA",
+            StatusColeta.PENDENTE,
+            StatusColeta.AGENDADA,
         }:
             return self._falha(
                 "Somente solicitações pendentes ou agendadas "

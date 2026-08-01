@@ -4,8 +4,17 @@
 
 # CODING_STANDARDS.md
 
-**Versão:** 1.0.0  
+**Versão:** 1.1.0  
 **Status:** Oficial
+
+---
+
+# Histórico de Versões
+
+| Versão | Status | Descrição |
+|---------|--------|-----------|
+| 1.0.0 | Oficial | Primeira versão dos padrões de desenvolvimento da plataforma. |
+| 1.1.0 | Oficial | Inclusão dos padrões de organização interna das classes, componentes reutilizáveis, utilitários, fluxo oficial de desenvolvimento e filosofia de evolução contínua. |
 
 ---
 

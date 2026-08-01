@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 from repositories.sqlite_database import SQLiteDatabase
+from config.constants import StatusColeta
 
 
 class AgendaRepository:
     """Repositório responsável pelas operações da agenda de coletas."""
 
     _STATUS_VALIDOS = {
-        "PENDENTE",
-        "AGENDADA",
-        "EM_COLETA",
-        "CONCLUIDA",
-        "CANCELADA",
+        StatusColeta.PENDENTE,
+        StatusColeta.AGENDADA,
+        StatusColeta.EM_COLETA,
+        StatusColeta.CONCLUIDA,
+        StatusColeta.CANCELADA,
     }
 
     _CAMPOS_DATA_STATUS = {
@@ -21,11 +22,23 @@ class AgendaRepository:
     }
 
     _TRANSICOES_STATUS = {
-        "PENDENTE": {"AGENDADA", "CANCELADA"},
-        "AGENDADA": {"EM_COLETA", "CANCELADA"},
-        "EM_COLETA": {"CONCLUIDA"},
-        "CONCLUIDA": set(),
-        "CANCELADA": set(),
+        StatusColeta.PENDENTE: {
+            StatusColeta.AGENDADA,
+            StatusColeta.CANCELADA,
+        },
+
+        StatusColeta.AGENDADA: {
+            StatusColeta.EM_COLETA,
+            StatusColeta.CANCELADA,
+        },
+
+        StatusColeta.EM_COLETA: {
+            StatusColeta.CONCLUIDA,
+        },
+
+        StatusColeta.CONCLUIDA: set(),
+
+        StatusColeta.CANCELADA: set(),
     }
 
     def __init__(
@@ -39,8 +52,8 @@ class AgendaRepository:
     # ==========================================================
 
     def listar(
-        self,
-        status: str | None = None,
+            self,
+            status: str | None = None,
     ) -> list[dict]:
         """
         Lista as solicitações ativas da agenda.
@@ -59,13 +72,17 @@ class AgendaRepository:
         parametros: list[object] = []
 
         if status:
-            status_normalizado = self._normalizar_status(status)
+            status_normalizado = self._normalizar_status(
+                status
+            )
 
             consulta += """
                 AND s.status = ?
             """
 
-            parametros.append(status_normalizado)
+            parametros.append(
+                status_normalizado
+            )
 
         else:
             consulta += """
@@ -395,8 +412,8 @@ class AgendaRepository:
             ).strip().upper()
 
             if status_atual not in {
-                "PENDENTE",
-                "AGENDADA",
+                StatusColeta.PENDENTE,
+                StatusColeta.AGENDADA,
             }:
                 return False
 
@@ -499,7 +516,7 @@ class AgendaRepository:
             solicitacao["status"]
         ).strip().upper()
 
-        if status_atual != "AGENDADA":
+        if status_atual != StatusColeta.AGENDADA:
             return False
 
         return self.agendar(
@@ -522,7 +539,7 @@ class AgendaRepository:
 
         return self._atualizar_status(
             solicitacao_id=solicitacao_id,
-            novo_status="EM_COLETA",
+            novo_status=StatusColeta.EM_COLETA,
             campo_data="data_hora_inicio",
         )
 
@@ -539,7 +556,7 @@ class AgendaRepository:
 
         return self._atualizar_status(
             solicitacao_id=solicitacao_id,
-            novo_status="CONCLUIDA",
+            novo_status=StatusColeta.CONCLUIDA,
             campo_data="data_hora_conclusao",
         )
 
@@ -556,7 +573,7 @@ class AgendaRepository:
 
         return self._atualizar_status(
             solicitacao_id=solicitacao_id,
-            novo_status="CANCELADA",
+            novo_status=StatusColeta.CANCELADA,
         )
 
     # ==========================================================

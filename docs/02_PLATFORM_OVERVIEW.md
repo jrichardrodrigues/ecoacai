@@ -4,6 +4,18 @@
 
 > Tecnologia a serviço da sustentabilidade.
 
+**Versão:** 2.1.0  
+**Status:** Oficial
+
+---
+
+# Histórico de Versões
+
+| Versão | Status | Descrição |
+|---------|--------|-----------|
+| 2.0.0 | Oficial | Primeira versão institucional da plataforma. |
+| 2.1.0 | Oficial | Inclusão do ecossistema da plataforma, tecnologias utilizadas, público-alvo e objetivos estratégicos. |
+
 ---
 
 # 1. Apresentação
@@ -47,7 +59,17 @@ Ser referência nacional em plataformas digitais voltadas à gestão urbana sust
 
 Transformar desafios urbanos em oportunidades por meio da inovação tecnológica.
 
-# 7. A Plataforma
+# 7. Ecossistema da Plataforma
+
+```text
+                ZELURBIS
+
+      EcoAçaí   EcoEntulho   EcoPoda
+
+          Desktop • Web • Mobile • APIs
+```
+
+# 8. A Plataforma
 
 ZELURBIS
 
@@ -59,22 +81,45 @@ ZELURBIS
 
 Cada solução compartilha um núcleo comum de arquitetura e regras de negócio.
 
-# 8. EcoAçaí
+# 9. EcoAçaí
 
 Primeira solução da plataforma, destinada à gestão da coleta de caroços de açaí.
 
-# 9. Perfis
+# 10. Perfis
 
 - Batedor de Açaí (Mobile)
 - Motorista (Mobile)
 - Cooperativa / Empresa Parceira (Desktop/Web)
 - Gestão (Desktop/Web)
 
-# 10. Arquitetura Conceitual
+# 11. Tecnologias Utilizadas
+
+- Python
+- Flet
+- SQLite
+- Git
+- Markdown
+
+# 12. Público-Alvo
+
+- Cooperativas
+- Empresas
+- Prefeituras
+- Associações
+- Organizações ambientais
+
+# 13. Objetivos Estratégicos
+
+- incentivar a sustentabilidade;
+- apoiar a economia circular;
+- melhorar a gestão operacional;
+- fornecer indicadores para tomada de decisão.
+
+# 14. Arquitetura Conceitual
 
 Um único núcleo de negócios atende todas as interfaces da plataforma.
 
-# 11. Princípios
+# 15. Princípios
 
 - Simplicidade
 - Reutilização
@@ -83,14 +128,18 @@ Um único núcleo de negócios atende todas as interfaces da plataforma.
 - Segurança
 - Documentação contínua
 
-# 12. Evolução
+# 16. Evolução
 
-Novas soluções poderão ser incorporadas preservando a arquitetura principal.
+EcoAçaí → EcoEntulho → EcoPoda → EcoRecicla → EcoÓleo → Novas soluções.
 
-# 13. Nosso Compromisso
+# 17. Nosso Compromisso
 
 Construir soluções que contribuam para cidades mais sustentáveis.
 
 ---
 
 > Toda solução começa com o zelo.
+
+> Tecnologia transforma processos.
+
+> Sustentabilidade transforma cidades.

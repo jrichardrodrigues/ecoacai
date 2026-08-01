@@ -4,7 +4,6 @@ from services.coletas_agendadas_service import (
     ColetasAgendadasService,
 )
 
-
 class ColetasAgendadasController:
     """
     Controller da Agenda de Coletas.
