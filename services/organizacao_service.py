@@ -4,8 +4,6 @@ import re
 
 from models import Organizacao
 from repositories import OrganizacaoRepository
-from services.sessao_service import SessaoService
-
 
 class OrganizacaoService:
     """
@@ -15,13 +13,13 @@ class OrganizacaoService:
     TIPO_GERADOR = "GERADOR"
 
     def __init__(
-        self,
-        repository: OrganizacaoRepository | None = None,
-        sessao_service: SessaoService | None = None,
+            self,
+            repository: OrganizacaoRepository | None = None,
     ) -> None:
 
-        self.repository = repository or OrganizacaoRepository()
-        self.sessao_service = sessao_service or SessaoService()
+        self.repository = (
+                repository or OrganizacaoRepository()
+        )
 
     # =====================================================
     # CADASTRO
@@ -89,10 +87,6 @@ class OrganizacaoService:
         try:
 
             organizacao = self.repository.cadastrar(
-                organizacao
-            )
-
-            self.sessao_service.atualizar_organizacao(
                 organizacao
             )
 

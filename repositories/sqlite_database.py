@@ -83,6 +83,15 @@ class SQLiteDatabase:
                 ),
             )
 
+            self._registrar_versao_schema(
+                conexao,
+                versao=3,
+                descricao=(
+                    "UC-002: evolução das solicitações para o "
+                    "modelo operacional da ZELURBIS"
+                ),
+            )
+
     # ==========================================================
     # CONTROLE DE VERSÃO DO BANCO
     # ==========================================================
@@ -1056,9 +1065,15 @@ class SQLiteDatabase:
         colunas_atuais = {
             "id",
             "codigo",
+            "organizacao_id",
+            "empresa_parceira_id",
+            "usuario_criacao_id",
             "estabelecimento_id",
             "motorista_id",
             "veiculo_id",
+            "tipo_residuo",
+            "unidade_medida",
+            "origem",
             "quantidade_sacas_prevista",
             "quantidade_kg_previsto",
             "quantidade_sacas_coletada",
@@ -1079,17 +1094,15 @@ class SQLiteDatabase:
             "atualizado_em",
         }
 
+        # Apenas nomes realmente pertencentes a estruturas antigas.
+        # Não inclua aqui colunas que também existem na estrutura atual,
+        # pois isso provocaria uma migração a cada inicialização.
         colunas_legadas = {
             "usuario_id",
             "tipo",
             "quantidade",
-            "quantidade_sacas_prevista",
-            "quantidade_kg_previsto",
-            "data_hora_agendada",
-            "data_hora_conclusao",
-            "observacao_cliente",
-            "motorista_id",
-            "veiculo_id",
+            "observacao",
+            "data-hora_agendada",
         }
 
         estrutura_incompleta = not colunas_atuais.issubset(
@@ -1146,9 +1159,8 @@ class SQLiteDatabase:
         conexao: sqlite3.Connection,
         nome_tabela: str = "solicitacoes",
     ) -> None:
-        """Cria a estrutura consolidada das solicitações."""
+        """Cria a estrutura atual das solicitações."""
 
-        # O nome da tabela é interno e controlado pelo código.
         conexao.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {nome_tabela} (
@@ -1156,36 +1168,77 @@ class SQLiteDatabase:
 
                 codigo TEXT UNIQUE,
 
-                estabelecimento_id INTEGER NOT NULL,
+                organizacao_id INTEGER,
+
+                empresa_parceira_id INTEGER,
+
+                usuario_criacao_id INTEGER,
+
+                estabelecimento_id INTEGER,
 
                 motorista_id INTEGER,
 
                 veiculo_id INTEGER,
 
-                quantidade_sacas_prevista INTEGER NOT NULL DEFAULT 1
-                    CHECK (quantidade_sacas_prevista > 0),
+                tipo_residuo TEXT NOT NULL
+                    DEFAULT 'CAROCO_ACAI',
 
-                quantidade_kg_previsto REAL NOT NULL DEFAULT 0
-                    CHECK (quantidade_kg_previsto >= 0),
-
-                quantidade_sacas_coletada INTEGER NOT NULL DEFAULT 0
-                    CHECK (quantidade_sacas_coletada >= 0),
-
-                quantidade_kg_coletado REAL NOT NULL DEFAULT 0
-                    CHECK (quantidade_kg_coletado >= 0),
-
-                status TEXT NOT NULL DEFAULT 'PENDENTE'
+                unidade_medida TEXT NOT NULL
+                    DEFAULT 'SACAS'
                     CHECK (
-                        status IN (
-                            'PENDENTE',
-                            'AGENDADA',
-                            'EM_COLETA',
-                            'CONCLUIDA',
-                            'CANCELADA'
+                        unidade_medida IN (
+                            'SACAS',
+                            'KG',
+                            'UNIDADES',
+                            'M3',
+                            'CACAMBAS'
                         )
                     ),
 
-                prioridade TEXT NOT NULL DEFAULT 'NORMAL'
+                origem TEXT NOT NULL
+                    DEFAULT 'GERADOR'
+                    CHECK (
+                        origem IN (
+                            'GERADOR',
+                            'GESTOR',
+                            'APP',
+                            'API'
+                        )
+                    ),
+
+                quantidade_sacas_prevista INTEGER NOT NULL
+                    DEFAULT 1
+                    CHECK (quantidade_sacas_prevista > 0),
+
+                quantidade_kg_previsto REAL NOT NULL
+                    DEFAULT 0
+                    CHECK (quantidade_kg_previsto >= 0),
+
+                quantidade_sacas_coletada INTEGER NOT NULL
+                    DEFAULT 0
+                    CHECK (quantidade_sacas_coletada >= 0),
+
+                quantidade_kg_coletado REAL NOT NULL
+                    DEFAULT 0
+                    CHECK (quantidade_kg_coletado >= 0),
+
+                status TEXT NOT NULL
+                    DEFAULT 'SOLICITADA'
+                    CHECK (
+                        status IN (
+                            'SOLICITADA',
+                            'EM_ANALISE',
+                            'AGENDADA',
+                            'EM_DESLOCAMENTO',
+                            'EM_COLETA',
+                            'CONCLUIDA',
+                            'CANCELADA',
+                            'RECUSADA'
+                        )
+                    ),
+
+                prioridade TEXT NOT NULL
+                    DEFAULT 'NORMAL'
                     CHECK (
                         prioridade IN (
                             'NORMAL',
@@ -1205,15 +1258,18 @@ class SQLiteDatabase:
 
                 data_hora_conclusao TEXT,
 
-                observacao_cliente TEXT NOT NULL DEFAULT '',
+                observacao_cliente TEXT NOT NULL
+                    DEFAULT '',
 
-                observacao_operacional TEXT NOT NULL DEFAULT '',
+                observacao_operacional TEXT NOT NULL
+                    DEFAULT '',
 
                 latitude REAL,
 
                 longitude REAL,
 
-                ativo INTEGER NOT NULL DEFAULT 1
+                ativo INTEGER NOT NULL
+                    DEFAULT 1
                     CHECK (ativo IN (0, 1)),
 
                 criado_em TEXT NOT NULL
@@ -1221,6 +1277,23 @@ class SQLiteDatabase:
 
                 atualizado_em TEXT NOT NULL
                     DEFAULT CURRENT_TIMESTAMP,
+
+                CHECK (
+                    organizacao_id IS NOT NULL
+                    OR estabelecimento_id IS NOT NULL
+                ),
+
+                FOREIGN KEY (organizacao_id)
+                    REFERENCES organizacoes(id)
+                    ON DELETE RESTRICT,
+
+                FOREIGN KEY (empresa_parceira_id)
+                    REFERENCES organizacoes(id)
+                    ON DELETE SET NULL,
+
+                FOREIGN KEY (usuario_criacao_id)
+                    REFERENCES usuarios(id)
+                    ON DELETE SET NULL,
 
                 FOREIGN KEY (estabelecimento_id)
                     REFERENCES estabelecimentos(id)
@@ -1243,13 +1316,7 @@ class SQLiteDatabase:
         conexao: sqlite3.Connection,
         colunas_antigas: set[str],
     ) -> None:
-        """
-        Reconstrói a tabela de solicitações na estrutura consolidada.
-
-        Os dados compatíveis são preservados. Registros sem um
-        estabelecimento válido não são copiados, pois o vínculo é
-        obrigatório na estrutura atual.
-        """
+        """Reconstrói solicitações preservando os dados compatíveis."""
 
         conexao.execute(
             "DROP TABLE IF EXISTS solicitacoes_nova"
@@ -1260,27 +1327,88 @@ class SQLiteDatabase:
             nome_tabela="solicitacoes_nova",
         )
 
-        # A estrutura muito antiga não possuía estabelecimento_id.
-        # Nesse caso, não há como criar um vínculo confiável.
-        if "estabelecimento_id" not in colunas_antigas:
-            conexao.execute(
-                "DROP TABLE solicitacoes"
+        def coluna(
+            nome: str,
+            expressao: str,
+            padrao: str,
+        ) -> str:
+            return (
+                expressao
+                if nome in colunas_antigas
+                else padrao
             )
-            conexao.execute(
-                """
-                ALTER TABLE solicitacoes_nova
-                RENAME TO solicitacoes
-                """
-            )
-            return
 
-        codigo = (
-            "NULLIF(TRIM(s.codigo), '')"
-            if "codigo" in colunas_antigas
-            else "NULL"
+        organizacao_id = coluna(
+            "organizacao_id",
+            """
+            CASE
+                WHEN s.organizacao_id IS NOT NULL
+                 AND EXISTS (
+                    SELECT 1
+                    FROM organizacoes AS o
+                    WHERE o.id = s.organizacao_id
+                 )
+                THEN s.organizacao_id
+                ELSE NULL
+            END
+            """,
+            "NULL",
         )
 
-        motorista_id = (
+        estabelecimento_id = coluna(
+            "estabelecimento_id",
+            """
+            CASE
+                WHEN s.estabelecimento_id IS NOT NULL
+                 AND EXISTS (
+                    SELECT 1
+                    FROM estabelecimentos AS e
+                    WHERE e.id = s.estabelecimento_id
+                 )
+                THEN s.estabelecimento_id
+                ELSE NULL
+            END
+            """,
+            "NULL",
+        )
+
+        empresa_parceira_id = coluna(
+            "empresa_parceira_id",
+            """
+            CASE
+                WHEN s.empresa_parceira_id IS NOT NULL
+                 AND EXISTS (
+                    SELECT 1
+                    FROM organizacoes AS o
+                    WHERE o.id = s.empresa_parceira_id
+                      AND o.tipo = 'EMPRESA_PARCEIRA'
+                 )
+                THEN s.empresa_parceira_id
+                ELSE NULL
+            END
+            """,
+            "NULL",
+        )
+
+        usuario_criacao_id = coluna(
+            "usuario_criacao_id",
+            """
+            CASE
+                WHEN s.usuario_criacao_id IS NOT NULL
+                 AND EXISTS (
+                    SELECT 1
+                    FROM usuarios AS u
+                    WHERE u.id = s.usuario_criacao_id
+                 )
+                THEN s.usuario_criacao_id
+                ELSE NULL
+            END
+            """,
+            "NULL",
+        )
+
+        motorista_id = coluna(
+            "motorista_id",
             """
             CASE
                 WHEN s.motorista_id IS NOT NULL
@@ -1292,12 +1420,12 @@ class SQLiteDatabase:
                 THEN s.motorista_id
                 ELSE NULL
             END
-            """
-            if "motorista_id" in colunas_antigas
-            else "NULL"
+            """,
+            "NULL",
         )
 
-        veiculo_id = (
+        veiculo_id = coluna(
+            "veiculo_id",
             """
             CASE
                 WHEN s.veiculo_id IS NOT NULL
@@ -1309,23 +1437,61 @@ class SQLiteDatabase:
                 THEN s.veiculo_id
                 ELSE NULL
             END
+            """,
+            "NULL",
+        )
+
+        codigo = coluna(
+            "codigo",
+            "NULLIF(TRIM(s.codigo), '')",
+            "NULL",
+        )
+
+        tipo_residuo = coluna(
+            "tipo_residuo",
             """
-            if "veiculo_id" in colunas_antigas
-            else "NULL"
+            COALESCE(
+                NULLIF(TRIM(s.tipo_residuo), ''),
+                'CAROCO_ACAI'
+            )
+            """,
+            "'CAROCO_ACAI'",
+        )
+
+        unidade_medida = coluna(
+            "unidade_medida",
+            """
+            CASE UPPER(COALESCE(s.unidade_medida, 'SACAS'))
+                WHEN 'KG' THEN 'KG'
+                WHEN 'UNIDADES' THEN 'UNIDADES'
+                WHEN 'M3' THEN 'M3'
+                WHEN 'CACAMBAS' THEN 'CACAMBAS'
+                ELSE 'SACAS'
+            END
+            """,
+            "'SACAS'",
+        )
+
+        origem = coluna(
+            "origem",
+            """
+            CASE UPPER(COALESCE(s.origem, 'GERADOR'))
+                WHEN 'GESTOR' THEN 'GESTOR'
+                WHEN 'APP' THEN 'APP'
+                WHEN 'API' THEN 'API'
+                ELSE 'GERADOR'
+            END
+            """,
+            "'GERADOR'",
         )
 
         if "quantidade_sacas_prevista" in colunas_antigas:
             quantidade_sacas_prevista = """
                 CASE
-                    WHEN COALESCE(s.quantidade_sacas_prevista, 0) > 0
-                    THEN s.quantidade_sacas_prevista
-                    ELSE 1
-                END
-            """
-        elif "quantidade_sacas_prevista" in colunas_antigas:
-            quantidade_sacas_prevista = """
-                CASE
-                    WHEN COALESCE(s.quantidade_sacas_prevista, 0) > 0
+                    WHEN COALESCE(
+                        s.quantidade_sacas_prevista,
+                        0
+                    ) > 0
                     THEN s.quantidade_sacas_prevista
                     ELSE 1
                 END
@@ -1341,169 +1507,200 @@ class SQLiteDatabase:
         else:
             quantidade_sacas_prevista = "1"
 
-        if "quantidade_kg_previsto" in colunas_antigas:
-            quantidade_kg_previsto = """
-                CASE
-                    WHEN COALESCE(s.quantidade_kg_previsto, 0) >= 0
-                    THEN s.quantidade_kg_previsto
-                    ELSE 0
-                END
-            """
-        elif "quantidade_kg_previsto" in colunas_antigas:
-            quantidade_kg_previsto = """
-                CASE
-                    WHEN COALESCE(s.quantidade_kg_previsto, 0) >= 0
-                    THEN s.quantidade_kg_previsto
-                    ELSE 0
-                END
-            """
-        else:
-            quantidade_kg_previsto = "0"
-
-        quantidade_sacas_coletada = (
+        quantidade_kg_previsto = coluna(
+            "quantidade_kg_previsto",
             """
             CASE
-                WHEN COALESCE(s.quantidade_sacas_coletada, 0) >= 0
+                WHEN COALESCE(
+                    s.quantidade_kg_previsto,
+                    0
+                ) >= 0
+                THEN s.quantidade_kg_previsto
+                ELSE 0
+            END
+            """,
+            "0",
+        )
+
+        quantidade_sacas_coletada = coluna(
+            "quantidade_sacas_coletada",
+            """
+            CASE
+                WHEN COALESCE(
+                    s.quantidade_sacas_coletada,
+                    0
+                ) >= 0
                 THEN s.quantidade_sacas_coletada
                 ELSE 0
             END
-            """
-            if "quantidade_sacas_coletada" in colunas_antigas
-            else "0"
+            """,
+            "0",
         )
 
-        quantidade_kg_coletado = (
+        quantidade_kg_coletado = coluna(
+            "quantidade_kg_coletado",
             """
             CASE
-                WHEN COALESCE(s.quantidade_kg_coletado, 0) >= 0
+                WHEN COALESCE(
+                    s.quantidade_kg_coletado,
+                    0
+                ) >= 0
                 THEN s.quantidade_kg_coletado
                 ELSE 0
             END
-            """
-            if "quantidade_kg_coletado" in colunas_antigas
-            else "0"
+            """,
+            "0",
         )
 
-        status = (
+        if "status" in colunas_antigas:
+            status = """
+                CASE UPPER(
+                    COALESCE(s.status, 'SOLICITADA')
+                )
+                    WHEN 'PENDENTE' THEN 'SOLICITADA'
+                    WHEN 'SOLICITADA' THEN 'SOLICITADA'
+                    WHEN 'EM_ANALISE' THEN 'EM_ANALISE'
+                    WHEN 'EM ANÁLISE' THEN 'EM_ANALISE'
+                    WHEN 'AGENDADA' THEN 'AGENDADA'
+                    WHEN 'ACEITA' THEN 'AGENDADA'
+                    WHEN 'EM_DESLOCAMENTO'
+                        THEN 'EM_DESLOCAMENTO'
+                    WHEN 'EM COLETA' THEN 'EM_COLETA'
+                    WHEN 'EM_COLETA' THEN 'EM_COLETA'
+                    WHEN 'CONCLUIDA' THEN 'CONCLUIDA'
+                    WHEN 'CONCLUÍDA' THEN 'CONCLUIDA'
+                    WHEN 'CANCELADA' THEN 'CANCELADA'
+                    WHEN 'RECUSADA' THEN 'RECUSADA'
+                    ELSE 'SOLICITADA'
+                END
             """
-            CASE UPPER(COALESCE(s.status, 'PENDENTE'))
-                WHEN 'ACEITA' THEN 'AGENDADA'
-                WHEN 'AGENDADA' THEN 'AGENDADA'
-                WHEN 'EM_COLETA' THEN 'EM_COLETA'
-                WHEN 'CONCLUIDA' THEN 'CONCLUIDA'
-                WHEN 'CANCELADA' THEN 'CANCELADA'
-                ELSE 'PENDENTE'
-            END
-            """
-            if "status" in colunas_antigas
-            else "'PENDENTE'"
-        )
+        else:
+            status = "'SOLICITADA'"
 
-        prioridade = (
+        prioridade = coluna(
+            "prioridade",
             """
             CASE UPPER(COALESCE(s.prioridade, 'NORMAL'))
                 WHEN 'URGENTE' THEN 'URGENTE'
                 WHEN 'PROGRAMADA' THEN 'PROGRAMADA'
                 ELSE 'NORMAL'
             END
-            """
-            if "prioridade" in colunas_antigas
-            else "'NORMAL'"
+            """,
+            "'NORMAL'",
         )
 
-        data_solicitacao = (
-            "COALESCE(s.data_solicitacao, s.criado_em, CURRENT_TIMESTAMP)"
-            if {
-                "data_solicitacao",
-                "criado_em",
-            }.issubset(colunas_antigas)
-            else (
-                "COALESCE(s.data_solicitacao, CURRENT_TIMESTAMP)"
-                if "data_solicitacao" in colunas_antigas
-                else (
-                    "COALESCE(s.criado_em, CURRENT_TIMESTAMP)"
-                    if "criado_em" in colunas_antigas
-                    else "CURRENT_TIMESTAMP"
+        if {
+            "data_solicitacao",
+            "criado_em",
+        }.issubset(colunas_antigas):
+            data_solicitacao = """
+                COALESCE(
+                    s.data_solicitacao,
+                    s.criado_em,
+                    CURRENT_TIMESTAMP
                 )
+            """
+        elif "data_solicitacao" in colunas_antigas:
+            data_solicitacao = """
+                COALESCE(
+                    s.data_solicitacao,
+                    CURRENT_TIMESTAMP
+                )
+            """
+        elif "criado_em" in colunas_antigas:
+            data_solicitacao = """
+                COALESCE(
+                    s.criado_em,
+                    CURRENT_TIMESTAMP
+                )
+            """
+        else:
+            data_solicitacao = "CURRENT_TIMESTAMP"
+
+        data_hora_agendada = coluna(
+            "data_hora_agendada",
+            "s.data_hora_agendada",
+            "NULL",
+        )
+
+        data_hora_inicio = coluna(
+            "data_hora_inicio",
+            "s.data_hora_inicio",
+            "NULL",
+        )
+
+        data_hora_chegada = coluna(
+            "data_hora_chegada",
+            "s.data_hora_chegada",
+            "NULL",
+        )
+
+        data_hora_conclusao = coluna(
+            "data_hora_conclusao",
+            "s.data_hora_conclusao",
+            "NULL",
+        )
+
+        if "observacao_cliente" in colunas_antigas:
+            observacao_cliente = """
+                COALESCE(s.observacao_cliente, '')
+            """
+        elif "observacao" in colunas_antigas:
+            observacao_cliente = """
+                COALESCE(s.observacao, '')
+            """
+        else:
+            observacao_cliente = "''"
+
+        observacao_operacional = coluna(
+            "observacao_operacional",
+            "COALESCE(s.observacao_operacional, '')",
+            "''",
+        )
+
+        latitude = coluna(
+            "latitude",
+            "s.latitude",
+            "NULL",
+        )
+
+        longitude = coluna(
+            "longitude",
+            "s.longitude",
+            "NULL",
+        )
+
+        ativo = coluna(
+            "ativo",
+            """
+            CASE
+                WHEN s.ativo = 0 THEN 0
+                ELSE 1
+            END
+            """,
+            "1",
+        )
+
+        criado_em = coluna(
+            "criado_em",
+            """
+            COALESCE(
+                s.criado_em,
+                CURRENT_TIMESTAMP
             )
+            """,
+            "CURRENT_TIMESTAMP",
         )
 
-        data_hora_agendada = (
-            "s.data_hora_agendada"
-            if "data_hora_agendada" in colunas_antigas
-            else (
-                "s.data-hora_agendada"
-                if "data-hora_agendada" in colunas_antigas
-                else "NULL"
+        atualizado_em = coluna(
+            "atualizado_em",
+            """
+            COALESCE(
+                s.atualizado_em,
+                CURRENT_TIMESTAMP
             )
-        )
-
-        data_hora_inicio = (
-            "s.data_hora_inicio"
-            if "data_hora_inicio" in colunas_antigas
-            else "NULL"
-        )
-
-        data_hora_chegada = (
-            "s.data_hora_chegada"
-            if "data_hora_chegada" in colunas_antigas
-            else "NULL"
-        )
-
-        data_hora_conclusao = (
-            "s.data_hora_conclusao"
-            if "data_hora_conclusao" in colunas_antigas
-            else (
-                "s.data_hora_conclusao"
-                if "data_hora_conclusao" in colunas_antigas
-                else "NULL"
-            )
-        )
-
-        observacao_cliente = (
-            "COALESCE(s.observacao_cliente, '')"
-            if "observacao_cliente" in colunas_antigas
-            else (
-                "COALESCE(s.observacao, '')"
-                if "observacao" in colunas_antigas
-                else "''"
-            )
-        )
-
-        observacao_operacional = (
-            "COALESCE(s.observacao_operacional, '')"
-            if "observacao_operacional" in colunas_antigas
-            else "''"
-        )
-
-        latitude = (
-            "s.latitude"
-            if "latitude" in colunas_antigas
-            else "NULL"
-        )
-
-        longitude = (
-            "s.longitude"
-            if "longitude" in colunas_antigas
-            else "NULL"
-        )
-
-        ativo = (
-            "CASE WHEN s.ativo = 0 THEN 0 ELSE 1 END"
-            if "ativo" in colunas_antigas
-            else "1"
-        )
-
-        criado_em = (
-            "COALESCE(s.criado_em, CURRENT_TIMESTAMP)"
-            if "criado_em" in colunas_antigas
-            else "CURRENT_TIMESTAMP"
-        )
-
-        atualizado_em = (
-            "COALESCE(s.atualizado_em, CURRENT_TIMESTAMP)"
-            if "atualizado_em" in colunas_antigas
-            else "CURRENT_TIMESTAMP"
+            """,
+            "CURRENT_TIMESTAMP",
         )
 
         conexao.execute(
@@ -1511,9 +1708,15 @@ class SQLiteDatabase:
             INSERT INTO solicitacoes_nova (
                 id,
                 codigo,
+                organizacao_id,
+                empresa_parceira_id,
+                usuario_criacao_id,
                 estabelecimento_id,
                 motorista_id,
                 veiculo_id,
+                tipo_residuo,
+                unidade_medida,
+                origem,
                 quantidade_sacas_prevista,
                 quantidade_kg_previsto,
                 quantidade_sacas_coletada,
@@ -1536,9 +1739,15 @@ class SQLiteDatabase:
             SELECT
                 s.id,
                 {codigo},
-                s.estabelecimento_id,
+                {organizacao_id},
+                {empresa_parceira_id},
+                {usuario_criacao_id},
+                {estabelecimento_id},
                 {motorista_id},
                 {veiculo_id},
+                {tipo_residuo},
+                {unidade_medida},
+                {origem},
                 {quantidade_sacas_prevista},
                 {quantidade_kg_previsto},
                 {quantidade_sacas_coletada},
@@ -1558,12 +1767,11 @@ class SQLiteDatabase:
                 {criado_em},
                 {atualizado_em}
             FROM solicitacoes AS s
-            WHERE s.estabelecimento_id IS NOT NULL
-              AND EXISTS (
-                  SELECT 1
-                  FROM estabelecimentos AS e
-                  WHERE e.id = s.estabelecimento_id
-              )
+            WHERE
+                (
+                    {organizacao_id} IS NOT NULL
+                    OR {estabelecimento_id} IS NOT NULL
+                )
             """
         )
 
@@ -1597,90 +1805,91 @@ class SQLiteDatabase:
     ) -> None:
         """Cria os índices de consulta das solicitações."""
 
-        conexao.execute(
-            """
-            CREATE UNIQUE INDEX IF NOT EXISTS
-                idx_solicitacoes_codigo
-            ON solicitacoes(codigo)
-            """
+        indices = (
+            (
+                "idx_solicitacoes_codigo",
+                "codigo",
+                True,
+            ),
+            (
+                "idx_solicitacoes_organizacao",
+                "organizacao_id",
+                False,
+            ),
+            (
+                "idx_solicitacoes_empresa_parceira",
+                "empresa_parceira_id",
+                False,
+            ),
+            (
+                "idx_solicitacoes_usuario_criacao",
+                "usuario_criacao_id",
+                False,
+            ),
+            (
+                "idx_solicitacoes_estabelecimento",
+                "estabelecimento_id",
+                False,
+            ),
+            (
+                "idx_solicitacoes_motorista",
+                "motorista_id",
+                False,
+            ),
+            (
+                "idx_solicitacoes_veiculo",
+                "veiculo_id",
+                False,
+            ),
+            (
+                "idx_solicitacoes_tipo_residuo",
+                "tipo_residuo",
+                False,
+            ),
+            (
+                "idx_solicitacoes_status",
+                "status",
+                False,
+            ),
+            (
+                "idx_solicitacoes_prioridade",
+                "prioridade",
+                False,
+            ),
+            (
+                "idx_solicitacoes_data_solicitacao",
+                "data_solicitacao",
+                False,
+            ),
+            (
+                "idx_solicitacoes_data_hora_agendada",
+                "data_hora_agendada",
+                False,
+            ),
+            (
+                "idx_solicitacoes_data_hora_inicio",
+                "data_hora_inicio",
+                False,
+            ),
+            (
+                "idx_solicitacoes_data_hora_conclusao",
+                "data_hora_conclusao",
+                False,
+            ),
+            (
+                "idx_solicitacoes_ativo",
+                "ativo",
+                False,
+            ),
         )
 
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_estabelecimento
-            ON solicitacoes(estabelecimento_id)
-            """
-        )
+        for nome, coluna, unico in indices:
+            comando_unico = "UNIQUE " if unico else ""
 
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_motorista
-            ON solicitacoes(motorista_id)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_veiculo
-            ON solicitacoes(veiculo_id)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_status
-            ON solicitacoes(status)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_prioridade
-            ON solicitacoes(prioridade)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_data_solicitacao
-            ON solicitacoes(data_solicitacao)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_data_hora_agendada
-            ON solicitacoes(data_hora_agendada)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_data_hora_inicio
-            ON solicitacoes(data_hora_inicio)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_data_hora_conclusao
-            ON solicitacoes(data_hora_conclusao)
-            """
-        )
-
-        conexao.execute(
-            """
-            CREATE INDEX IF NOT EXISTS
-                idx_solicitacoes_ativo
-            ON solicitacoes(ativo)
-            """
-        )
+            conexao.execute(
+                f"""
+                CREATE {comando_unico}INDEX IF NOT EXISTS
+                    {nome}
+                ON solicitacoes({coluna})
+                """
+            )

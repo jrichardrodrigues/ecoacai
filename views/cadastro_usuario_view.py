@@ -298,7 +298,7 @@ class CadastroUsuarioView:
 
         return self.construir()
 
-    def _ir_para_endereco(
+    async def _ir_para_endereco(
         self,
         _evento: ft.ControlEvent,
     ) -> None:
@@ -314,7 +314,7 @@ class CadastroUsuarioView:
         self._atualizar_etapa()
 
         try:
-            self.cep.focus()
+            await self.cep.focus()
         except RuntimeError:
             pass
 
@@ -341,7 +341,7 @@ class CadastroUsuarioView:
         )
         self._atualizar_pagina()
 
-    def _consultar_cep(
+    async def _consultar_cep(
         self,
         _evento: ft.ControlEvent | None = None,
     ) -> None:
@@ -387,7 +387,7 @@ class CadastroUsuarioView:
         self._atualizar_pagina()
 
         try:
-            self.numero.focus()
+            await self.numero.focus()
         except RuntimeError:
             pass
 

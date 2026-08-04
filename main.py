@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from typing import Any
+
 import flet as ft
 
+from components.layout import BasePage
 from config import APP_NAME, COR_FUNDO
 from controllers.auth_controller import AuthController
 from controllers.organizacao_controller import OrganizacaoController
+from controllers.solicitacao_coleta_controller import (
+    SolicitacaoColetaController,
+)
 from models import Organizacao, SessaoUsuario
 from repositories.sqlite_database import SQLiteDatabase
 from services.sessao_service import SessaoService
@@ -14,32 +20,20 @@ from views.assistente_configuracao_inicial_view import (
 from views.cadastro_usuario_view import CadastroUsuarioView
 from views.home_view import construir_interface
 from views.login_view import LoginView
+from views.nova_solicitacao_view import NovaSolicitacaoView
+from views.portal_gerador_view import PortalGeradorView
 
 
 def main(page: ft.Page) -> None:
     """Inicializa e controla o fluxo principal da aplicação."""
 
-    # ==========================================================
-    # BANCO DE DADOS
-    # ==========================================================
-
     SQLiteDatabase().inicializar()
-
-    # ==========================================================
-    # CONFIGURAÇÃO DA PÁGINA
-    # ==========================================================
 
     page.title = APP_NAME
     page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = COR_FUNDO
     page.padding = 0
 
-    # ==========================================================
-    # SERVIÇOS E CONTROLLERS COMPARTILHADOS
-    # ==========================================================
-
-    # Deve existir apenas uma instância de SessaoService durante
-    # toda a execução da aplicação.
     sessao_service = SessaoService()
 
     auth_controller = AuthController(
@@ -50,76 +44,309 @@ def main(page: ft.Page) -> None:
         sessao_service=sessao_service,
     )
 
-    # ==========================================================
-    # PORTAL DO GERADOR
-    # ==========================================================
+    solicitacao_controller = SolicitacaoColetaController()
+
+    def exibir(controle: ft.Control) -> None:
+        """Substitui o conteúdo atual da página."""
+
+        page.clean()
+        page.add(controle)
+        page.update()
+
+    def obter_sessao_atual() -> SessaoUsuario:
+        """Retorna a sessão autenticada atual."""
+
+        return sessao_service.exigir_sessao()
+
+    def formatar_status(status: str) -> str:
+        return str(status or "").replace("_", " ").title()
+
+    class NavegacaoGerador:
+        """
+        Adaptador temporário utilizado pela NovaSolicitacaoView.
+
+        A View atual procura page.navigation_controller depois
+        de cadastrar uma solicitação.
+        """
+
+        def ir_para(
+            self,
+            destino: str,
+        ) -> None:
+            rotas = {
+                "portal_gerador": abrir_portal_gerador,
+                "nova_solicitacao": abrir_nova_solicitacao,
+                "minhas_solicitacoes": abrir_minhas_solicitacoes,
+            }
+
+            acao = rotas.get(
+                str(destino or "").strip().lower()
+            )
+
+            if acao is None:
+                print(
+                    "Rota do Gerador não configurada:",
+                    destino,
+                )
+                return
+
+            acao()
+
+    page.navigation_controller = NavegacaoGerador()
 
     def abrir_portal_gerador(
         organizacao: Organizacao | None = None,
     ) -> None:
         """
-        Abre temporariamente a interface principal existente.
+        Abre o Portal do Gerador.
 
-        O parâmetro organizacao permite que este método seja usado
-        diretamente como callback do assistente de configuração.
+        O parâmetro organizacao permite usar esta função como
+        callback do Assistente de Configuração Inicial.
         """
 
-        page.clean()
+        sessao = obter_sessao_atual()
 
-        construir_interface(page)
+        portal = PortalGeradorView(
+            page=page,
+            sessao=sessao,
+            controller=solicitacao_controller,
+            on_nova_solicitacao=abrir_nova_solicitacao,
+            on_minhas_solicitacoes=abrir_minhas_solicitacoes,
+            on_sair=sair,
+        )
 
-        page.update()
+        exibir(portal.build())
 
-    # ==========================================================
-    # FLUXO APÓS O LOGIN
-    # ==========================================================
+    def abrir_nova_solicitacao() -> None:
+        """Abre o formulário simplificado do Gerador."""
 
-    def abrir_area_principal(
-        sessao: SessaoUsuario,
-    ) -> None:
-        """
-        Decide o destino do usuário após a autenticação.
+        sessao = obter_sessao_atual()
 
-        Geradores sem organização são encaminhados ao Assistente
-        de Configuração Inicial.
-        """
+        if sessao.organizacao is None:
+            abrir_assistente_configuracao()
+            return
 
-        page.clean()
+        organizacao_id = sessao.organizacao.id
+        usuario_id = sessao.usuario.id
 
-        if (
-            sessao.eh_gerador
-            and not sessao.possui_organizacao
-        ):
-            assistente_view = (
-                AssistenteConfiguracaoInicialView(
-                    page=page,
-                    controller=organizacao_controller,
-                    on_configuracao_concluida=(
-                        abrir_portal_gerador
+        if organizacao_id is None or usuario_id is None:
+            raise RuntimeError(
+                "A sessão não possui usuário e organização válidos."
+            )
+
+        view = NovaSolicitacaoView(
+            page=page,
+            organizacao_id=organizacao_id,
+            usuario_id=usuario_id,
+        )
+
+        exibir(view.build())
+
+    def abrir_minhas_solicitacoes() -> None:
+        """Lista as solicitações da organização autenticada."""
+
+        sessao = obter_sessao_atual()
+
+        if sessao.organizacao is None:
+            abrir_assistente_configuracao()
+            return
+
+        organizacao_id = sessao.organizacao.id
+
+        if organizacao_id is None:
+            raise RuntimeError(
+                "A organização da sessão não possui identificador."
+            )
+
+        solicitacoes = solicitacao_controller.listar_por_organizacao(
+            organizacao_id=organizacao_id,
+        )
+
+        cards: list[ft.Control] = []
+
+        for solicitacao in solicitacoes:
+            cards.append(
+                ft.Card(
+                    content=ft.Container(
+                        padding=16,
+                        content=ft.Column(
+                            controls=[
+                                ft.Row(
+                                    controls=[
+                                        ft.Text(
+                                            solicitacao.numero,
+                                            size=16,
+                                            weight=ft.FontWeight.BOLD,
+                                        ),
+                                        ft.Container(expand=True),
+                                        ft.Text(
+                                            formatar_status(
+                                                solicitacao.status
+                                            ),
+                                            weight=ft.FontWeight.BOLD,
+                                        ),
+                                    ],
+                                ),
+                                ft.Text(
+                                    (
+                                        "Tipo de resíduo: "
+                                        f"{solicitacao.tipo_residuo}"
+                                    )
+                                ),
+                                ft.Text(
+                                    (
+                                        "Quantidade prevista: "
+                                        f"{solicitacao.quantidade_sacas_prevista} "
+                                        f"{solicitacao.unidade_medida}"
+                                    )
+                                ),
+                                ft.Text(
+                                    (
+                                        "Solicitada em: "
+                                        f"{solicitacao.data_solicitacao or '-'}"
+                                    )
+                                ),
+                                ft.Text(
+                                    solicitacao.observacao_cliente,
+                                    visible=bool(
+                                        solicitacao.observacao_cliente
+                                    ),
+                                ),
+                            ],
+                            spacing=8,
+                        ),
                     ),
                 )
             )
 
-            page.add(
-                assistente_view.build()
+        if not cards:
+            cards.append(
+                ft.Container(
+                    padding=32,
+                    alignment=ft.Alignment.CENTER,
+                    content=ft.Column(
+                        controls=[
+                            ft.Icon(
+                                ft.Icons.INBOX_OUTLINED,
+                                size=56,
+                            ),
+                            ft.Text(
+                                "Nenhuma solicitação registrada.",
+                                size=18,
+                                weight=ft.FontWeight.BOLD,
+                            ),
+                            ft.FilledButton(
+                                content="Solicitar primeira coleta",
+                                icon=ft.Icons.ADD_CIRCLE_OUTLINE,
+                                on_click=(
+                                    lambda _e:
+                                    abrir_nova_solicitacao()
+                                ),
+                            ),
+                        ],
+                        horizontal_alignment=(
+                            ft.CrossAxisAlignment.CENTER
+                        ),
+                        spacing=12,
+                    ),
+                )
             )
-            page.update()
-            return
 
-        # Por enquanto, os usuários que já possuem organização
-        # e os gestores continuam utilizando a interface atual.
-        abrir_portal_gerador()
+        conteudo = ft.Column(
+            controls=[
+                ft.Row(
+                    controls=[
+                        ft.OutlinedButton(
+                            content="Voltar ao portal",
+                            icon=ft.Icons.ARROW_BACK,
+                            on_click=(
+                                lambda _e:
+                                abrir_portal_gerador()
+                            ),
+                        ),
+                        ft.Container(expand=True),
+                        ft.FilledButton(
+                            content="Nova solicitação",
+                            icon=ft.Icons.ADD,
+                            on_click=(
+                                lambda _e:
+                                abrir_nova_solicitacao()
+                            ),
+                        ),
+                    ],
+                ),
+                ft.Text(
+                    f"Total de solicitações: {len(solicitacoes)}",
+                ),
+                ft.Column(
+                    controls=cards,
+                    spacing=12,
+                ),
+            ],
+            spacing=16,
+            scroll=ft.ScrollMode.AUTO,
+        )
 
-    # ==========================================================
-    # LOGIN
-    # ==========================================================
+        tela = BasePage(
+            title="Minhas Solicitações",
+            subtitle=(
+                "Acompanhe as solicitações de coleta "
+                "da sua organização."
+            ),
+            content=conteudo,
+            max_width=1000,
+        )
 
-    def abrir_login(
-        evento: ft.ControlEvent | None = None,
-    ) -> None:
-        """Abre a tela de autenticação."""
+        exibir(tela)
+
+    def abrir_assistente_configuracao() -> None:
+        sessao = obter_sessao_atual()
+
+        assistente = AssistenteConfiguracaoInicialView(
+            page=page,
+            controller=organizacao_controller,
+            sessao=sessao,
+            on_configuracao_concluida=abrir_portal_gerador,
+        )
+
+        exibir(assistente.build())
+
+    def abrir_area_gestor() -> None:
+        """Mantém o Gestor na interface administrativa atual."""
 
         page.clean()
+        construir_interface(page)
+        page.update()
+
+    def abrir_area_principal(
+        sessao: SessaoUsuario,
+    ) -> None:
+        """Direciona cada perfil para sua área."""
+
+        if sessao.eh_gerador:
+            if not sessao.possui_organizacao:
+                abrir_assistente_configuracao()
+                return
+
+            abrir_portal_gerador()
+            return
+
+        if sessao.eh_gestor:
+            abrir_area_gestor()
+            return
+
+        if sessao.eh_empresa_parceira:
+            # Portal específico será criado posteriormente.
+            abrir_area_gestor()
+            return
+
+        auth_controller.sair()
+        abrir_login()
+
+    def abrir_login(
+            evento: Any = None,
+    ) -> None:
+        """Abre a tela de autenticação sem alterar a sessão."""
 
         login_view = LoginView(
             page=page,
@@ -129,50 +356,34 @@ def main(page: ft.Page) -> None:
             on_esqueci_senha=abrir_recuperacao_senha,
         )
 
-        page.add(
-            login_view.build()
-        )
+        exibir(login_view.build())
 
-        page.update()
+    def sair(
+            evento: Any = None,
+    ) -> None:
+        """Encerra a sessão e retorna ao login."""
 
-    # ==========================================================
-    # CRIAÇÃO DE CONTA
-    # ==========================================================
+        auth_controller.sair()
+        abrir_login()
 
     def abrir_criar_conta(
         evento: ft.ControlEvent | None = None,
     ) -> None:
         """Abre a tela pública de criação de conta."""
 
-        page.clean()
-
         cadastro_view = CadastroUsuarioView(
             page=page,
             on_voltar_login=abrir_login,
         )
 
-        page.add(
-            cadastro_view.build()
-        )
-
-        page.update()
-
-    # ==========================================================
-    # RECUPERAÇÃO DE SENHA
-    # ==========================================================
+        exibir(cadastro_view.build())
 
     def abrir_recuperacao_senha(
         evento: ft.ControlEvent,
     ) -> None:
         """Fluxo temporário de recuperação de senha."""
 
-        print(
-            "Abrir recuperação de senha"
-        )
-
-    # ==========================================================
-    # INÍCIO DA APLICAÇÃO
-    # ==========================================================
+        print("Abrir recuperação de senha")
 
     abrir_login()
 

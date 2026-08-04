@@ -65,11 +65,11 @@ class BasePage(ft.Container):
             expand=expand,
             bgcolor=bgcolor or Colors.Background.DEFAULT,
             padding=Spacing.PAGE_PADDING,
-            alignment=ft.alignment.top_center,
+            alignment=ft.Alignment.TOP_CENTER,
             content=ft.Container(
                 width=max_width,
                 border_radius=Radius.LG,
-                shadow=Shadows.SM,
+                shadow=Shadows.CARD,
                 bgcolor=Colors.Background.SURFACE,
                 padding=Spacing.XL,
                 content=body,

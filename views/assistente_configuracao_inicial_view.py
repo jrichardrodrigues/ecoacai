@@ -8,8 +8,9 @@ from components.buttons import PrimaryButton
 from components.cards import FormCard
 from components.headers import PageHeader
 from components.theme import Colors, Radius, Spacing
+
 from controllers.organizacao_controller import OrganizacaoController
-from models import Organizacao
+from models import Organizacao, SessaoUsuario
 from utils.messages import mostrar_erro, mostrar_sucesso
 
 
@@ -22,16 +23,19 @@ class AssistenteConfiguracaoInicialView:
     """
 
     def __init__(
-        self,
-        page: ft.Page,
-        controller: OrganizacaoController,
-        on_configuracao_concluida: Callable[[Organizacao], None],
+            self,
+            page: ft.Page,
+            controller: OrganizacaoController,
+            sessao: SessaoUsuario,
+            on_configuracao_concluida: Callable[[Organizacao], None],
     ) -> None:
         self.page = page
         self.controller = controller
+        self.sessao = sessao
         self._on_configuracao_concluida = on_configuracao_concluida
 
         self._construir_controles()
+        self._preencher_dados_usuario()
 
     def _construir_controles(self) -> None:
         """Cria os controles do formulário."""
@@ -52,7 +56,7 @@ class AssistenteConfiguracaoInicialView:
         )
 
         self.telefone = ft.TextField(
-            label="Telefone",
+            label="Telefone/WhatsApp da organização",
             hint_text="(00) 00000-0000",
             width=230,
             border_radius=Radius.INPUT,
@@ -78,6 +82,17 @@ class AssistenteConfiguracaoInicialView:
             icon=ft.Icons.ARROW_FORWARD,
             on_click=self._salvar,
         )
+
+    def _preencher_dados_usuario(self) -> None:
+        """Reaproveita os dados do usuário autenticado."""
+
+        usuario = self.sessao.usuario
+
+        if usuario.celular:
+            self.telefone.value = usuario.celular
+
+        if usuario.email:
+            self.email.value = usuario.email
 
     def construir(self) -> ft.Control:
         """Constrói a interface do assistente."""

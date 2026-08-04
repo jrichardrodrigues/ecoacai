@@ -5,6 +5,20 @@ from .base_validated_field import BaseValidatedField
 
 class NameField(BaseValidatedField):
 
+    PALAVRAS_MINUSCULAS = {
+        "e",
+        "da",
+        "das",
+        "de",
+        "do",
+        "dos",
+        "del",
+        "della",
+        "di",
+        "van",
+        "von",
+    }
+
     def __init__(self):
         super().__init__(
             label="Nome do Proprietário/Responsável",
@@ -20,22 +34,19 @@ class NameField(BaseValidatedField):
     def formatar_nome(valor: str) -> str:
         valor = NameField.normalizar_espacos(valor)
 
-        palavras_minusculas = {
-            "da",
-            "das",
-            "de",
-            "do",
-            "dos",
-            "e",
-        }
-
         palavras_formatadas = []
 
         for indice, palavra in enumerate(valor.split()):
             palavra_minuscula = palavra.lower()
 
-            if indice > 0 and palavra_minuscula in palavras_minusculas:
-                palavras_formatadas.append(palavra_minuscula)
+            if (
+                    indice > 0
+                    and palavra_minuscula
+                    in NameField.PALAVRAS_MINUSCULAS
+            ):
+                palavras_formatadas.append(
+                    palavra_minuscula
+                )
             else:
                 palavras_formatadas.append(
                     palavra_minuscula.capitalize()
@@ -70,9 +81,18 @@ class NameField(BaseValidatedField):
             self.erro("Informe o nome e o sobrenome.")
             return
 
-        if any(len(palavra) == 1 for palavra in palavras):
-            self.erro("Há uma palavra muito curta no nome.")
-            return
+        for palavra in palavras:
+
+            palavra = palavra.lower()
+
+            if palavra in NameField.PALAVRAS_MINUSCULAS:
+                continue
+
+            if len(palavra) < 2:
+                self.erro(
+                    "Há uma palavra muito curta no nome."
+                )
+                return
 
         self.sucesso("Nome válido.")
 

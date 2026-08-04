@@ -6,16 +6,13 @@ from services.sessao_service import SessaoService
 
 
 class OrganizacaoController:
-    """
-    Controlador responsável pelo fluxo de organizações.
-    """
+    """Controla o fluxo de organizações."""
 
     def __init__(
         self,
         organizacao_service: OrganizacaoService | None = None,
         sessao_service: SessaoService | None = None,
     ) -> None:
-
         self.organizacao_service = (
             organizacao_service or OrganizacaoService()
         )
@@ -29,13 +26,12 @@ class OrganizacaoController:
     # =====================================================
 
     def cadastrar_gerador(
-        self,
-        nome: str,
-        documento: str,
-        telefone: str = "",
-        email: str = "",
+            self,
+            nome: str,
+            documento: str,
+            telefone: str = "",
+            email: str = "",
     ) -> tuple[bool, str, Organizacao | None]:
-
         sucesso, mensagem, organizacao = (
             self.organizacao_service.cadastrar_gerador(
                 nome=nome,
@@ -45,10 +41,7 @@ class OrganizacaoController:
             )
         )
 
-        if (
-            sucesso
-            and organizacao is not None
-        ):
+        if sucesso and organizacao is not None:
             self.sessao_service.atualizar_organizacao(
                 organizacao
             )
