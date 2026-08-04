@@ -59,46 +59,289 @@ class SQLiteDatabase:
         """Cria e atualiza as tabelas necessárias."""
 
         with self.obter_conexao() as conexao:
-            self._criar_tabela_usuarios(conexao)
+            self._criar_tabela_schema_version(conexao)
+
+            self._criar_tabela_organizacoes(conexao)
+            self._criar_tabela_perfis(conexao)
+            self._inserir_perfis_iniciais(conexao)
+            self._criar_organizacao_administracao(conexao)
+            self._garantir_tabela_usuarios(conexao)
+
             self._criar_tabela_codigos_verificacao(conexao)
             self._criar_tabela_estabelecimentos(conexao)
 
             self._garantir_tabela_motoristas(conexao)
             self._garantir_tabela_veiculos(conexao)
-
             self._garantir_tabela_solicitacoes(conexao)
+
+            self._registrar_versao_schema(
+                conexao,
+                versao=2,
+                descricao=(
+                    "Modelo organizacional: organizações, perfis e "
+                    "vínculos de usuários"
+                ),
+            )
+
+    # ==========================================================
+    # CONTROLE DE VERSÃO DO BANCO
+    # ==========================================================
+
+    @staticmethod
+    def _criar_tabela_schema_version(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria o histórico de versões estruturais do banco."""
+
+        conexao.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_version (
+                versao INTEGER PRIMARY KEY,
+                descricao TEXT NOT NULL,
+                aplicado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+    @staticmethod
+    def _registrar_versao_schema(
+        conexao: sqlite3.Connection,
+        *,
+        versao: int,
+        descricao: str,
+    ) -> None:
+        """Registra uma migração sem duplicar versões já aplicadas."""
+
+        conexao.execute(
+            """
+            INSERT OR IGNORE INTO schema_version (
+                versao,
+                descricao
+            )
+            VALUES (?, ?)
+            """,
+            (versao, descricao),
+        )
+
+    # ==========================================================
+    # ORGANIZAÇÕES
+    # ==========================================================
+
+    @staticmethod
+    def _criar_tabela_organizacoes(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria as organizações participantes da plataforma."""
+
+        conexao.execute(
+            """
+            CREATE TABLE IF NOT EXISTS organizacoes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                tipo TEXT NOT NULL
+                    CHECK (
+                        tipo IN (
+                            'ZELURBIS',
+                            'GERADOR',
+                            'EMPRESA_PARCEIRA',
+                            'PREFEITURA',
+                            'COOPERATIVA'
+                        )
+                    ),
+
+                nome TEXT NOT NULL,
+                documento TEXT NOT NULL DEFAULT '',
+                email TEXT NOT NULL DEFAULT '',
+                telefone TEXT NOT NULL DEFAULT '',
+
+                ativo INTEGER NOT NULL DEFAULT 1
+                    CHECK (ativo IN (0, 1)),
+
+                criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_organizacoes_tipo
+            ON organizacoes(tipo)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_organizacoes_nome
+            ON organizacoes(nome)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+                idx_organizacoes_documento_unico
+            ON organizacoes(documento)
+            WHERE TRIM(documento) <> ''
+            """
+        )
+
+    @staticmethod
+    def _criar_organizacao_administracao(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Garante a organização interna da administração ZELURBIS."""
+
+        conexao.execute(
+            """
+            INSERT INTO organizacoes (
+                tipo,
+                nome,
+                documento,
+                email,
+                telefone,
+                ativo
+            )
+            SELECT
+                'ZELURBIS',
+                'Administração ZELURBIS',
+                '',
+                '',
+                '',
+                1
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM organizacoes
+                WHERE tipo = 'ZELURBIS'
+                  AND nome = 'Administração ZELURBIS'
+            )
+            """
+        )
+
+    # ==========================================================
+    # PERFIS
+    # ==========================================================
+
+    @staticmethod
+    def _criar_tabela_perfis(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria os perfis de acesso da plataforma."""
+
+        conexao.execute(
+            """
+            CREATE TABLE IF NOT EXISTS perfis (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT NOT NULL UNIQUE,
+                nome TEXT NOT NULL,
+                descricao TEXT NOT NULL DEFAULT '',
+
+                ativo INTEGER NOT NULL DEFAULT 1
+                    CHECK (ativo IN (0, 1)),
+
+                criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+    @staticmethod
+    def _inserir_perfis_iniciais(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cadastra os perfis oficiais sem gerar duplicidade."""
+
+        perfis = (
+            (
+                'GESTOR',
+                'Gestor do Sistema',
+                'Administra e acompanha todo o ecossistema.',
+            ),
+            (
+                'GERADOR',
+                'Gerador do Resíduo',
+                'Solicita e acompanha as próprias coletas.',
+            ),
+            (
+                'EMPRESA_PARCEIRA',
+                'Empresa Parceira',
+                'Executa as operações designadas à organização.',
+            ),
+        )
+
+        conexao.executemany(
+            """
+            INSERT OR IGNORE INTO perfis (
+                codigo,
+                nome,
+                descricao
+            )
+            VALUES (?, ?, ?)
+            """,
+            perfis,
+        )
+
+    # ==========================================================
+    # USUÁRIOS
+    # ==========================================================
+
+    @classmethod
+    def _garantir_tabela_usuarios(
+        cls,
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria ou migra usuários para o modelo organizacional."""
+
+        if not cls._tabela_existe(conexao, 'usuarios'):
+            cls._criar_tabela_usuarios(conexao)
+        else:
+            colunas = cls._obter_colunas(conexao, 'usuarios')
+
+            # Para bancos existentes, o ALTER TABLE preserva os dados e
+            # evita conflitos com codigos_verificacao, que referencia usuários.
+            if 'organizacao_id' not in colunas:
+                conexao.execute(
+                    """
+                    ALTER TABLE usuarios
+                    ADD COLUMN organizacao_id INTEGER
+                    """
+                )
+
+            if 'perfil_id' not in colunas:
+                conexao.execute(
+                    """
+                    ALTER TABLE usuarios
+                    ADD COLUMN perfil_id INTEGER
+                    """
+                )
+
+        cls._vincular_usuarios_legados(conexao)
+        cls._criar_indices_usuarios(conexao)
 
     @staticmethod
     def _criar_tabela_usuarios(
-            conexao: sqlite3.Connection,
+        conexao: sqlite3.Connection,
     ) -> None:
-        """Cria a tabela de usuários."""
+        """Cria a estrutura atual da tabela de usuários."""
 
         conexao.execute(
             """
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
+                organizacao_id INTEGER,
+                perfil_id INTEGER,
+
                 nome TEXT NOT NULL,
-
                 cpf TEXT NOT NULL UNIQUE,
-
                 celular TEXT NOT NULL UNIQUE,
-
                 cep TEXT NOT NULL,
-
                 logradouro TEXT NOT NULL,
-
                 numero TEXT NOT NULL,
-
                 complemento TEXT,
-
                 bairro TEXT NOT NULL,
-
                 cidade TEXT NOT NULL,
-
                 uf TEXT NOT NULL,
-
                 senha_hash TEXT NOT NULL,
 
                 celular_confirmado INTEGER NOT NULL DEFAULT 0
@@ -108,9 +351,77 @@ class SQLiteDatabase:
                     CHECK (ativo IN (0, 1)),
 
                 criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-                atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                FOREIGN KEY (organizacao_id)
+                    REFERENCES organizacoes(id)
+                    ON DELETE RESTRICT,
+
+                FOREIGN KEY (perfil_id)
+                    REFERENCES perfis(id)
+                    ON DELETE RESTRICT
             )
+            """
+        )
+
+    @staticmethod
+    def _vincular_usuarios_legados(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Vincula usuários sem contexto ao gestor da ZELURBIS."""
+
+        organizacao = conexao.execute(
+            """
+            SELECT id
+            FROM organizacoes
+            WHERE tipo = 'ZELURBIS'
+              AND nome = 'Administração ZELURBIS'
+            LIMIT 1
+            """
+        ).fetchone()
+
+        perfil = conexao.execute(
+            """
+            SELECT id
+            FROM perfis
+            WHERE codigo = 'GESTOR'
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if organizacao is None or perfil is None:
+            raise RuntimeError(
+                'Não foi possível preparar organização e perfil padrão.'
+            )
+
+        conexao.execute(
+            """
+            UPDATE usuarios
+            SET organizacao_id = COALESCE(organizacao_id, ?),
+                perfil_id = COALESCE(perfil_id, ?)
+            WHERE organizacao_id IS NULL
+               OR perfil_id IS NULL
+            """,
+            (organizacao['id'], perfil['id']),
+        )
+
+    @staticmethod
+    def _criar_indices_usuarios(
+        conexao: sqlite3.Connection,
+    ) -> None:
+        """Cria índices para vínculos organizacionais e de acesso."""
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_usuarios_organizacao
+            ON usuarios(organizacao_id)
+            """
+        )
+
+        conexao.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_usuarios_perfil
+            ON usuarios(perfil_id)
             """
         )
 

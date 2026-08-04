@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from config.constants import STATUS_VEICULO_DISPONIVEL
+from config.constants import StatusVeiculo
 
 
 @dataclass(slots=True)
@@ -26,7 +26,7 @@ class Veiculo:
 
     motorista_id: int | None = None
 
-    status: str = STATUS_VEICULO_DISPONIVEL
+    status: str = StatusVeiculo.DISPONIVEL
 
     ativo: bool = True
 

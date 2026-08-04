@@ -1,12 +1,21 @@
-from models import Usuario
-from services import AuthService
+from __future__ import annotations
+
+from models import SessaoUsuario, Usuario
+from services.auth_service import AuthService
+from services.sessao_service import SessaoService
 
 
 class AuthController:
-    """Ponte entre as telas de autenticação e o AuthService."""
+    """Coordena a autenticação e a sessão do usuário."""
 
-    def __init__(self) -> None:
-        self.auth_service = AuthService()
+    def __init__(
+        self,
+        auth_service: AuthService | None = None,
+        sessao_service: SessaoService | None = None,
+    ) -> None:
+        self.auth_service = auth_service or AuthService()
+        self.sessao_service = sessao_service or SessaoService()
+
         self._usuario_logado: Usuario | None = None
 
     @property
@@ -20,25 +29,57 @@ class AuthController:
         cpf: str,
         senha: str,
     ) -> tuple[bool, str]:
-        """Autentica um usuário."""
+        """Autentica o usuário e abre sua sessão."""
 
         sucesso, mensagem, usuario = (
-            self.auth_service.autenticar(cpf, senha)
+            self.auth_service.autenticar(
+                cpf,
+                senha,
+            )
         )
 
-        if sucesso:
-            self._usuario_logado = usuario
-        else:
+        if not sucesso or usuario is None:
             self._usuario_logado = None
+            self.sessao_service.encerrar_sessao()
 
-        return sucesso, mensagem
+            return False, mensagem
+
+        try:
+            sessao = self.sessao_service.abrir_sessao(
+                usuario
+            )
+        except (ValueError, RuntimeError) as erro:
+            self._usuario_logado = None
+            self.sessao_service.encerrar_sessao()
+
+            return False, str(erro)
+
+        self._usuario_logado = sessao.usuario
+
+        return True, mensagem
+
+    def obter_sessao(self) -> SessaoUsuario | None:
+        """Retorna a sessão autenticada atual."""
+
+        return self.sessao_service.obter_sessao()
+
+    def precisa_configurar_organizacao(self) -> bool:
+        """Informa se o usuário ainda não possui organização."""
+
+        sessao = self.obter_sessao()
+
+        return (
+            sessao is not None
+            and not sessao.possui_organizacao
+        )
 
     def sair(self) -> None:
-        """Encerra a sessão do usuário autenticado."""
+        """Encerra completamente a sessão."""
 
         self._usuario_logado = None
+        self.sessao_service.encerrar_sessao()
 
     def esta_autenticado(self) -> bool:
-        """Informa se existe um usuário autenticado."""
+        """Informa se existe uma sessão autenticada."""
 
-        return self._usuario_logado is not None
+        return self.sessao_service.esta_autenticado()

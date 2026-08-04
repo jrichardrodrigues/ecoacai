@@ -71,6 +71,7 @@ SETORES = [
 # STATUS DAS SOLICITAÇÕES
 ###############################################################################
 
+
 class StatusSolicitacao:
     PENDENTE = "PENDENTE"
     AGENDADA = "AGENDADA"
@@ -93,9 +94,11 @@ class StatusSolicitacao:
         descricoes = dict(cls.OPCOES)
         return descricoes.get(status, status)
 
+
 ###############################################################################
 # STATUS DAS COLETAS
 ###############################################################################
+
 
 class StatusColeta:
     PENDENTE = "PENDENTE"
@@ -117,9 +120,11 @@ class StatusColeta:
         descricoes = dict(cls.OPCOES)
         return descricoes.get(status, status)
 
+
 ###############################################################################
 # STATUS DOS VEÍCULOS
 ###############################################################################
+
 
 class StatusVeiculo:
     DISPONIVEL = "DISPONIVEL"
@@ -138,6 +143,31 @@ class StatusVeiculo:
     def descricao(cls, status: str) -> str:
         descricoes = dict(cls.OPCOES)
         return descricoes.get(status, status)
+
+
+###############################################################################
+# COMPATIBILIDADE COM NOMES ANTERIORES
+###############################################################################
+
+# Solicitações
+STATUS_SOLICITACAO_PENDENTE = StatusSolicitacao.PENDENTE
+STATUS_SOLICITACAO_AGENDADA = StatusSolicitacao.AGENDADA
+STATUS_SOLICITACAO_EM_DESLOCAMENTO = (
+    StatusSolicitacao.EM_DESLOCAMENTO
+)
+STATUS_SOLICITACAO_EM_COLETA = StatusSolicitacao.EM_COLETA
+STATUS_SOLICITACAO_CONCLUIDA = StatusSolicitacao.CONCLUIDA
+STATUS_SOLICITACAO_CANCELADA = StatusSolicitacao.CANCELADA
+
+STATUS_SOLICITACOES = StatusSolicitacao.OPCOES
+
+# Veículos
+STATUS_VEICULO_DISPONIVEL = StatusVeiculo.DISPONIVEL
+STATUS_VEICULO_EM_COLETA = StatusVeiculo.EM_COLETA
+STATUS_VEICULO_MANUTENCAO = StatusVeiculo.MANUTENCAO
+STATUS_VEICULO_INATIVO = StatusVeiculo.INATIVO
+
+STATUS_VEICULOS = StatusVeiculo.OPCOES
 
 ###############################################################################
 # CATÁLOGO DE VEÍCULOS

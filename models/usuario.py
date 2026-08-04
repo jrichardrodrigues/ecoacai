@@ -6,10 +6,16 @@ from typing import Any
 class Usuario:
     id: int | None = None
 
+    # Vínculos organizacionais.
+    organizacao_id: int | None = None
+    perfil_id: int | None = None
+
+    # Dados pessoais.
     nome: str = ""
     cpf: str = ""
     celular: str = ""
 
+    # Endereço.
     cep: str = ""
     logradouro: str = ""
     numero: str = ""
@@ -18,6 +24,7 @@ class Usuario:
     cidade: str = ""
     uf: str = ""
 
+    # Autenticação e situação.
     senha_hash: str = ""
     celular_confirmado: bool = False
     ativo: bool = True
@@ -48,10 +55,14 @@ class Usuario:
     @classmethod
     def from_row(cls, row: Any) -> "Usuario":
         if row is None:
-            raise ValueError("Não é possível criar usuário a partir de uma linha vazia.")
+            raise ValueError(
+                "Não é possível criar usuário a partir de uma linha vazia."
+            )
 
         return cls(
             id=row["id"],
+            organizacao_id=row["organizacao_id"],
+            perfil_id=row["perfil_id"],
             nome=row["nome"],
             cpf=row["cpf"],
             celular=row["celular"],

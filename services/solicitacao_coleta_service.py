@@ -1,12 +1,6 @@
 from datetime import datetime
 
-from config import (
-    STATUS_SOLICITACAO_PENDENTE,
-    STATUS_SOLICITACAO_AGENDADA,
-    STATUS_SOLICITACAO_EM_DESLOCAMENTO,
-    STATUS_SOLICITACAO_EM_COLETA,
-    STATUS_SOLICITACAO_CONCLUIDA,
-)
+from config import StatusSolicitacao
 
 from models import SolicitacaoColeta
 from repositories import SolicitacaoColetaRepository
@@ -129,7 +123,7 @@ class SolicitacaoColetaService:
             observacao_cliente=(
                     observacao_cliente or ""
             ).strip(),
-            status=STATUS_SOLICITACAO_PENDENTE,
+            status = StatusSolicitacao.PENDENTE,
             data_solicitacao=datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S",
             ),
@@ -277,20 +271,20 @@ class SolicitacaoColetaService:
             "%Y-%m-%d %H:%M:%S"
         )
 
-        if solicitacao.status == STATUS_SOLICITACAO_PENDENTE:
-            solicitacao.status = STATUS_SOLICITACAO_AGENDADA
+        if solicitacao.status == StatusSolicitacao.PENDENTE:
+            solicitacao.status = StatusSolicitacao.AGENDADA
             solicitacao.data_hora_agendada = agora
 
-        elif solicitacao.status == STATUS_SOLICITACAO_AGENDADA:
-            solicitacao.status = STATUS_SOLICITACAO_EM_DESLOCAMENTO
+        elif solicitacao.status == StatusSolicitacao.AGENDADA:
+            solicitacao.status = StatusSolicitacao.EM_DESLOCAMENTO
             solicitacao.data_hora_inicio = agora
 
-        elif solicitacao.status == STATUS_SOLICITACAO_EM_DESLOCAMENTO:
-            solicitacao.status = STATUS_SOLICITACAO_EM_COLETA
+        elif solicitacao.status == StatusSolicitacao.EM_DESLOCAMENTO:
+            solicitacao.status = StatusSolicitacao.EM_COLETA
             solicitacao.data_hora_chegada = agora
 
-        elif solicitacao.status == STATUS_SOLICITACAO_EM_COLETA:
-            solicitacao.status = STATUS_SOLICITACAO_CONCLUIDA
+        elif solicitacao.status == StatusSolicitacao.EM_COLETA:
+            solicitacao.status = StatusSolicitacao.CONCLUIDA
             solicitacao.data_hora_conclusao = agora
 
         else:

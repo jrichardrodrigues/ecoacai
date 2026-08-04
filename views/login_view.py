@@ -13,7 +13,7 @@ from components.headers import PageHeader
 from components.theme import Colors
 from config import APP_NAME, APP_SUBTITLE
 from controllers.auth_controller import AuthController
-from models import Usuario
+from models import SessaoUsuario
 from utils.messages import mostrar_erro
 
 
@@ -24,7 +24,7 @@ class LoginView:
         self,
         page: ft.Page,
         auth_controller: AuthController,
-        on_login_sucesso: Callable[[Usuario], None],
+        on_login_sucesso: Callable[[SessaoUsuario], None],
         on_criar_conta: Callable[[ft.ControlEvent], None],
         on_esqueci_senha: Callable[[ft.ControlEvent], None],
     ) -> None:
@@ -64,16 +64,16 @@ class LoginView:
             )
             return
 
-        usuario = self.controller.usuario_logado
+        sessao = self.controller.obter_sessao()
 
-        if usuario is None:
+        if sessao is None:
             mostrar_erro(
                 self.page,
-                "Não foi possível recuperar o usuário autenticado.",
+                "Não foi possível abrir a sessão.",
             )
             return
 
-        self._on_login_sucesso(usuario)
+        self._on_login_sucesso(sessao)
 
     def on_criar_conta(self, e: ft.ControlEvent) -> None:
         """Encaminha o evento para o fluxo de criação de conta."""

@@ -1,4 +1,9 @@
 from .usuario import Usuario
+from .sessao_usuario import SessaoUsuario
+
+from .organizacao import Organizacao
+from .perfil import Perfil
+
 from .solicitacao import Solicitacao
 from .estabelecimento import Estabelecimento
 from .solicitacao_coleta import (
@@ -13,3 +18,4 @@ from .solicitacao_coleta import (
 )
 from .motorista import Motorista
 from .veiculo import Veiculo
+
