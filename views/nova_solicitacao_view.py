@@ -7,8 +7,9 @@ from controllers.solicitacao_coleta_controller import (
     SolicitacaoColetaController,
 )
 from models.solicitacao_coleta import (
+    FORMA_BAG,
+    FORMA_SACA,
     TIPO_RESIDUO_CAROCO_ACAI,
-    UNIDADE_SACAS,
 )
 from utils.messages import mostrar_erro, mostrar_sucesso
 
@@ -17,9 +18,12 @@ class NovaSolicitacaoView:
     """
     Tela simplificada para o Gerador solicitar uma coleta.
 
-    O Gerador informa somente os dados relacionados ao resíduo.
+    O Gerador informa apenas os dados relacionados ao resíduo.
     Motorista, veículo e agendamento serão definidos pelo Gestor.
     """
+
+    PESO_MEDIO_SACA_KG = 50
+    PESO_MEDIO_BAG_KG = 1000
 
     def __init__(
         self,
@@ -37,6 +41,7 @@ class NovaSolicitacaoView:
         )
 
         self._criar_controles()
+        self._atualizar_resumo()
 
     # ==========================================================
     # CONTROLES
@@ -57,6 +62,24 @@ class NovaSolicitacaoView:
             expand=True,
         )
 
+        self.forma_acondicionamento = ft.RadioGroup(
+            value=FORMA_SACA,
+            on_change=self._ao_alterar_dados,
+            content=ft.Column(
+                controls=[
+                    ft.Radio(
+                        value=FORMA_SACA,
+                        label="Sacas",
+                    ),
+                    ft.Radio(
+                        value=FORMA_BAG,
+                        label="Bags (1 m³)",
+                    ),
+                ],
+                spacing=6,
+            ),
+        )
+
         self.quantidade = ft.TextField(
             label="Quantidade prevista",
             hint_text="Ex.: 10",
@@ -64,19 +87,61 @@ class NovaSolicitacaoView:
             keyboard_type=ft.KeyboardType.NUMBER,
             border_radius=10,
             expand=True,
+            on_change=self._ao_alterar_dados,
         )
 
-        self.unidade_medida = ft.Dropdown(
-            label="Unidade de medida",
-            value=UNIDADE_SACAS,
-            options=[
-                ft.dropdown.Option(
-                    key=UNIDADE_SACAS,
-                    text="Sacas",
-                ),
-            ],
+        self.texto_peso = ft.Text(
+            value="Peso estimado: 50 kg",
+            size=16,
+            weight=ft.FontWeight.BOLD,
+        )
+
+        self.texto_operacao = ft.Text(
+            value="Operação prevista: Coleta manual",
+            size=15,
+        )
+
+        self.texto_orientacao = ft.Text(
+            value=(
+                "As sacas podem ser carregadas manualmente "
+                "pela equipe de coleta."
+            ),
+            size=13,
+            color=ft.Colors.BLUE_GREY_700,
+        )
+
+        self.icone_operacao = ft.Icon(
+            ft.Icons.PERSON_OUTLINE,
+            size=34,
+            color=ft.Colors.GREEN_700,
+        )
+
+        self.resumo_operacional = ft.Container(
+            padding=16,
             border_radius=10,
-            expand=True,
+            bgcolor=ft.Colors.BLUE_50,
+            content=ft.Row(
+                controls=[
+                    self.icone_operacao,
+                    ft.Column(
+                        controls=[
+                            ft.Text(
+                                "Resumo operacional",
+                                size=14,
+                                weight=ft.FontWeight.BOLD,
+                                color=ft.Colors.BLUE_GREY_800,
+                            ),
+                            self.texto_peso,
+                            self.texto_operacao,
+                            self.texto_orientacao,
+                        ],
+                        spacing=4,
+                        expand=True,
+                    ),
+                ],
+                spacing=14,
+                vertical_alignment=ft.CrossAxisAlignment.START,
+            ),
         )
 
         self.observacao = ft.TextField(
@@ -108,6 +173,83 @@ class NovaSolicitacaoView:
             icon=ft.Icons.ARROW_BACK,
             on_click=self._voltar,
         )
+
+    # ==========================================================
+    # RESUMO OPERACIONAL
+    # ==========================================================
+
+    def _ao_alterar_dados(
+        self,
+        _evento: ft.ControlEvent,
+    ) -> None:
+        self._atualizar_resumo()
+
+    def _obter_quantidade_para_resumo(self) -> int:
+        """Lê a quantidade sem exibir mensagens durante a digitação."""
+
+        texto = str(self.quantidade.value or "").strip()
+
+        try:
+            quantidade = int(texto)
+        except (TypeError, ValueError):
+            return 0
+
+        return max(0, quantidade)
+
+    def _atualizar_resumo(self) -> None:
+        quantidade = self._obter_quantidade_para_resumo()
+
+        forma = str(
+            self.forma_acondicionamento.value
+            or FORMA_SACA
+        ).strip().upper()
+
+        if forma == FORMA_BAG:
+            peso_estimado = (
+                quantidade * self.PESO_MEDIO_BAG_KG
+            )
+            operacao = "Caminhão Munck"
+            orientacao = (
+                "A coleta em Bags exige veículo equipado "
+                "com Munck."
+            )
+            icone = ft.Icons.LOCAL_SHIPPING_OUTLINED
+            cor_icone = ft.Colors.BLUE_700
+            cor_fundo = ft.Colors.BLUE_50
+        else:
+            peso_estimado = (
+                quantidade * self.PESO_MEDIO_SACA_KG
+            )
+            operacao = "Coleta manual"
+            orientacao = (
+                "As sacas podem ser carregadas manualmente "
+                "pela equipe de coleta."
+            )
+            icone = ft.Icons.PERSON_OUTLINE
+            cor_icone = ft.Colors.GREEN_700
+            cor_fundo = ft.Colors.GREEN_50
+
+        self.texto_peso.value = (
+            "Peso estimado: "
+            f"{self._formatar_numero(peso_estimado)} kg"
+        )
+
+        self.texto_operacao.value = (
+            f"Operação prevista: {operacao}"
+        )
+
+        self.texto_orientacao.value = orientacao
+        self.icone_operacao.icon = icone
+        self.icone_operacao.color = cor_icone
+        self.resumo_operacional.bgcolor = cor_fundo
+
+        self._atualizar_pagina()
+
+    @staticmethod
+    def _formatar_numero(valor: int | float) -> str:
+        """Formata números com separador de milhar brasileiro."""
+
+        return f"{valor:,.0f}".replace(",", ".")
 
     # ==========================================================
     # VALIDAÇÃO
@@ -160,12 +302,12 @@ class NovaSolicitacaoView:
         tipo_residuo = str(
             self.tipo_residuo.value
             or TIPO_RESIDUO_CAROCO_ACAI
-        ).strip()
+        ).strip().upper()
 
-        unidade_medida = str(
-            self.unidade_medida.value
-            or UNIDADE_SACAS
-        ).strip()
+        forma_acondicionamento = str(
+            self.forma_acondicionamento.value
+            or FORMA_SACA
+        ).strip().upper()
 
         observacao = str(
             self.observacao.value or ""
@@ -176,13 +318,14 @@ class NovaSolicitacaoView:
         try:
             sucesso, mensagem, _solicitacao = (
                 self.controller.criar(
+                    quantidade_prevista=quantidade,
+                    forma_acondicionamento=(
+                        forma_acondicionamento
+                    ),
                     organizacao_id=self.organizacao_id,
                     usuario_criacao_id=self.usuario_id,
                     tipo_residuo=tipo_residuo,
-                    unidade_medida=unidade_medida,
                     origem="GERADOR",
-                    quantidade_sacas_prevista=quantidade,
-                    quantidade_kg_previsto=0,
                     observacao_cliente=observacao,
                 )
             )
@@ -258,6 +401,9 @@ class NovaSolicitacaoView:
         self.botao_solicitar.disabled = carregando
         self.botao_voltar.disabled = carregando
 
+        self._atualizar_pagina()
+
+    def _atualizar_pagina(self) -> None:
         try:
             self.page.update()
         except RuntimeError:
@@ -280,33 +426,21 @@ class NovaSolicitacaoView:
                     ),
                     ft.Text(
                         (
-                            "Informe a quantidade estimada do "
-                            "resíduo disponível para coleta."
+                            "Informe como o resíduo está "
+                            "acondicionado e a quantidade disponível."
                         ),
                         size=14,
                     ),
                     ft.Divider(),
                     self.tipo_residuo,
-                    ft.ResponsiveRow(
-                        controls=[
-                            ft.Container(
-                                col={
-                                    "xs": 12,
-                                    "sm": 6,
-                                },
-                                content=self.quantidade,
-                            ),
-                            ft.Container(
-                                col={
-                                    "xs": 12,
-                                    "sm": 6,
-                                },
-                                content=self.unidade_medida,
-                            ),
-                        ],
-                        spacing=15,
-                        run_spacing=15,
+                    ft.Text(
+                        "Forma de acondicionamento",
+                        size=14,
+                        weight=ft.FontWeight.BOLD,
                     ),
+                    self.forma_acondicionamento,
+                    self.quantidade,
+                    self.resumo_operacional,
                     self.observacao,
                     ft.Divider(),
                     ft.Row(

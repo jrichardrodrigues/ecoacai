@@ -153,22 +153,21 @@ class SolicitacaoColetaController:
     # ==========================================================
 
     def criar(
-        self,
-        quantidade_sacas_prevista: int,
-        quantidade_kg_previsto: float = 0,
-        *,
-        organizacao_id: int | None = None,
-        estabelecimento_id: int | None = None,
-        empresa_parceira_id: int | None = None,
-        usuario_criacao_id: int | None = None,
-        motorista_id: int | None = None,
-        veiculo_id: int | None = None,
-        tipo_residuo: str = "CAROCO_ACAI",
-        unidade_medida: str = "SACAS",
-        origem: str = "GERADOR",
-        prioridade: str = "NORMAL",
-        data_hora_agendada: str = "",
-        observacao_cliente: str = "",
+            self,
+            quantidade_prevista: int,
+            *,
+            forma_acondicionamento: str = "SACA",
+            organizacao_id: int | None = None,
+            estabelecimento_id: int | None = None,
+            empresa_parceira_id: int | None = None,
+            usuario_criacao_id: int | None = None,
+            motorista_id: int | None = None,
+            veiculo_id: int | None = None,
+            tipo_residuo: str = "CAROCO_ACAI",
+            origem: str = "GERADOR",
+            prioridade: str = "NORMAL",
+            data_hora_agendada: str = "",
+            observacao_cliente: str = "",
     ) -> tuple[
         bool,
         str,
@@ -177,6 +176,8 @@ class SolicitacaoColetaController:
         """Cria uma nova solicitação de coleta."""
 
         return self.service.criar(
+            quantidade_prevista=quantidade_prevista,
+            forma_acondicionamento=forma_acondicionamento,
             organizacao_id=organizacao_id,
             estabelecimento_id=estabelecimento_id,
             empresa_parceira_id=empresa_parceira_id,
@@ -184,15 +185,8 @@ class SolicitacaoColetaController:
             motorista_id=motorista_id,
             veiculo_id=veiculo_id,
             tipo_residuo=tipo_residuo,
-            unidade_medida=unidade_medida,
             origem=origem,
             prioridade=prioridade,
-            quantidade_sacas_prevista=(
-                quantidade_sacas_prevista
-            ),
-            quantidade_kg_previsto=(
-                quantidade_kg_previsto
-            ),
             data_hora_agendada=data_hora_agendada,
             observacao_cliente=observacao_cliente,
         )

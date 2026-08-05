@@ -1092,6 +1092,10 @@ class SQLiteDatabase:
             "ativo",
             "criado_em",
             "atualizado_em",
+            "forma_acondicionamento",
+            "quantidade_prevista",
+            "peso_estimado_kg",
+            "tipo_operacao",
         }
 
         # Apenas nomes realmente pertencentes a estruturas antigas.
@@ -1118,6 +1122,34 @@ class SQLiteDatabase:
                 conexao,
                 colunas,
             )
+
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "forma_acondicionamento",
+            "TEXT NOT NULL DEFAULT 'SACA'",
+        )
+
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "quantidade_prevista",
+            "INTEGER NOT NULL DEFAULT 0",
+        )
+
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "peso_estimado_kg",
+            "REAL NOT NULL DEFAULT 0",
+        )
+
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "tipo_operacao",
+            "TEXT NOT NULL DEFAULT 'MANUAL'",
+        )
 
         cls._preencher_codigos_solicitacoes(conexao)
         cls._criar_indices_solicitacoes(conexao)
@@ -1153,6 +1185,32 @@ class SQLiteDatabase:
             str(row["name"])
             for row in rows
         }
+
+    @staticmethod
+    def _adicionar_coluna_se_nao_existir(
+            conexao: sqlite3.Connection,
+            tabela: str,
+            coluna: str,
+            definicao: str,
+    ) -> None:
+        """
+        Adiciona uma coluna somente se ela ainda não existir.
+        """
+
+        colunas = SQLiteDatabase._obter_colunas(
+            conexao,
+            tabela,
+        )
+
+        if coluna in colunas:
+            return
+
+        conexao.execute(
+            f"""
+            ALTER TABLE {tabela}
+            ADD COLUMN {coluna} {definicao}
+            """
+        )
 
     @staticmethod
     def _criar_tabela_solicitacoes(

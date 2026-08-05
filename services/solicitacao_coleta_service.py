@@ -16,7 +16,8 @@ from models.solicitacao_coleta import (
     STATUS_RECUSADA,
     STATUS_SOLICITADA,
     TIPO_RESIDUO_CAROCO_ACAI,
-    UNIDADE_SACAS,
+    FORMA_BAG,
+    FORMA_SACA,
 )
 from repositories import SolicitacaoColetaRepository
 
@@ -93,33 +94,34 @@ class SolicitacaoColetaService:
 
     @classmethod
     def _validar_quantidades(
-        cls,
-        *,
-        quantidade_sacas_prevista: int,
-        quantidade_kg_previsto: float,
+            cls,
+            *,
+            quantidade_prevista: int,
     ) -> tuple[bool, str]:
-        if quantidade_sacas_prevista <= 0:
+        if (
+                not isinstance(quantidade_prevista, int)
+                or isinstance(quantidade_prevista, bool)
+        ):
             return (
                 False,
-                "A quantidade de sacas deve ser maior que zero.",
+                "A quantidade informada é inválida.",
             )
 
-        if quantidade_kg_previsto < 0:
+        if quantidade_prevista <= 0:
             return (
                 False,
-                "A quantidade em quilos não pode ser negativa.",
+                "A quantidade deve ser maior que zero.",
             )
 
         return True, ""
 
     @classmethod
     def _validar_solicitacao(
-        cls,
-        *,
-        organizacao_id: int | None,
-        estabelecimento_id: int | None,
-        quantidade_sacas_prevista: int,
-        quantidade_kg_previsto: float,
+            cls,
+            *,
+            organizacao_id: int | None,
+            estabelecimento_id: int | None,
+            quantidade_prevista: int,
     ) -> tuple[bool, str]:
         valido, mensagem = cls._validar_vinculo(
             organizacao_id=organizacao_id,
@@ -130,8 +132,7 @@ class SolicitacaoColetaService:
             return valido, mensagem
 
         return cls._validar_quantidades(
-            quantidade_sacas_prevista=quantidade_sacas_prevista,
-            quantidade_kg_previsto=quantidade_kg_previsto,
+            quantidade_prevista=quantidade_prevista,
         )
 
     def listar(
@@ -238,34 +239,48 @@ class SolicitacaoColetaService:
         return self.repository.listar_com_estabelecimento()
 
     def criar(
-        self,
-        quantidade_sacas_prevista: int,
-        quantidade_kg_previsto: float = 0,
-        *,
-        organizacao_id: int | None = None,
-        estabelecimento_id: int | None = None,
-        empresa_parceira_id: int | None = None,
-        usuario_criacao_id: int | None = None,
-        motorista_id: int | None = None,
-        veiculo_id: int | None = None,
-        tipo_residuo: str = TIPO_RESIDUO_CAROCO_ACAI,
-        unidade_medida: str = UNIDADE_SACAS,
-        origem: str = ORIGEM_GERADOR,
-        prioridade: str = PRIORIDADE_NORMAL,
-        data_hora_agendada: str = "",
-        observacao_cliente: str = "",
+            self,
+            quantidade_prevista: int,
+            *,
+            forma_acondicionamento: str = FORMA_SACA,
+            organizacao_id: int | None = None,
+            estabelecimento_id: int | None = None,
+            empresa_parceira_id: int | None = None,
+            usuario_criacao_id: int | None = None,
+            motorista_id: int | None = None,
+            veiculo_id: int | None = None,
+            tipo_residuo: str = TIPO_RESIDUO_CAROCO_ACAI,
+            origem: str = ORIGEM_GERADOR,
+            prioridade: str = PRIORIDADE_NORMAL,
+            data_hora_agendada: str = "",
+            observacao_cliente: str = "",
     ) -> tuple[bool, str, SolicitacaoColeta | None]:
         """Valida e cadastra uma nova solicitação."""
 
         valido, mensagem = self._validar_solicitacao(
             organizacao_id=organizacao_id,
             estabelecimento_id=estabelecimento_id,
-            quantidade_sacas_prevista=quantidade_sacas_prevista,
-            quantidade_kg_previsto=quantidade_kg_previsto,
+            quantidade_prevista=quantidade_prevista,
         )
 
         if not valido:
             return False, mensagem, None
+
+        forma_normalizada = (
+            str(forma_acondicionamento or FORMA_SACA)
+            .strip()
+            .upper()
+        )
+
+        if forma_normalizada not in {
+            FORMA_SACA,
+            FORMA_BAG,
+        }:
+            return (
+                False,
+                "Forma de acondicionamento inválida.",
+                None,
+            )
 
         solicitacao = SolicitacaoColeta(
             organizacao_id=organizacao_id,
@@ -275,24 +290,26 @@ class SolicitacaoColetaService:
             motorista_id=motorista_id,
             veiculo_id=veiculo_id,
             tipo_residuo=(
-                str(tipo_residuo or TIPO_RESIDUO_CAROCO_ACAI)
+                str(
+                    tipo_residuo
+                    or TIPO_RESIDUO_CAROCO_ACAI
+                )
                 .strip()
                 .upper()
             ),
-            unidade_medida=(
-                str(unidade_medida or UNIDADE_SACAS)
-                .strip()
-                .upper()
-            ),
+            forma_acondicionamento=forma_normalizada,
+            quantidade_prevista=quantidade_prevista,
             origem=(
                 str(origem or ORIGEM_GERADOR)
                 .strip()
                 .upper()
             ),
-            quantidade_sacas_prevista=quantidade_sacas_prevista,
-            quantidade_kg_previsto=quantidade_kg_previsto,
-            data_hora_agendada=str(data_hora_agendada or "").strip(),
-            observacao_cliente=str(observacao_cliente or "").strip(),
+            data_hora_agendada=(
+                str(data_hora_agendada or "").strip()
+            ),
+            observacao_cliente=(
+                str(observacao_cliente or "").strip()
+            ),
             status=STATUS_SOLICITADA,
             prioridade=(
                 str(prioridade or PRIORIDADE_NORMAL)
@@ -302,10 +319,18 @@ class SolicitacaoColetaService:
             data_solicitacao=self._agora(),
         )
 
+        solicitacao.atualizar_planejamento()
+
         try:
-            cadastrada = self.repository.cadastrar(solicitacao)
+            cadastrada = self.repository.cadastrar(
+                solicitacao
+            )
+
         except Exception as erro:
-            return self._erro_operacao("cadastrar", erro)
+            return self._erro_operacao(
+                "cadastrar",
+                erro,
+            )
 
         return (
             True,
@@ -314,18 +339,28 @@ class SolicitacaoColetaService:
         )
 
     def atualizar(
-        self,
-        solicitacao: SolicitacaoColeta,
+            self,
+            solicitacao: SolicitacaoColeta,
     ) -> tuple[bool, str, SolicitacaoColeta | None]:
         """Atualiza uma solicitação existente."""
 
         if solicitacao.id is None:
-            return False, "Solicitação inválida.", None
+            return (
+                False,
+                "Solicitação inválida.",
+                None,
+            )
 
-        existente = self.repository.buscar_por_id(solicitacao.id)
+        existente = self.repository.buscar_por_id(
+            solicitacao.id
+        )
 
         if existente is None:
-            return False, "Solicitação não encontrada.", None
+            return (
+                False,
+                "Solicitação não encontrada.",
+                None,
+            )
 
         if existente.status in self.STATUS_FINAIS:
             return (
@@ -337,19 +372,51 @@ class SolicitacaoColetaService:
         valido, mensagem = self._validar_solicitacao(
             organizacao_id=solicitacao.organizacao_id,
             estabelecimento_id=solicitacao.estabelecimento_id,
-            quantidade_sacas_prevista=(
-                solicitacao.quantidade_sacas_prevista
-            ),
-            quantidade_kg_previsto=solicitacao.quantidade_kg_previsto,
+            quantidade_prevista=solicitacao.quantidade_prevista,
         )
 
         if not valido:
-            return False, mensagem, None
+            return (
+                False,
+                mensagem,
+                None,
+            )
+
+        forma_normalizada = (
+            str(
+                solicitacao.forma_acondicionamento
+                or FORMA_SACA
+            )
+            .strip()
+            .upper()
+        )
+
+        if forma_normalizada not in {
+            FORMA_SACA,
+            FORMA_BAG,
+        }:
+            return (
+                False,
+                "Forma de acondicionamento inválida.",
+                None,
+            )
+
+        solicitacao.forma_acondicionamento = (
+            forma_normalizada
+        )
+
+        solicitacao.atualizar_planejamento()
 
         try:
-            atualizada = self.repository.atualizar(solicitacao)
+            atualizada = self.repository.atualizar(
+                solicitacao
+            )
+
         except Exception as erro:
-            return self._erro_operacao("atualizar", erro)
+            return self._erro_operacao(
+                "atualizar",
+                erro,
+            )
 
         if atualizada is None:
             return (

@@ -3,10 +3,7 @@ from typing import Any
 
 
 STATUS_SOLICITADA = "SOLICITADA"
-
-# Compatibilidade temporária com módulos antigos.
 STATUS_PENDENTE = STATUS_SOLICITADA
-
 STATUS_EM_ANALISE = "EM_ANALISE"
 STATUS_AGENDADA = "AGENDADA"
 STATUS_EM_DESLOCAMENTO = "EM_DESLOCAMENTO"
@@ -20,6 +17,15 @@ PRIORIDADE_URGENTE = "URGENTE"
 PRIORIDADE_PROGRAMADA = "PROGRAMADA"
 
 TIPO_RESIDUO_CAROCO_ACAI = "CAROCO_ACAI"
+
+FORMA_SACA = "SACA"
+FORMA_BAG = "BAG"
+
+OPERACAO_MANUAL = "MANUAL"
+OPERACAO_MUNCK = "MUNCK"
+
+PESO_MEDIO_SACA_KG = 50.0
+PESO_MEDIO_BAG_KG = 1000.0
 
 UNIDADE_SACAS = "SACAS"
 UNIDADE_KG = "KG"
@@ -37,54 +43,31 @@ ORIGEM_API = "API"
 class SolicitacaoColeta:
     """Representa uma solicitação de coleta da ZELURBIS."""
 
-    # ==========================================================
-    # IDENTIFICAÇÃO
-    # ==========================================================
-
     id: int | None = None
     codigo: str = ""
-
-    # ==========================================================
-    # RELACIONAMENTOS DA NOVA ARQUITETURA
-    # ==========================================================
 
     organizacao_id: int | None = None
     empresa_parceira_id: int | None = None
     usuario_criacao_id: int | None = None
 
-    # ==========================================================
-    # COMPATIBILIDADE COM O MODELO LEGADO
-    # ==========================================================
-
     estabelecimento_id: int | None = None
     motorista_id: int | None = None
     veiculo_id: int | None = None
 
-    # ==========================================================
-    # RESÍDUO
-    # ==========================================================
-
     tipo_residuo: str = TIPO_RESIDUO_CAROCO_ACAI
-    unidade_medida: str = UNIDADE_SACAS
+    forma_acondicionamento: str = FORMA_SACA
     origem: str = ORIGEM_GERADOR
+    unidade_medida: str = UNIDADE_SACAS
 
-    # ==========================================================
-    # PLANEJAMENTO
-    # ==========================================================
+    quantidade_prevista: int = 0
+    peso_estimado_kg: float = 0.0
+    tipo_operacao: str = OPERACAO_MANUAL
 
     quantidade_sacas_prevista: int = 0
     quantidade_kg_previsto: float = 0.0
 
-    # ==========================================================
-    # EXECUÇÃO
-    # ==========================================================
-
     quantidade_sacas_coletada: int = 0
     quantidade_kg_coletado: float = 0.0
-
-    # ==========================================================
-    # DATAS
-    # ==========================================================
 
     data_solicitacao: str | None = None
     data_hora_agendada: str | None = None
@@ -92,47 +75,52 @@ class SolicitacaoColeta:
     data_hora_chegada: str | None = None
     data_hora_conclusao: str | None = None
 
-    # ==========================================================
-    # OPERAÇÃO
-    # ==========================================================
-
     status: str = STATUS_SOLICITADA
     prioridade: str = PRIORIDADE_NORMAL
-
-    # ==========================================================
-    # OBSERVAÇÕES
-    # ==========================================================
 
     observacao_cliente: str = ""
     observacao_operacional: str = ""
 
-    # ==========================================================
-    # LOCALIZAÇÃO
-    # ==========================================================
-
     latitude: float | None = None
     longitude: float | None = None
-
-    # ==========================================================
-    # CONTROLE
-    # ==========================================================
 
     ativo: bool = True
     criado_em: str | None = None
     atualizado_em: str | None = None
 
-    # ==========================================================
-    # PROPRIEDADES
-    # ==========================================================
+    def __post_init__(self) -> None:
+        self.forma_acondicionamento = (
+            str(self.forma_acondicionamento or FORMA_SACA)
+            .strip()
+            .upper()
+        )
+
+        if self.forma_acondicionamento not in {
+            FORMA_SACA,
+            FORMA_BAG,
+        }:
+            self.forma_acondicionamento = FORMA_SACA
+
+        self.tipo_residuo = (
+            str(self.tipo_residuo or TIPO_RESIDUO_CAROCO_ACAI)
+            .strip()
+            .upper()
+        )
+        self.origem = str(self.origem or ORIGEM_GERADOR).strip().upper()
+        self.status = str(self.status or STATUS_SOLICITADA).strip().upper()
+        self.prioridade = str(self.prioridade or PRIORIDADE_NORMAL).strip().upper()
+
+        if self.quantidade_prevista <= 0:
+            self.quantidade_prevista = self.quantidade_sacas_prevista
+
+        self.atualizar_planejamento()
 
     @property
     def numero(self) -> str:
         if self.codigo:
             return self.codigo
-
         if self.id is None:
             return "COL-NOVA"
-
         return f"COL-{self.id:06d}"
 
     @property
@@ -166,9 +154,50 @@ class SolicitacaoColeta:
     def recusada(self) -> bool:
         return self.status == STATUS_RECUSADA
 
-    # ==========================================================
-    # CONVERSÃO
-    # ==========================================================
+    @property
+    def peso_medio_por_unidade_kg(self) -> float:
+        if self.forma_acondicionamento == FORMA_BAG:
+            return PESO_MEDIO_BAG_KG
+        return PESO_MEDIO_SACA_KG
+
+    @property
+    def requer_munck(self) -> bool:
+        return self.tipo_operacao == OPERACAO_MUNCK
+
+    def calcular_peso_estimado(self) -> float:
+        quantidade = max(0, int(self.quantidade_prevista or 0))
+        self.peso_estimado_kg = (
+            quantidade * self.peso_medio_por_unidade_kg
+        )
+        return self.peso_estimado_kg
+
+    def atualizar_tipo_operacao(self) -> str:
+        if self.forma_acondicionamento == FORMA_BAG:
+            self.tipo_operacao = OPERACAO_MUNCK
+            self.unidade_medida = UNIDADE_UNIDADES
+        else:
+            self.tipo_operacao = OPERACAO_MANUAL
+            self.unidade_medida = UNIDADE_SACAS
+        return self.tipo_operacao
+
+    def sincronizar_campos_legados(self) -> None:
+        """Mantém compatibilidade temporária com o banco antigo."""
+
+        self.quantidade_kg_previsto = self.peso_estimado_kg
+
+        if self.forma_acondicionamento == FORMA_SACA:
+            self.quantidade_sacas_prevista = (
+                self.quantidade_prevista
+            )
+        else:
+            # Valor técnico temporário para satisfazer a restrição
+            # legada CHECK (quantidade_sacas_prevista > 0).
+            self.quantidade_sacas_prevista = 1
+
+    def atualizar_planejamento(self) -> None:
+        self.atualizar_tipo_operacao()
+        self.calcular_peso_estimado()
+        self.sincronizar_campos_legados()
 
     def to_dict(self) -> dict:
         return {
@@ -181,8 +210,12 @@ class SolicitacaoColeta:
             "motorista_id": self.motorista_id,
             "veiculo_id": self.veiculo_id,
             "tipo_residuo": self.tipo_residuo,
-            "unidade_medida": self.unidade_medida,
+            "forma_acondicionamento": self.forma_acondicionamento,
             "origem": self.origem,
+            "unidade_medida": self.unidade_medida,
+            "quantidade_prevista": self.quantidade_prevista,
+            "peso_estimado_kg": self.peso_estimado_kg,
+            "tipo_operacao": self.tipo_operacao,
             "quantidade_sacas_prevista": self.quantidade_sacas_prevista,
             "quantidade_kg_previsto": self.quantidade_kg_previsto,
             "quantidade_sacas_coletada": self.quantidade_sacas_coletada,
@@ -204,10 +237,7 @@ class SolicitacaoColeta:
         }
 
     @classmethod
-    def from_row(
-        cls,
-        row: Any,
-    ) -> "SolicitacaoColeta":
+    def from_row(cls, row: Any) -> "SolicitacaoColeta":
         if row is None:
             raise ValueError(
                 "Não é possível criar uma solicitação "
@@ -216,106 +246,67 @@ class SolicitacaoColeta:
 
         chaves = set(row.keys())
 
-        def obter(
-            nome: str,
-            padrao: Any = None,
-        ) -> Any:
+        def obter(nome: str, padrao: Any = None) -> Any:
             return row[nome] if nome in chaves else padrao
+
+        forma = obter("forma_acondicionamento", FORMA_SACA)
+        quantidade_legada = obter("quantidade_sacas_prevista", 0)
+        quantidade_prevista = obter(
+            "quantidade_prevista",
+            quantidade_legada,
+        )
 
         return cls(
             id=obter("id"),
             codigo=obter("codigo", "") or "",
             organizacao_id=obter("organizacao_id"),
-            empresa_parceira_id=obter(
-                "empresa_parceira_id"
-            ),
-            usuario_criacao_id=obter(
-                "usuario_criacao_id"
-            ),
-            estabelecimento_id=obter(
-                "estabelecimento_id"
-            ),
+            empresa_parceira_id=obter("empresa_parceira_id"),
+            usuario_criacao_id=obter("usuario_criacao_id"),
+            estabelecimento_id=obter("estabelecimento_id"),
             motorista_id=obter("motorista_id"),
             veiculo_id=obter("veiculo_id"),
             tipo_residuo=obter(
                 "tipo_residuo",
                 TIPO_RESIDUO_CAROCO_ACAI,
             ),
-            unidade_medida=obter(
-                "unidade_medida",
-                UNIDADE_SACAS,
+            forma_acondicionamento=forma,
+            origem=obter("origem", ORIGEM_GERADOR),
+            unidade_medida=obter("unidade_medida", UNIDADE_SACAS),
+            quantidade_prevista=quantidade_prevista,
+            peso_estimado_kg=obter(
+                "peso_estimado_kg",
+                obter("quantidade_kg_previsto", 0.0),
             ),
-            origem=obter(
-                "origem",
-                ORIGEM_GERADOR,
+            tipo_operacao=obter(
+                "tipo_operacao",
+                OPERACAO_MUNCK if forma == FORMA_BAG else OPERACAO_MANUAL,
             ),
-            quantidade_sacas_prevista=obter(
-                "quantidade_sacas_prevista",
-                0,
-            ),
-            quantidade_kg_previsto=obter(
-                "quantidade_kg_previsto",
-                0.0,
-            ),
-            quantidade_sacas_coletada=obter(
-                "quantidade_sacas_coletada",
-                0,
-            ),
-            quantidade_kg_coletado=obter(
-                "quantidade_kg_coletado",
-                0.0,
-            ),
-            data_solicitacao=obter(
-                "data_solicitacao"
-            ),
-            data_hora_agendada=obter(
-                "data_hora_agendada"
-            ),
-            data_hora_inicio=obter(
-                "data_hora_inicio"
-            ),
-            data_hora_chegada=obter(
-                "data_hora_chegada"
-            ),
-            data_hora_conclusao=obter(
-                "data_hora_conclusao"
-            ),
-            status=obter(
-                "status",
-                STATUS_SOLICITADA,
-            ),
-            prioridade=obter(
-                "prioridade",
-                PRIORIDADE_NORMAL,
-            ),
-            observacao_cliente=obter(
-                "observacao_cliente",
-                "",
-            ) or "",
-            observacao_operacional=obter(
-                "observacao_operacional",
-                "",
-            ) or "",
+            quantidade_sacas_prevista=quantidade_legada,
+            quantidade_kg_previsto=obter("quantidade_kg_previsto", 0.0),
+            quantidade_sacas_coletada=obter("quantidade_sacas_coletada", 0),
+            quantidade_kg_coletado=obter("quantidade_kg_coletado", 0.0),
+            data_solicitacao=obter("data_solicitacao"),
+            data_hora_agendada=obter("data_hora_agendada"),
+            data_hora_inicio=obter("data_hora_inicio"),
+            data_hora_chegada=obter("data_hora_chegada"),
+            data_hora_conclusao=obter("data_hora_conclusao"),
+            status=obter("status", STATUS_SOLICITADA),
+            prioridade=obter("prioridade", PRIORIDADE_NORMAL),
+            observacao_cliente=obter("observacao_cliente", "") or "",
+            observacao_operacional=obter("observacao_operacional", "") or "",
             latitude=obter("latitude"),
             longitude=obter("longitude"),
             ativo=bool(obter("ativo", 1)),
             criado_em=obter("criado_em"),
-            atualizado_em=obter(
-                "atualizado_em"
-            ),
+            atualizado_em=obter("atualizado_em"),
         )
 
     @classmethod
-    def from_dict(
-        cls,
-        dados: dict,
-    ) -> "SolicitacaoColeta":
+    def from_dict(cls, dados: dict) -> "SolicitacaoColeta":
         campos_validos = cls.__dataclass_fields__.keys()
-
         dados_filtrados = {
             campo: valor
             for campo, valor in dados.items()
             if campo in campos_validos
         }
-
         return cls(**dados_filtrados)

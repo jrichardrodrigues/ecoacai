@@ -12,6 +12,7 @@ class CpfField(BaseValidatedField):
     ):
         super().__init__(
             label="CPF",
+            hint_text="000.000.000-00",
             max_length=14,
         )
 
