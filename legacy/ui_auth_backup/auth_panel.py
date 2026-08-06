@@ -4,8 +4,8 @@ import flet as ft
 
 from components.fields import CpfField, PasswordField
 from components.ui import theme
+from components.ui.auth import AuthMode, AuthPanel
 from components.ui.branding import HeroPanel
-from components.ui.login import LoginPanel
 from controllers.auth_controller import AuthController
 from models import SessaoUsuario
 from utils.messages import mostrar_erro
@@ -15,14 +15,13 @@ class LoginView:
     """Tela de autenticação institucional da ZELURBIS."""
 
     def __init__(
-            self,
-            page: ft.Page,
-            auth_controller: AuthController,
-            on_login_sucesso: Callable[[SessaoUsuario], None],
-            on_criar_conta: Callable[[ft.ControlEvent], None],
-            on_esqueci_senha: Callable[[ft.ControlEvent], None],
+        self,
+        page: ft.Page,
+        auth_controller: AuthController,
+        on_login_sucesso: Callable[[SessaoUsuario], None],
+        on_criar_conta: Callable[[ft.ControlEvent], None],
+        on_esqueci_senha: Callable[[ft.ControlEvent], None],
     ) -> None:
-
         self.page = page
         self.controller = auth_controller
 
@@ -46,16 +45,10 @@ class LoginView:
             value=False,
         )
 
-    # ==========================================================
-    # AUTENTICAÇÃO
-    # ==========================================================
-
     def on_entrar(
         self,
         _evento: ft.ControlEvent,
     ) -> None:
-        """Tenta autenticar o usuário com CPF e senha."""
-
         sucesso, mensagem = self.controller.entrar(
             self.cpf.value,
             self.senha.value,
@@ -83,36 +76,22 @@ class LoginView:
         self,
         evento: ft.ControlEvent,
     ) -> None:
-        """Encaminha para o fluxo de criação de conta."""
-
         self._on_criar_conta(evento)
 
     def on_esqueci_senha(
         self,
         evento: ft.ControlEvent,
     ) -> None:
-        """Encaminha para o fluxo de recuperação de senha."""
-
         self._on_esqueci_senha(evento)
 
-    # ==========================================================
-    # LAYOUT
-    # ==========================================================
-
     def _layout_compacto(self) -> bool:
-        """Informa se a largura atual exige o layout compacto."""
-
         largura = self.page.width or 1200
         return largura < 900
 
-    def _criar_hero_panel(
-        self,
-        *,
-        compacto: bool,
-    ) -> HeroPanel:
-        """Cria o painel institucional da tela."""
+    def construir(self) -> ft.Control:
+        compacto = self._layout_compacto()
 
-        return HeroPanel(
+        hero_panel = HeroPanel(
             min_height=300 if compacto else 640,
             padding=(
                 theme.SPACE_LG
@@ -121,43 +100,26 @@ class LoginView:
             ),
         )
 
-    def _criar_login_panel(
-        self,
-        *,
-        compacto: bool,
-    ) -> LoginPanel:
-        """Cria o painel de autenticação."""
-
-        return LoginPanel(
-            cpf_field=self.cpf,
-            password_field=self.senha,
-            remember_checkbox=self.lembrar_me,
-            on_login=self.on_entrar,
+        auth_panel = AuthPanel(
+            mode=AuthMode.LOGIN,
+            fields=[
+                self.cpf.container,
+                self.senha.container,
+            ],
+            on_primary=self.on_entrar,
             on_register=self.on_criar_conta,
             on_forgot_password=self.on_esqueci_senha,
+            remember_checkbox=self.lembrar_me,
             version="0.9.1",
             width=None if compacto else 520,
-            min_height=560 if compacto else 640,
-        )
-
-    def construir(self) -> ft.Control:
-        """Constrói a nova tela institucional de login."""
-
-        compacto = self._layout_compacto()
-
-        hero_panel = self._criar_hero_panel(
-            compacto=compacto,
-        )
-
-        login_panel = self._criar_login_panel(
-            compacto=compacto,
+            height=560 if compacto else 640,
         )
 
         if compacto:
             conteudo: ft.Control = ft.Column(
                 controls=[
                     hero_panel,
-                    login_panel,
+                    auth_panel,
                 ],
                 spacing=theme.SPACE_MD,
                 horizontal_alignment=(
@@ -172,7 +134,7 @@ class LoginView:
                         expand=5,
                     ),
                     ft.Container(
-                        content=login_panel,
+                        content=auth_panel,
                         expand=6,
                     ),
                 ],
@@ -196,6 +158,4 @@ class LoginView:
         )
 
     def build(self) -> ft.Control:
-        """Mantém compatibilidade com o padrão das Views."""
-
         return self.construir()

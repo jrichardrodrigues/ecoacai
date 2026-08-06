@@ -44,3 +44,31 @@ class AuthService:
             return False, "Senha incorreta.", None
 
         return True, "Login realizado com sucesso.", usuario
+
+    def alterar_senha_por_cpf(
+        self,
+        cpf: str,
+        nova_senha: str,
+    ) -> tuple[bool, str]:
+        """
+        Altera a senha de um usuário identificado pelo CPF.
+        """
+
+        usuario = self.repository.buscar_por_cpf(cpf)
+
+        if usuario is None:
+            return False, "CPF não encontrado."
+
+        if not usuario.ativo:
+            return False, "Usuário desativado."
+
+        usuario.senha_hash = self.password_service.gerar_hash(
+            nova_senha,
+        )
+
+        atualizado = self.repository.atualizar(usuario)
+
+        if atualizado is None:
+            return False, "Não foi possível alterar a senha."
+
+        return True, "Senha alterada com sucesso."

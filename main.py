@@ -22,10 +22,9 @@ from views.home_view import construir_interface
 from views.login_view import LoginView
 from views.nova_solicitacao_view import NovaSolicitacaoView
 from views.portal_gerador_view import PortalGeradorView
-
+from views.recuperar_senha_view import RecuperarSenhaView
 
 def main(page: ft.Page) -> None:
-    """Inicializa e controla o fluxo principal da aplicação."""
 
     SQLiteDatabase().inicializar()
 
@@ -47,7 +46,6 @@ def main(page: ft.Page) -> None:
     solicitacao_controller = SolicitacaoColetaController()
 
     def exibir(controle: ft.Control) -> None:
-        """Substitui o conteúdo atual da página."""
 
         page.clean()
         page.add(controle)
@@ -84,10 +82,6 @@ def main(page: ft.Page) -> None:
             )
 
             if acao is None:
-                print(
-                    "Rota do Gerador não configurada:",
-                    destino,
-                )
                 return
 
             acao()
@@ -346,7 +340,6 @@ def main(page: ft.Page) -> None:
     def abrir_login(
             evento: Any = None,
     ) -> None:
-        """Abre a tela de autenticação sem alterar a sessão."""
 
         login_view = LoginView(
             page=page,
@@ -356,7 +349,9 @@ def main(page: ft.Page) -> None:
             on_esqueci_senha=abrir_recuperacao_senha,
         )
 
-        exibir(login_view.build())
+        controle = login_view.build()
+
+        exibir(controle)
 
     def sair(
             evento: Any = None,
@@ -379,11 +374,19 @@ def main(page: ft.Page) -> None:
         exibir(cadastro_view.build())
 
     def abrir_recuperacao_senha(
-        evento: ft.ControlEvent,
+            evento: ft.ControlEvent | None = None,
     ) -> None:
-        """Fluxo temporário de recuperação de senha."""
+        """Abre a tela de recuperação de senha."""
 
-        print("Abrir recuperação de senha")
+        view = RecuperarSenhaView(
+            page=page,
+            auth_controller=auth_controller,
+            on_voltar=abrir_login,
+        )
+
+        exibir(view.build())
+
+
 
     abrir_login()
 

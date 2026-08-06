@@ -83,3 +83,17 @@ class AuthController:
         """Informa se existe uma sessão autenticada."""
 
         return self.sessao_service.esta_autenticado()
+
+    def alterar_senha_por_cpf(
+            self,
+            cpf: str,
+            nova_senha: str,
+    ) -> tuple[bool, str]:
+        """
+        Altera a senha de um usuário a partir do CPF.
+        """
+
+        return self.auth_service.alterar_senha_por_cpf(
+            cpf=cpf,
+            nova_senha=nova_senha,
+        )

@@ -1,10 +1,12 @@
 class Colors:
     """
-    Paleta oficial do EcoAçaí.
+    Paleta oficial da plataforma ZELURBIS.
 
-    A identidade institucional utiliza tons inspirados no fruto do açaí.
-    As cores estão organizadas por responsabilidade para facilitar a
-    manutenção e permitir a criação de outros temas futuramente.
+    A identidade institucional utiliza tons inspirados no açaí,
+    preservando a origem da primeira solução da plataforma.
+
+    As cores estão organizadas por responsabilidade para facilitar
+    a manutenção, a reutilização e a criação de futuros temas.
 
     As constantes no nível principal foram preservadas para manter
     compatibilidade com os componentes já existentes.
@@ -110,15 +112,6 @@ class Colors:
         WEIGHT_BG = "#F3E5F5"
 
         CHART_BACKGROUND = "#F7F9FA"
-
-        class Dashboard:
-            REQUESTS = "#1976D2"  # Azul
-            ESTABLISHMENTS = "#00ACC1"  # Ciano
-            PENDING = "#F9A825"  # Âmbar
-            SCHEDULED = "#8E24AA"  # Roxo
-            TODAY = "#3949AB"  # Índigo
-            COLLECTING = "#F4511E"  # Laranja
-            COMPLETED = "#43A047"  # Verde
 
     # ==========================================================
     # SOMBRAS E SOBREPOSIÇÕES
