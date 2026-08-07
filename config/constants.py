@@ -101,14 +101,16 @@ class StatusSolicitacao:
 
 
 class StatusColeta:
-    PENDENTE = "PENDENTE"
+    SOLICITADA = "SOLICITADA"
+    EM_ANALISE = "EM_ANALISE"
     AGENDADA = "AGENDADA"
     EM_COLETA = "EM_COLETA"
     CONCLUIDA = "CONCLUIDA"
     CANCELADA = "CANCELADA"
 
     OPCOES = [
-        (PENDENTE, "Pendente"),
+        (SOLICITADA, "Solicitada"),
+        (EM_ANALISE, "Em análise"),
         (AGENDADA, "Agendada"),
         (EM_COLETA, "Em coleta"),
         (CONCLUIDA, "Concluída"),

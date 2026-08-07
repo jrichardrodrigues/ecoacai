@@ -774,9 +774,14 @@ class SolicitacaoColetaRepository:
                 END AS veiculo,
 
                 s.tipo_residuo,
+                s.forma_acondicionamento,
                 s.unidade_medida,
                 s.origem,
-
+                
+                s.quantidade_prevista,
+                s.peso_estimado_kg,
+                s.tipo_operacao,
+                
                 s.quantidade_sacas_prevista,
                 s.quantidade_kg_previsto,
                 s.quantidade_sacas_coletada,

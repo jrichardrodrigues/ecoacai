@@ -28,14 +28,14 @@ class ColetasAgendadasView:
     - integração inicial com o Controller.
     """
 
-    _STATUS = (
-        StatusColeta.PENDENTE,
+    _STATUS_VALIDOS = {
+        StatusColeta.SOLICITADA,
+        StatusColeta.EM_ANALISE,
         StatusColeta.AGENDADA,
         StatusColeta.EM_COLETA,
         StatusColeta.CONCLUIDA,
         StatusColeta.CANCELADA,
-    )
-
+    }
     def __init__(
         self,
         page: ft.Page,
@@ -67,22 +67,34 @@ class ColetasAgendadasView:
     def _construir_controles(self) -> None:
         """Cria os controles utilizados pela tela."""
 
-        hoje = date.today().isoformat()
+        hoje = date.today()
 
         self.campo_data_inicial = ft.TextField(
             label="Data inicial",
-            hint_text="AAAA-MM-DD",
-            value=hoje,
-            width=170,
+            value=hoje.strftime("%d/%m/%Y"),
+            width=145,
             dense=True,
+            read_only=True,
+        )
+
+        self.botao_data_inicial = ft.IconButton(
+            icon=ft.Icons.CALENDAR_MONTH,
+            tooltip="Selecionar data inicial",
+            on_click=self._abrir_seletor_data_inicial,
         )
 
         self.campo_data_final = ft.TextField(
             label="Data final",
-            hint_text="AAAA-MM-DD",
-            value=hoje,
-            width=170,
+            value=hoje.strftime("%d/%m/%Y"),
+            width=145,
             dense=True,
+            read_only=True,
+        )
+
+        self.botao_data_final = ft.IconButton(
+            icon=ft.Icons.CALENDAR_MONTH,
+            tooltip="Selecionar data final",
+            on_click=self._abrir_seletor_data_final,
         )
 
         self.dropdown_status = ft.Dropdown(
@@ -96,8 +108,12 @@ class ColetasAgendadasView:
                     text="Todos",
                 ),
                 ft.DropdownOption(
-                    key=StatusColeta.PENDENTE,
-                    text="Pendente",
+                    key=StatusColeta.SOLICITADA,
+                    text="Solicitada",
+                ),
+                ft.DropdownOption(
+                    key=StatusColeta.EM_ANALISE,
+                    text="Em análise",
                 ),
                 ft.DropdownOption(
                     key=StatusColeta.AGENDADA,
@@ -204,7 +220,7 @@ class ColetasAgendadasView:
         )
 
         self.dropdown_solicitacao_dialog = ft.Dropdown(
-            label="Solicitação pendente",
+            label="Solicitação em análise",
             hint_text="Selecione uma solicitação",
             width=520,
             dense=True,
@@ -213,18 +229,36 @@ class ColetasAgendadasView:
 
         self.campo_data_agendamento = ft.TextField(
             label="Data",
-            hint_text="DD/MM/AAAA",
             value=amanha.strftime("%d/%m/%Y"),
-            width=250,
+            width=210,
             dense=True,
+            read_only=True,
         )
 
-        self.campo_hora_agendamento = ft.TextField(
+        self.botao_selecionar_data = ft.IconButton(
+            icon=ft.Icons.CALENDAR_MONTH,
+            tooltip="Selecionar data",
+            on_click=self._abrir_seletor_data,
+        )
+
+        self.campo_hora_agendamento = ft.Dropdown(
             label="Hora",
-            hint_text="HH:MM",
-            value="08:00",
             width=250,
             dense=True,
+            value="08:00",
+            options=[
+                ft.DropdownOption(key="08:00", text="08:00"),
+                ft.DropdownOption(key="09:00", text="09:00"),
+                ft.DropdownOption(key="10:00", text="10:00"),
+                ft.DropdownOption(key="11:00", text="11:00"),
+                ft.DropdownOption(key="12:00", text="12:00"),
+                ft.DropdownOption(key="13:00", text="13:00"),
+                ft.DropdownOption(key="14:00", text="14:00"),
+                ft.DropdownOption(key="15:00", text="15:00"),
+                ft.DropdownOption(key="16:00", text="16:00"),
+                ft.DropdownOption(key="17:00", text="17:00"),
+                ft.DropdownOption(key="18:00", text="18:00"),
+            ],
         )
 
         self.dropdown_motorista_dialog = ft.Dropdown(
@@ -290,14 +324,21 @@ class ColetasAgendadasView:
         conteudo_dialog = ft.Column(
             controls=[
                 ft.Text(
-                    "Selecione uma solicitação pendente e informe "
+                    "Selecione uma solicitação em análise e informe "
                     "os dados do agendamento.",
                     size=13,
                 ),
                 self.dropdown_solicitacao_dialog,
                 ft.Row(
                     controls=[
-                        self.campo_data_agendamento,
+                        ft.Row(
+                            controls=[
+                                self.campo_data_agendamento,
+                                self.botao_selecionar_data,
+                            ],
+                            spacing=4,
+                            tight=True,
+                        ),
                         self.campo_hora_agendamento,
                     ],
                     spacing=16,
@@ -524,8 +565,22 @@ class ColetasAgendadasView:
 
         linha_filtros = ft.Row(
             controls=[
-                self.campo_data_inicial,
-                self.campo_data_final,
+                ft.Row(
+                    controls=[
+                        self.campo_data_inicial,
+                        self.botao_data_inicial,
+                    ],
+                    spacing=2,
+                    tight=True,
+                ),
+                ft.Row(
+                    controls=[
+                        self.campo_data_final,
+                        self.botao_data_final,
+                    ],
+                    spacing=2,
+                    tight=True,
+                ),
                 self.dropdown_status,
                 self.dropdown_motorista,
                 self.dropdown_veiculo,
@@ -553,7 +608,7 @@ class ColetasAgendadasView:
 
         cards = [
             self._criar_card_indicador(
-                titulo="Pendentes",
+                titulo="Em análise",
                 texto_total=self.texto_total_pendentes,
                 icone=ft.Icons.PENDING_ACTIONS,
             ),
@@ -690,6 +745,103 @@ class ColetasAgendadasView:
             weight=ft.FontWeight.BOLD,
         )
 
+    def _abrir_seletor_data(
+        self,
+        _evento: ft.Event,
+    ) -> None:
+        """Abre o calendário para seleção da data."""
+
+        hoje = date.today()
+
+        seletor = ft.DatePicker(
+            first_date=hoje,
+            last_date=date(
+                hoje.year + 2,
+                12,
+                31,
+            ),
+            on_change=self._ao_selecionar_data,
+        )
+
+        self.page.show_dialog(seletor)
+
+    def _ao_selecionar_data(
+            self,
+            evento: ft.Event,
+    ) -> None:
+        """Atualiza o campo de data após a seleção."""
+
+        valor = evento.control.value
+
+        if valor is None:
+            return
+
+        self.campo_data_agendamento.value = (
+            valor.strftime("%d/%m/%Y")
+        )
+
+        self._atualizar_pagina()
+
+    def _abrir_seletor_data_inicial(
+        self,
+        _evento: ft.Event,
+    ) -> None:
+        """Abre o calendário do filtro de data inicial."""
+
+        hoje = date.today()
+
+        seletor = ft.DatePicker(
+            first_date=date(2020, 1, 1),
+            last_date=date(hoje.year + 2, 12, 31),
+            on_change=self._ao_selecionar_data_inicial,
+        )
+
+        self.page.show_dialog(seletor)
+
+    def _ao_selecionar_data_inicial(
+        self,
+        evento: ft.Event,
+    ) -> None:
+        """Atualiza a data inicial selecionada."""
+
+        valor = evento.control.value
+
+        if valor is None:
+            return
+
+        self.campo_data_inicial.value = valor.strftime("%d/%m/%Y")
+        self._atualizar_pagina()
+
+    def _abrir_seletor_data_final(
+        self,
+        _evento: ft.Event,
+    ) -> None:
+        """Abre o calendário do filtro de data final."""
+
+        hoje = date.today()
+
+        seletor = ft.DatePicker(
+            first_date=date(2020, 1, 1),
+            last_date=date(hoje.year + 2, 12, 31),
+            on_change=self._ao_selecionar_data_final,
+        )
+
+        self.page.show_dialog(seletor)
+
+    def _ao_selecionar_data_final(
+        self,
+        evento: ft.Event,
+    ) -> None:
+        """Atualiza a data final selecionada."""
+
+        valor = evento.control.value
+
+        if valor is None:
+            return
+
+        self.campo_data_final.value = valor.strftime("%d/%m/%Y")
+        self._atualizar_pagina()
+
     # ==========================================================
     # CARREGAMENTO
     # ==========================================================
@@ -721,7 +873,7 @@ class ColetasAgendadasView:
         totais = resultado.dados or {}
 
         self.texto_total_pendentes.value = str(
-            totais.get(StatusColeta.PENDENTE, 0)
+            totais.get(StatusColeta.EM_ANALISE, 0)
         )
 
         self.texto_total_agendadas.value = str(
@@ -743,11 +895,11 @@ class ColetasAgendadasView:
     def _carregar_tabela(self) -> None:
         """Carrega a tabela aplicando os filtros atuais."""
 
-        data_inicial = self._valor_texto(
+        data_inicial = self._converter_data_filtro(
             self.campo_data_inicial.value
         )
 
-        data_final = self._valor_texto(
+        data_final = self._converter_data_filtro(
             self.campo_data_final.value
         )
 
@@ -861,10 +1013,7 @@ class ColetasAgendadasView:
             )
 
     def _carregar_solicitacoes_pendentes(self) -> None:
-        """
-        Carrega no diálogo somente as solicitações
-        que possuem status PENDENTE.
-        """
+        """Carrega no diálogo somente as solicitações em ANÁLISE."""
 
         try:
             solicitacoes = (
@@ -879,7 +1028,7 @@ class ColetasAgendadasView:
                     solicitacao.get("status") or ""
                 ).strip().upper()
 
-                if status != StatusColeta.PENDENTE:
+                if status != StatusColeta.EM_ANALISE:
                     continue
 
                 solicitacao_id = solicitacao.get("id")
@@ -891,31 +1040,47 @@ class ColetasAgendadasView:
                     solicitacao.get("codigo") or "-"
                 )
 
-                estabelecimento = str(
-                    solicitacao.get("estabelecimento")
-                    or "Estabelecimento não informado"
+                solicitante = str(
+                    solicitacao.get("solicitante")
+                    or "Solicitante não identificado"
                 )
 
-                quantidade_sacas = int(
-                    solicitacao.get(
-                        "quantidade_sacas_prevista",
-                        0,
-                    )
+                forma = str(
+                    solicitacao.get("forma_acondicionamento") or ""
+                ).strip().upper()
+
+                quantidade = int(
+                    solicitacao.get("quantidade_prevista", 0)
                     or 0
                 )
 
-                unidade = (
-                    "saca"
-                    if quantidade_sacas == 1
-                    else "sacas"
-                )
+                if forma == "BAG":
+                    unidade = (
+                        "Bag"
+                        if quantidade == 1
+                        else "Bags"
+                    )
+
+                    quantidade_texto = (
+                        f"{quantidade} "
+                        f"{unidade} (1 m³)"
+                    )
+                else:
+                    unidade = (
+                        "Saca"
+                        if quantidade == 1
+                        else "Sacas"
+                    )
+
+                    quantidade_texto = (
+                        f"{quantidade} {unidade}"
+                    )
 
                 descricao = (
                     f"{codigo} • "
-                    f"{estabelecimento} • "
-                    f"{quantidade_sacas} {unidade}"
+                    f"{solicitante} • "
+                    f"{quantidade_texto}"
                 )
-
                 opcoes.append(
                     ft.DropdownOption(
                         key=str(solicitacao_id),
@@ -928,8 +1093,8 @@ class ColetasAgendadasView:
 
             if not opcoes:
                 self.texto_mensagem_dialog.value = (
-                    "Não existem solicitações pendentes "
-                    "disponíveis para agendamento."
+                   "Não existem solicitações em análise "
+                   "disponíveis para agendamento."
                 )
                 self.texto_mensagem_dialog.color = ft.Colors.ORANGE
                 self.texto_mensagem_dialog.visible = True
@@ -1169,7 +1334,7 @@ class ColetasAgendadasView:
             ),
         ]
 
-        if status == StatusColeta.PENDENTE:
+        if status == StatusColeta.EM_ANALISE:
             itens.extend([
                 ft.PopupMenuItem(
                     content=ft.Text("Agendar"),
@@ -1243,7 +1408,7 @@ class ColetasAgendadasView:
     ) -> None:
         """Restaura os filtros iniciais."""
 
-        hoje = date.today().isoformat()
+        hoje = date.today().strftime("%d/%m/%Y")
 
         self.campo_data_inicial.value = hoje
         self.campo_data_final.value = hoje
@@ -1475,7 +1640,10 @@ class ColetasAgendadasView:
 
             return False
 
-        if not self.campo_hora_agendamento.value.strip():
+        if not str(
+                    self.campo_hora_agendamento.value or ""
+                ).strip():
+
             self.texto_mensagem_dialog.value = (
                 "Informe a hora."
             )
@@ -1585,6 +1753,28 @@ class ColetasAgendadasView:
         return str(valor).strip()
 
     @staticmethod
+    def _converter_data_filtro(valor: Any) -> str:
+        """
+        Converte a data exibida no filtro de DD/MM/AAAA
+        para AAAA-MM-DD, formato utilizado pelo Controller.
+        """
+
+        texto = ColetasAgendadasView._valor_texto(valor)
+
+        if not texto:
+            return ""
+
+        try:
+            data_convertida = datetime.strptime(
+                texto,
+                "%d/%m/%Y",
+            )
+        except ValueError:
+            return texto
+
+        return data_convertida.strftime("%Y-%m-%d")
+
+    @staticmethod
     def _formatar_data_hora(
         valor: Any,
     ) -> str:
@@ -1649,7 +1839,9 @@ class ColetasAgendadasView:
         """
 
         data = self.campo_data_agendamento.value.strip()
-        hora = self.campo_hora_agendamento.value.strip()
+        hora = str(
+                    self.campo_hora_agendamento.value or ""
+                ).strip()
 
         data_hora = datetime.strptime(
             f"{data} {hora}",

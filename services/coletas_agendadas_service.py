@@ -313,11 +313,11 @@ class ColetasAgendadasService:
         )
 
         if status_atual not in {
-            StatusColeta.PENDENTE,
+            StatusColeta.EM_ANALISE,
             StatusColeta.AGENDADA,
         }:
             return self._falha(
-                "Somente solicitações pendentes ou agendadas "
+                "Somente solicitações em análise ou agendadas "
                 "podem ser agendadas."
             )
 
@@ -536,7 +536,7 @@ class ColetasAgendadasService:
         self,
         solicitacao_id: int,
     ) -> RepositoryResult:
-        """Cancela uma solicitação pendente ou agendada."""
+        """Cancela uma solicitação solicitada, em análise ou agendada."""
 
         if not self._id_valido(solicitacao_id):
             return self._falha(
@@ -557,12 +557,13 @@ class ColetasAgendadasService:
         )
 
         if status_atual not in {
-            StatusColeta.PENDENTE,
+            StatusColeta.SOLICITADA,
+            StatusColeta.EM_ANALISE,
             StatusColeta.AGENDADA,
         }:
             return self._falha(
-                "Somente solicitações pendentes ou agendadas "
-                "podem ser canceladas."
+                "Somente solicitações solicitadas, em análise "
+                "ou agendadas podem ser canceladas."
             )
 
         try:

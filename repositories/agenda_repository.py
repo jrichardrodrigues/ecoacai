@@ -8,7 +8,8 @@ class AgendaRepository:
     """Repositório responsável pelas operações da agenda de coletas."""
 
     _STATUS_VALIDOS = {
-        StatusColeta.PENDENTE,
+        StatusColeta.SOLICITADA,
+        StatusColeta.EM_ANALISE,
         StatusColeta.AGENDADA,
         StatusColeta.EM_COLETA,
         StatusColeta.CONCLUIDA,
@@ -22,7 +23,12 @@ class AgendaRepository:
     }
 
     _TRANSICOES_STATUS = {
-        StatusColeta.PENDENTE: {
+        StatusColeta.SOLICITADA: {
+            StatusColeta.EM_ANALISE,
+            StatusColeta.CANCELADA,
+        },
+
+        StatusColeta.EM_ANALISE: {
             StatusColeta.AGENDADA,
             StatusColeta.CANCELADA,
         },
@@ -412,7 +418,7 @@ class AgendaRepository:
             ).strip().upper()
 
             if status_atual not in {
-                StatusColeta.PENDENTE,
+                StatusColeta.EM_ANALISE,
                 StatusColeta.AGENDADA,
             }:
                 return False
@@ -1033,8 +1039,14 @@ class AgendaRepository:
                 s.id,
                 s.codigo,
 
+                s.organizacao_id,
                 s.estabelecimento_id,
-                e.nome AS estabelecimento_nome,
+                
+                COALESCE(
+                    o.nome,
+                    e.nome,
+                    'Solicitante não identificado'
+                ) AS estabelecimento_nome,
 
                 s.motorista_id,
                 m.nome AS motorista_nome,
@@ -1070,7 +1082,10 @@ class AgendaRepository:
 
             FROM solicitacoes AS s
 
-            INNER JOIN estabelecimentos AS e
+            LEFT JOIN organizacoes AS o
+                ON o.id = s.organizacao_id
+            
+            LEFT JOIN estabelecimentos AS e
                 ON e.id = s.estabelecimento_id
 
             LEFT JOIN motoristas AS m

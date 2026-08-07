@@ -5,7 +5,6 @@ import flet as ft
 from models import Estabelecimento, Motorista, Solicitacao, Veiculo
 from views.cadastro_view import CadastroView
 from views.estabelecimentos_view import EstabelecimentosView
-from views.solicitacoes_view import SolicitacoesView
 from views.solicitacao_form_view import SolicitacaoFormView
 from views.dashboard_view import DashboardView
 from views.home_page import HomeView
@@ -13,12 +12,24 @@ from views.motorista_form_view import MotoristaFormView
 from views.motoristas_view import MotoristasView
 from views.veiculos_view import VeiculosView
 from views.coletas_agendadas_view import ColetasAgendadasView
+from views.solicitacoes_gestor_view import SolicitacoesGestorView
+from controllers.solicitacao_coleta_controller import (
+    SolicitacaoColetaController,
+)
+from views.detalhe_solicitacao_gestor_view import (
+    DetalheSolicitacaoGestorView,
+)
+
 
 class NavigationController:
     """Controla a troca do conteúdo principal da aplicação."""
 
     def __init__(self, page: ft.Page) -> None:
         self.page = page
+
+        self.solicitacao_coleta_controller = (
+            SolicitacaoColetaController()
+        )
 
         self.conteudo = ft.Container(
             expand=True,
@@ -85,13 +96,60 @@ class NavigationController:
         ).build()
 
     def _solicitacoes(self) -> ft.Control:
-        """Abre a lista de solicitações."""
+        """Abre a fila de solicitações recebidas pelo Gestor."""
 
-        return SolicitacoesView(
+        return SolicitacoesGestorView(
             page=self.page,
-            on_nova_solicitacao=self.abrir_nova_solicitacao,
-            on_editar_solicitacao=self.abrir_edicao_solicitacao,
+            controller=self.solicitacao_coleta_controller,
+            on_ver_detalhes=self.abrir_detalhe_solicitacao,
         ).build()
+
+    def abrir_detalhe_solicitacao(
+            self,
+            solicitacao_id: int,
+            solicitante: str,
+    ) -> None:
+        """Abre os detalhes de uma solicitação para o Gestor."""
+
+        solicitacao = (
+            self.solicitacao_coleta_controller.buscar_por_id(
+                solicitacao_id
+            )
+        )
+
+        if solicitacao is None:
+            return
+
+        view = DetalheSolicitacaoGestorView(
+            solicitacao=solicitacao,
+            solicitante=solicitante,
+            on_voltar=self.abrir_solicitacoes,
+            on_agendar=self.abrir_agendamento_solicitacao,
+        )
+
+        self._mostrar(
+            view.build()
+        )
+
+    def abrir_agendamento_solicitacao(
+            self,
+            solicitacao,
+    ) -> None:
+        """Abre a área de Coletas Agendadas para a solicitação selecionada."""
+
+        view = ColetasAgendadasView(
+            page=self.page,
+        )
+
+        controle = view.build()
+
+        self._mostrar(
+            controle
+        )
+
+        view._abrir_dialog_agendamento(
+            solicitacao_id=solicitacao.id
+        )
 
     def abrir_cadastro(self) -> None:
         """Abre o formulário no modo de cadastro."""

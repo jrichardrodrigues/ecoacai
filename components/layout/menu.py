@@ -33,7 +33,7 @@ def criar_menu(on_change):
             ft.NavigationRailDestination(
                 icon=ft.Icons.LOCAL_SHIPPING_OUTLINED,
                 selected_icon=ft.Icons.LOCAL_SHIPPING,
-                label="Coletas",
+                label="Solicitações",
             ),
             ft.NavigationRailDestination(
                 icon=ft.Icons.BADGE_OUTLINED,

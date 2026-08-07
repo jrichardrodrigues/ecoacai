@@ -23,6 +23,8 @@ from views.login_view import LoginView
 from views.nova_solicitacao_view import NovaSolicitacaoView
 from views.portal_gerador_view import PortalGeradorView
 from views.recuperar_senha_view import RecuperarSenhaView
+from views.minhas_solicitacoes_view import MinhasSolicitacoesView
+from views.detalhe_solicitacao_view import DetalheSolicitacaoView
 
 def main(page: ft.Page) -> None:
 
@@ -141,6 +143,18 @@ def main(page: ft.Page) -> None:
 
         exibir(view.build())
 
+    def abrir_detalhe_solicitacao(
+            solicitacao,
+    ) -> None:
+        """Abre os detalhes de uma solicitação do Gerador."""
+
+        view = DetalheSolicitacaoView(
+            solicitacao=solicitacao,
+            on_voltar=abrir_minhas_solicitacoes,
+        )
+
+        exibir(view.build())
+
     def abrir_minhas_solicitacoes() -> None:
         """Lista as solicitações da organização autenticada."""
 
@@ -161,171 +175,14 @@ def main(page: ft.Page) -> None:
             organizacao_id=organizacao_id,
         )
 
-        cards: list[ft.Control] = []
-
-        for solicitacao in solicitacoes:
-            forma = str(
-                solicitacao.forma_acondicionamento or ""
-            ).strip().upper()
-
-            if forma == "BAG":
-                quantidade_texto = (
-                    f"{solicitacao.quantidade_prevista} "
-                    f"{'Bag' if solicitacao.quantidade_prevista == 1 else 'Bags'} "
-                    "(1 m³)"
-                )
-            else:
-                quantidade_texto = (
-                    f"{solicitacao.quantidade_prevista} "
-                    f"{'Saca' if solicitacao.quantidade_prevista == 1 else 'Sacas'}"
-                )
-
-            # Nome amigável do tipo de resíduo
-            tipos_residuo = {
-                "CAROCO_ACAI": "Caroço de Açaí",
-            }
-
-            tipo_residuo_texto = tipos_residuo.get(
-                solicitacao.tipo_residuo,
-                solicitacao.tipo_residuo,
-            )
-
-            # Data amigável
-            data_solicitacao_texto = solicitacao.data_solicitacao or "-"
-
-            if data_solicitacao_texto != "-":
-                try:
-                    from datetime import datetime
-
-                    data_solicitacao_texto = datetime.fromisoformat(
-                        data_solicitacao_texto
-                    ).strftime("%d/%m/%Y %H:%M")
-                except (ValueError, TypeError):
-                    pass
-
-            cards.append(
-                ft.Card(
-                    content=ft.Container(
-                        padding=16,
-                        content=ft.Column(
-                            controls=[
-                                ft.Row(
-                                    controls=[
-                                        ft.Text(
-                                            solicitacao.numero,
-                                            size=16,
-                                            weight=ft.FontWeight.BOLD,
-                                        ),
-                                        ft.Container(expand=True),
-                                        ft.Text(
-                                            formatar_status(
-                                                solicitacao.status
-                                            ),
-                                            weight=ft.FontWeight.BOLD,
-                                        ),
-                                    ],
-                                ),
-                                ft.Text(
-                                    f"Tipo de resíduo: {tipo_residuo_texto}"
-                                ),
-                                ft.Text(
-                                    f"Quantidade prevista: {quantidade_texto}"
-                                ),
-                                ft.Text(
-                                    f"Solicitada em: {data_solicitacao_texto}"
-                                ),
-                                ft.Text(
-                                    solicitacao.observacao_cliente,
-                                    visible=bool(
-                                        solicitacao.observacao_cliente
-                                    ),
-                                ),
-                            ],
-                            spacing=8,
-                        ),
-                    ),
-                )
-            )
-
-        if not cards:
-            cards.append(
-                ft.Container(
-                    padding=32,
-                    alignment=ft.Alignment.CENTER,
-                    content=ft.Column(
-                        controls=[
-                            ft.Icon(
-                                ft.Icons.INBOX_OUTLINED,
-                                size=56,
-                            ),
-                            ft.Text(
-                                "Nenhuma solicitação registrada.",
-                                size=18,
-                                weight=ft.FontWeight.BOLD,
-                            ),
-                            ft.FilledButton(
-                                content="Solicitar primeira coleta",
-                                icon=ft.Icons.ADD_CIRCLE_OUTLINE,
-                                on_click=(
-                                    lambda _e:
-                                    abrir_nova_solicitacao()
-                                ),
-                            ),
-                        ],
-                        horizontal_alignment=(
-                            ft.CrossAxisAlignment.CENTER
-                        ),
-                        spacing=12,
-                    ),
-                )
-            )
-
-        conteudo = ft.Column(
-            controls=[
-                ft.Row(
-                    controls=[
-                        ft.OutlinedButton(
-                            content="Voltar ao portal",
-                            icon=ft.Icons.ARROW_BACK,
-                            on_click=(
-                                lambda _e:
-                                abrir_portal_gerador()
-                            ),
-                        ),
-                        ft.Container(expand=True),
-                        ft.FilledButton(
-                            content="Nova solicitação",
-                            icon=ft.Icons.ADD,
-                            on_click=(
-                                lambda _e:
-                                abrir_nova_solicitacao()
-                            ),
-                        ),
-                    ],
-                ),
-                ft.Text(
-                    f"Total de solicitações: {len(solicitacoes)}",
-                ),
-                ft.Column(
-                    controls=cards,
-                    spacing=12,
-                ),
-            ],
-            spacing=16,
-            scroll=ft.ScrollMode.AUTO,
+        view = MinhasSolicitacoesView(
+            solicitacoes=solicitacoes,
+            on_voltar=abrir_portal_gerador,
+            on_nova_solicitacao=abrir_nova_solicitacao,
+            on_ver_detalhes=abrir_detalhe_solicitacao,
         )
 
-        tela = BasePage(
-            title="Minhas Solicitações",
-            subtitle=(
-                "Acompanhe as solicitações de coleta "
-                "da sua organização."
-            ),
-            content=conteudo,
-            max_width=1000,
-        )
-
-        exibir(tela)
+        exibir(view.build())
 
     def abrir_assistente_configuracao() -> None:
         sessao = obter_sessao_atual()
