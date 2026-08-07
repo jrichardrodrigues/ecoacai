@@ -31,4 +31,7 @@ data/*.db
 .DS_Store
 Thumbs.db
 
+# Preferências locais do usuário
+data/remember_me.json
+
 

@@ -9,7 +9,7 @@ from components.ui.login import LoginPanel
 from controllers.auth_controller import AuthController
 from models import SessaoUsuario
 from utils.messages import mostrar_erro
-
+from services.remember_me_service import RememberMeService
 
 class LoginView:
     """Tela de autenticação institucional da ZELURBIS."""
@@ -39,6 +39,16 @@ class LoginView:
         self.senha = PasswordField(
             label="Senha",
             mostrar_requisitos=False,
+        )
+
+        cpf_lembrado = RememberMeService.carregar_cpf()
+
+        if cpf_lembrado:
+            self.cpf.value = cpf_lembrado
+
+        self.lembrar_me = ft.Checkbox(
+            label="Lembrar-me",
+            value=bool(cpf_lembrado),
         )
 
         self.lembrar_me = ft.Checkbox(
@@ -76,6 +86,13 @@ class LoginView:
                 "Não foi possível abrir a sessão.",
             )
             return
+
+        if self.lembrar_me.value:
+            RememberMeService.salvar_cpf(
+                self.cpf.value,
+            )
+        else:
+            RememberMeService.limpar()
 
         self._on_login_sucesso(sessao)
 

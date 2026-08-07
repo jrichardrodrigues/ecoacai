@@ -62,13 +62,16 @@ class AuthService:
         if not usuario.ativo:
             return False, "Usuário desativado."
 
-        usuario.senha_hash = self.password_service.gerar_hash(
+        senha_hash = self.password_service.gerar_hash(
             nova_senha,
         )
 
-        atualizado = self.repository.atualizar(usuario)
+        atualizado = self.repository.atualizar_senha(
+            usuario_id=usuario.id,
+            senha_hash=senha_hash,
+        )
 
-        if atualizado is None:
+        if not atualizado:
             return False, "Não foi possível alterar a senha."
 
         return True, "Senha alterada com sucesso."
