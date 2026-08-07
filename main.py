@@ -33,6 +33,11 @@ def main(page: ft.Page) -> None:
     page.bgcolor = COR_FUNDO
     page.padding = 0
 
+    page.window.width = 1280
+    page.window.height = 850
+    page.window.min_width = 1000
+    page.window.min_height = 600
+
     sessao_service = SessaoService()
 
     auth_controller = AuthController(
@@ -159,6 +164,45 @@ def main(page: ft.Page) -> None:
         cards: list[ft.Control] = []
 
         for solicitacao in solicitacoes:
+            forma = str(
+                solicitacao.forma_acondicionamento or ""
+            ).strip().upper()
+
+            if forma == "BAG":
+                quantidade_texto = (
+                    f"{solicitacao.quantidade_prevista} "
+                    f"{'Bag' if solicitacao.quantidade_prevista == 1 else 'Bags'} "
+                    "(1 m³)"
+                )
+            else:
+                quantidade_texto = (
+                    f"{solicitacao.quantidade_prevista} "
+                    f"{'Saca' if solicitacao.quantidade_prevista == 1 else 'Sacas'}"
+                )
+
+            # Nome amigável do tipo de resíduo
+            tipos_residuo = {
+                "CAROCO_ACAI": "Caroço de Açaí",
+            }
+
+            tipo_residuo_texto = tipos_residuo.get(
+                solicitacao.tipo_residuo,
+                solicitacao.tipo_residuo,
+            )
+
+            # Data amigável
+            data_solicitacao_texto = solicitacao.data_solicitacao or "-"
+
+            if data_solicitacao_texto != "-":
+                try:
+                    from datetime import datetime
+
+                    data_solicitacao_texto = datetime.fromisoformat(
+                        data_solicitacao_texto
+                    ).strftime("%d/%m/%Y %H:%M")
+                except (ValueError, TypeError):
+                    pass
+
             cards.append(
                 ft.Card(
                     content=ft.Container(
@@ -182,23 +226,13 @@ def main(page: ft.Page) -> None:
                                     ],
                                 ),
                                 ft.Text(
-                                    (
-                                        "Tipo de resíduo: "
-                                        f"{solicitacao.tipo_residuo}"
-                                    )
+                                    f"Tipo de resíduo: {tipo_residuo_texto}"
                                 ),
                                 ft.Text(
-                                    (
-                                        "Quantidade prevista: "
-                                        f"{solicitacao.quantidade_sacas_prevista} "
-                                        f"{solicitacao.unidade_medida}"
-                                    )
+                                    f"Quantidade prevista: {quantidade_texto}"
                                 ),
                                 ft.Text(
-                                    (
-                                        "Solicitada em: "
-                                        f"{solicitacao.data_solicitacao or '-'}"
-                                    )
+                                    f"Solicitada em: {data_solicitacao_texto}"
                                 ),
                                 ft.Text(
                                     solicitacao.observacao_cliente,

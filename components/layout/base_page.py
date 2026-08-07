@@ -15,9 +15,11 @@ class BasePage(ft.Container):
     """
     Página base da Plataforma ZELURBIS.
 
-    Todas as telas da aplicação deverão herdar desta classe
-    para manter identidade visual, espaçamentos e comportamento
-    consistentes.
+    Mantém identidade visual, espaçamentos e comportamento
+    consistente entre as telas da aplicação.
+
+    Em janelas menores, a página permite rolagem vertical
+    automática sem comprimir o conteúdo.
     """
 
     def __init__(
@@ -54,24 +56,34 @@ class BasePage(ft.Container):
                 )
             )
 
-        body = ft.Column(
-            controls=body_controls,
-            spacing=Spacing.LG,
-            expand=True,
+        # O card cresce naturalmente conforme o conteúdo.
+        card = ft.Container(
+            width=max_width,
+            border_radius=Radius.LG,
+            shadow=Shadows.CARD,
+            bgcolor=Colors.Background.SURFACE,
+            padding=Spacing.XL,
+            content=ft.Column(
+                controls=body_controls,
+                spacing=Spacing.LG,
+            ),
+        )
+
+        # A rolagem pertence à página, e não ao conteúdo interno do card.
+        page_content = ft.Column(
+            controls=[
+                ft.Row(
+                    controls=[card],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                )
+            ],
             scroll=scroll,
+            expand=True,
         )
 
         super().__init__(
             expand=expand,
             bgcolor=bgcolor or Colors.Background.DEFAULT,
             padding=Spacing.PAGE_PADDING,
-            alignment=ft.Alignment.TOP_CENTER,
-            content=ft.Container(
-                width=max_width,
-                border_radius=Radius.LG,
-                shadow=Shadows.CARD,
-                bgcolor=Colors.Background.SURFACE,
-                padding=Spacing.XL,
-                content=body,
-            ),
+            content=page_content,
         )

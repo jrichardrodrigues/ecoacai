@@ -242,8 +242,12 @@ class SolicitacaoColetaRepository:
                     motorista_id,
                     veiculo_id,
                     tipo_residuo,
+                    forma_acondicionamento,
                     unidade_medida,
                     origem,
+                    quantidade_prevista,
+                    peso_estimado_kg,
+                    tipo_operacao,
                     quantidade_sacas_prevista,
                     quantidade_kg_previsto,
                     quantidade_sacas_coletada,
@@ -264,7 +268,7 @@ class SolicitacaoColetaRepository:
                 VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 """,
                 (
@@ -276,8 +280,12 @@ class SolicitacaoColetaRepository:
                     solicitacao.motorista_id,
                     solicitacao.veiculo_id,
                     solicitacao.tipo_residuo,
+                    solicitacao.forma_acondicionamento,
                     solicitacao.unidade_medida,
                     solicitacao.origem,
+                    solicitacao.quantidade_prevista,
+                    solicitacao.peso_estimado_kg,
+                    solicitacao.tipo_operacao,
                     solicitacao.quantidade_sacas_prevista,
                     solicitacao.quantidade_kg_previsto,
                     solicitacao.quantidade_sacas_coletada,
@@ -354,8 +362,12 @@ class SolicitacaoColetaRepository:
                     motorista_id = ?,
                     veiculo_id = ?,
                     tipo_residuo = ?,
+                    forma_acondicionamento = ?,
                     unidade_medida = ?,
                     origem = ?,
+                    quantidade_prevista = ?,
+                    peso_estimado_kg = ?,
+                    tipo_operacao = ?,
                     quantidade_sacas_prevista = ?,
                     quantidade_kg_previsto = ?,
                     quantidade_sacas_coletada = ?,

@@ -462,6 +462,14 @@ class NovaSolicitacaoView:
             ),
         )
 
+        conteudo = ft.Column(
+            controls=[
+                formulario,
+            ],
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
+        )
+
         return BasePage(
             title="Solicitar Coleta",
             subtitle=(
