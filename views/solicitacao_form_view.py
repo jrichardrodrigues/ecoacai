@@ -53,8 +53,8 @@ class SolicitacaoFormView:
         self.veiculos = self.veiculo_controller.listar_ativos()
 
         self.estabelecimento = ft.Dropdown(
-            label="Estabelecimento",
-            hint_text="Selecione o estabelecimento",
+            label="Solicitante",
+            hint_text="Selecione o solicitante",
             expand=True,
             border_radius=10,
             options=[
@@ -71,13 +71,32 @@ class SolicitacaoFormView:
             self.ao_selecionar_estabelecimento
         )
 
+        self.forma_acondicionamento = ft.Dropdown(
+            label="Forma de acondicionamento",
+            value="SACA",
+            border_radius=10,
+            expand=True,
+            options=[
+                ft.dropdown.Option(
+                    key="SACA",
+                    text="Sacas (50 kg)",
+                ),
+                ft.dropdown.Option(
+                    key="BAG",
+                    text="Bags (1 m³)",
+                ),
+            ],
+            on_select=self.ao_selecionar_forma_acondicionamento,
+        )
+
         self.quantidade_sacas_prevista = ft.TextField(
             label="Quantidade de sacas",
             hint_text="Ex.: 10",
-            value="1",
+            value="0",
             keyboard_type=ft.KeyboardType.NUMBER,
             border_radius=10,
             expand=True,
+            on_change=self.ao_alterar_quantidade,
         )
 
         self.quantidade_kg_previsto = ft.TextField(
@@ -87,6 +106,7 @@ class SolicitacaoFormView:
             keyboard_type=ft.KeyboardType.NUMBER,
             border_radius=10,
             expand=True,
+            read_only=True,
         )
 
         self.seletor_data = ft.DatePicker(
@@ -158,7 +178,7 @@ class SolicitacaoFormView:
             content=ft.Column(
                 controls=[
                     ft.Text(
-                        "Selecione um estabelecimento.",
+                        "Selecione um solicitante.",
                         color=ft.Colors.GREY_600,
                     ),
                 ],
@@ -308,7 +328,7 @@ class SolicitacaoFormView:
             self.resumo_estabelecimento.content = ft.Column(
                 controls=[
                     ft.Text(
-                        "Selecione um estabelecimento.",
+                        "Selecione um solicitante.",
                         color=ft.Colors.GREY_600,
                     ),
                 ],
@@ -331,7 +351,7 @@ class SolicitacaoFormView:
 
         if estabelecimento is None:
             self.resumo_estabelecimento.content = ft.Text(
-                "Estabelecimento não encontrado.",
+                "Solicitante não encontrado.",
                 color=ft.Colors.RED,
             )
 
@@ -401,7 +421,7 @@ class SolicitacaoFormView:
             self.status_texto.color = ft.Colors.BLUE_800
             self.status_container.bgcolor = ft.Colors.BLUE_50
 
-            self.botao_operacao.content = "Cheguei ao Estabelecimento"
+            self.botao_operacao.content = "Cheguei ao Solicitante"
             self.botao_operacao.icon = ft.Icons.LOCATION_ON
 
         elif status == "EM_COLETA":
@@ -522,6 +542,78 @@ class SolicitacaoFormView:
 
         return None
 
+    def ao_alterar_quantidade(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Calcula automaticamente o peso previsto."""
+
+        texto = str(
+            self.quantidade_sacas_prevista.value or ""
+        ).strip()
+
+        if not texto:
+            self.quantidade_kg_previsto.value = "0"
+            self.quantidade_kg_previsto.update()
+            return
+
+        try:
+            quantidade = int(texto)
+
+        except ValueError:
+            self.quantidade_kg_previsto.value = "0"
+            self.quantidade_kg_previsto.update()
+            return
+
+        forma = str(
+            self.forma_acondicionamento.value or "SACA"
+        ).strip().upper()
+
+        peso_unitario = (
+            1000
+            if forma == "BAG"
+            else 50
+        )
+
+        self.quantidade_kg_previsto.value = str(
+            quantidade * peso_unitario
+        )
+
+        self.quantidade_kg_previsto.update()
+
+    def ao_selecionar_forma_acondicionamento(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Atualiza os campos conforme a forma de acondicionamento."""
+
+        forma = str(
+            self.forma_acondicionamento.value or "SACA"
+        ).strip().upper()
+
+        if forma == "BAG":
+            self.quantidade_sacas_prevista.label = (
+                "Quantidade de bags"
+            )
+            self.quantidade_sacas_prevista.hint_text = (
+                "Ex.: 2"
+            )
+
+        else:
+            self.quantidade_sacas_prevista.label = (
+                "Quantidade de sacas"
+            )
+            self.quantidade_sacas_prevista.hint_text = (
+                "Ex.: 10"
+            )
+
+        # Limpa os valores ao trocar a forma de acondicionamento
+        self.quantidade_sacas_prevista.value = "0"
+        self.quantidade_kg_previsto.value = "0"
+
+        self.quantidade_sacas_prevista.update()
+        self.quantidade_kg_previsto.update()
+
     def abrir_calendario(
             self,
             e: ft.ControlEvent,
@@ -575,7 +667,7 @@ class SolicitacaoFormView:
 
         except (TypeError, ValueError):
             self.resumo_estabelecimento.content = ft.Text(
-                "Estabelecimento inválido.",
+                "Solicitante inválido.",
                 color=ft.Colors.RED,
             )
 
@@ -647,7 +739,7 @@ class SolicitacaoFormView:
         if not estabelecimento_valor:
             return (
                 None,
-                "Selecione um estabelecimento.",
+                "Selecione um solicitante.",
             )
 
         try:
@@ -658,7 +750,7 @@ class SolicitacaoFormView:
         except (TypeError, ValueError):
             return (
                 None,
-                "Estabelecimento inválido.",
+                "Solicitante inválido.",
             )
 
         try:
@@ -892,7 +984,7 @@ class SolicitacaoFormView:
                         weight=ft.FontWeight.BOLD,
                     ),
                     ft.Text(
-                        "Selecione o estabelecimento e informe "
+                        "Selecione o solicitante e informe "
                         "os dados previstos para a coleta.",
                         size=15,
                     ),
@@ -912,6 +1004,13 @@ class SolicitacaoFormView:
                         controls=[
                             self.botao_operacao,
                         ],
+                    ),
+
+                    ft.Row(
+                        controls=[
+                            self.forma_acondicionamento,
+                        ],
+                        spacing=15,
                     ),
 
                     ft.Row(

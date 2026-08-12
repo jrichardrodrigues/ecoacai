@@ -395,8 +395,12 @@ class SolicitacaoColetaRepository:
                     solicitacao.motorista_id,
                     solicitacao.veiculo_id,
                     solicitacao.tipo_residuo,
+                    solicitacao.forma_acondicionamento,
                     solicitacao.unidade_medida,
                     solicitacao.origem,
+                    solicitacao.quantidade_prevista,
+                    solicitacao.peso_estimado_kg,
+                    solicitacao.tipo_operacao,
                     solicitacao.quantidade_sacas_prevista,
                     solicitacao.quantidade_kg_previsto,
                     solicitacao.quantidade_sacas_coletada,
@@ -609,9 +613,26 @@ class SolicitacaoColetaRepository:
                     ) AS sacas_previstas,
 
                     COALESCE(
-                        SUM(quantidade_sacas_coletada),
+                        SUM(
+                            CASE
+                                WHEN forma_acondicionamento = 'SACA'
+                                THEN quantidade_sacas_coletada
+                                ELSE 0
+                            END
+                        ),
                         0
                     ) AS sacas_coletadas,
+                    
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN forma_acondicionamento = 'BAG'
+                                THEN quantidade_sacas_coletada
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    ) AS bags_coletados,
 
                     COALESCE(
                         SUM(quantidade_kg_previsto),
@@ -657,9 +678,12 @@ class SolicitacaoColetaRepository:
                 s.tipo_residuo,
                 s.unidade_medida,
                 s.status,
+                
                 s.quantidade_sacas_prevista,
                 s.quantidade_kg_previsto,
-
+                s.quantidade_sacas_coletada,
+                s.quantidade_kg_coletado,
+                
                 strftime(
                     '%d/%m/%Y %H:%M',
                     s.data_solicitacao

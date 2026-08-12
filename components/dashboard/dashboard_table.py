@@ -156,6 +156,39 @@ class DashboardTable(ft.Container):
         linhas: list[ft.DataRow] = []
 
         for solicitacao in self.solicitacoes:
+            status = str(
+                solicitacao.get(
+                    "status",
+                    "",
+                )
+            ).strip().upper()
+
+            concluida = status == "CONCLUIDA"
+
+            quantidade_sacas = (
+                solicitacao.get(
+                    "quantidade_sacas_coletada",
+                    0,
+                )
+                if concluida
+                else solicitacao.get(
+                    "quantidade_sacas_prevista",
+                    0,
+                )
+            )
+
+            quantidade_kg = (
+                solicitacao.get(
+                    "quantidade_kg_coletado",
+                    0,
+                )
+                if concluida
+                else solicitacao.get(
+                    "quantidade_kg_previsto",
+                    0,
+                )
+            )
+
             linhas.append(
                 ft.DataRow(
                     cells=[
@@ -197,7 +230,7 @@ class DashboardTable(ft.Container):
                                 content=ft.Text(
                                     str(
                                         solicitacao.get(
-                                            "estabelecimento",
+                                            "solicitante",
                                             "",
                                         )
                                     ),
@@ -228,10 +261,7 @@ class DashboardTable(ft.Container):
                                 alignment=ft.Alignment.CENTER,
                                 content=ft.Text(
                                     str(
-                                        solicitacao.get(
-                                            "quantidade_sacas_prevista",
-                                            0,
-                                        )
+                                        quantidade_sacas or 0
                                     ),
                                     color=ft.Colors.GREY_800,
                                 ),
@@ -243,10 +273,7 @@ class DashboardTable(ft.Container):
                                 alignment=ft.Alignment.CENTER,
                                 content=ft.Text(
                                     self._formatar_peso(
-                                        solicitacao.get(
-                                            "quantidade_kg",
-                                            0,
-                                        )
+                                        quantidade_kg or 0
                                     ),
                                     color=ft.Colors.GREY_800,
                                 ),
@@ -299,7 +326,7 @@ class DashboardTable(ft.Container):
             border_radius=Radius.LG,
             columns=[
                 self._coluna("Número", 125),
-                self._coluna("Estabelecimento", 300),
+                self._coluna("Solicitante", 300),
                 self._coluna("Status", 165, centralizar=True),
                 self._coluna("Sacas", 75, centralizar=True),
                 self._coluna("Kg", 90, centralizar=True),

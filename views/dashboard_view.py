@@ -170,11 +170,12 @@ class DashboardView:
         )
 
     def _criar_grafico_status(
-        self,
-        pendentes: int,
-        agendadas: int,
-        em_coleta: int,
-        concluidas: int,
+            self,
+            pendentes: int,
+            agendadas: int,
+            em_coleta: int,
+            concluidas: int,
+            canceladas: int,
     ) -> ft.Control:
         """Cria o painel executivo de distribuição por status."""
         dados = [
@@ -205,6 +206,13 @@ class DashboardView:
                 ft.Icons.CHECK_CIRCLE,
                 ft.Colors.GREEN_600,
                 ft.Colors.GREEN_50,
+            ),
+            (
+                "Canceladas",
+                canceladas,
+                ft.Icons.CANCEL,
+                ft.Colors.GREY_700,
+                ft.Colors.GREY_100,
             ),
         ]
 
@@ -323,6 +331,15 @@ class DashboardView:
                 ],
             )
 
+            card_canceladas = self._criar_card_status_grafico(
+                titulo=dados[4][0],
+                valor=dados[4][1],
+                total=total,
+                icone=dados[4][2],
+                cor=dados[4][3],
+                cor_fundo=dados[4][4],
+            )
+
             area_grafico = ft.Container(
                 width=420,
                 height=320,
@@ -337,7 +354,8 @@ class DashboardView:
             )
 
             conteudo_principal = ft.Column(
-                spacing=10,
+                spacing=14,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
                     ft.Row(
                         alignment=ft.MainAxisAlignment.CENTER,
@@ -349,6 +367,9 @@ class DashboardView:
                             coluna_direita,
                         ],
                     ),
+
+                    card_canceladas,
+
                     legenda,
                 ],
             )
@@ -414,14 +435,15 @@ class DashboardView:
         )
 
     def _obter_cards_status(
-        self,
-        total_solicitacoes: int,
-        total_estabelecimentos: int,
-        total_pendentes: int,
-        total_agendadas: int,
-        total_hoje: int,
-        total_em_coleta: int,
-        total_concluidas: int,
+            self,
+            total_solicitacoes: int,
+            total_estabelecimentos: int,
+            total_pendentes: int,
+            total_agendadas: int,
+            total_hoje: int,
+            total_em_coleta: int,
+            total_concluidas: int,
+            total_canceladas: int,
     ) -> list[dict]:
         """Retorna os dados dos cards de status."""
         return [
@@ -488,23 +510,42 @@ class DashboardView:
                 "subtitulo": "Coletas finalizadas",
                 "col": {"sm": 12, "md": 6, "lg": 3},
             },
+            {
+                "titulo": "Canceladas",
+                "valor": self._formatar_numero(total_canceladas),
+                "icone": ft.Icons.CANCEL,
+                "cor": ft.Colors.RED_700,
+                "cor_fundo": ft.Colors.RED_50,
+                "subtitulo": "Solicitações canceladas",
+                "col": {"sm": 12, "md": 6, "lg": 3},
+            },
         ]
 
     def _obter_cards_totais(
-        self,
-        total_sacas: int,
-        total_kg: int | float,
+            self,
+            total_sacas: int,
+            total_bags: int,
+            total_kg: int | float,
     ) -> list[dict]:
         """Retorna os dados dos cards de volumes."""
         return [
             {
-                "titulo": "Total de sacas",
+                "titulo": "Sacas coletadas",
                 "valor": f"{self._formatar_numero(total_sacas)} sacas",
                 "icone": ft.Icons.INVENTORY_2,
                 "cor": Colors.Dashboard.SACKS,
                 "cor_fundo": Colors.Dashboard.SACKS_BG,
-                "subtitulo": "Volume total registrado",
-                "col": {"sm": 12, "md": 6},
+                "subtitulo": "Volumes coletados em sacas",
+                "col": {"sm": 12, "md": 4},
+            },
+            {
+                "titulo": "Bags coletados",
+                "valor": f"{self._formatar_numero(total_bags)} bags",
+                "icone": ft.Icons.INVENTORY,
+                "cor": ft.Colors.TEAL_700,
+                "cor_fundo": ft.Colors.TEAL_50,
+                "subtitulo": "Volumes coletados em bags",
+                "col": {"sm": 12, "md": 4},
             },
             {
                 "titulo": "Peso coletado",
@@ -512,8 +553,8 @@ class DashboardView:
                 "icone": ft.Icons.SCALE,
                 "cor": Colors.Dashboard.WEIGHT,
                 "cor_fundo": Colors.Dashboard.WEIGHT_BG,
-                "subtitulo": "Peso acumulado das solicitações",
-                "col": {"sm": 12, "md": 6},
+                "subtitulo": "Peso efetivamente coletado",
+                "col": {"sm": 12, "md": 4},
             },
         ]
 
@@ -529,12 +570,41 @@ class DashboardView:
         coletas_hoje = self.estatisticas.get("coletas_hoje", 0)
         em_coleta = self.estatisticas.get("em_coleta", 0)
         concluidas = self.estatisticas.get("concluidas", 0)
-        total_sacas = self.estatisticas.get("total_sacas", 0)
-        total_kg = self.estatisticas.get("total_kg", 0)
+        total_sacas = self.estatisticas.get(
+            "sacas_coletadas",
+            0,
+        )
+
+        total_bags = self.estatisticas.get(
+            "bags_coletados",
+            0,
+        )
+
+        total_kg = self.estatisticas.get(
+            "kg_coletados",
+            0,
+        )
+
+        canceladas = self.estatisticas.get(
+            "canceladas",
+            0,
+        )
 
         ultimas_solicitacoes = self.controller.listar_ultimas(
             limite=5,
         )
+
+        print("ULTIMAS SOLICITACOES:")
+
+        for item in ultimas_solicitacoes:
+            print(
+                item.get("codigo"),
+                "| status:", item.get("status"),
+                "| sacas_previstas:", item.get("quantidade_sacas_prevista"),
+                "| kg_previsto:", item.get("quantidade_kg_previsto"),
+                "| sacas_coletadas:", item.get("quantidade_sacas_coletada"),
+                "| kg_coletado:", item.get("quantidade_kg_coletado"),
+            )
 
         cards_status_data = self._obter_cards_status(
             total_solicitacoes=total,
@@ -544,6 +614,7 @@ class DashboardView:
             total_hoje=coletas_hoje,
             total_em_coleta=em_coleta,
             total_concluidas=concluidas,
+            total_canceladas=canceladas,
         )
 
         cards_status = ft.ResponsiveRow(
@@ -557,6 +628,7 @@ class DashboardView:
 
         cards_totais_data = self._obter_cards_totais(
             total_sacas=total_sacas,
+            total_bags=total_bags,
             total_kg=total_kg,
         )
 
@@ -583,6 +655,7 @@ class DashboardView:
             agendadas=agendadas,
             em_coleta=em_coleta,
             concluidas=concluidas,
+            canceladas=canceladas,
         )
 
         return ft.Column(
