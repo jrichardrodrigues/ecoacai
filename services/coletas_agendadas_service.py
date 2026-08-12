@@ -492,8 +492,11 @@ class ColetasAgendadasService:
             )
 
     def concluir_coleta(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
+            quantidade_coletada: int,
+            peso_coletado_kg: float,
+            observacao_operacional: str = "",
     ) -> RepositoryResult:
         """Conclui uma coleta que esteja em andamento."""
 
@@ -508,9 +511,26 @@ class ColetasAgendadasService:
         if validacao.falhou:
             return validacao
 
+        if quantidade_coletada <= 0:
+            return self._falha(
+                "Informe a quantidade efetivamente coletada."
+            )
+
+        if peso_coletado_kg <= 0:
+            return self._falha(
+                "Informe o peso efetivamente coletado."
+            )
+
+        observacao_operacional = str(
+            observacao_operacional or ""
+        ).strip()
+
         try:
             sucesso = self.repository.concluir_coleta(
-                solicitacao_id
+                solicitacao_id=solicitacao_id,
+                quantidade_coletada=quantidade_coletada,
+                peso_coletado_kg=peso_coletado_kg,
+                observacao_operacional=observacao_operacional,
             )
 
             if not sucesso:

@@ -552,19 +552,40 @@ class AgendaRepository:
     def concluir_coleta(
             self,
             solicitacao_id: int,
+            quantidade_coletada: int,
+            peso_coletado_kg: float,
+            observacao_operacional: str = "",
     ) -> bool:
         """
-        Conclui uma coleta em andamento.
-
-        Altera o status para CONCLUIDA e registra
-        a data e a hora de conclusão.
+        Conclui uma coleta em andamento e registra
+        os dados efetivamente coletados.
         """
 
-        return self._atualizar_status(
-            solicitacao_id=solicitacao_id,
-            novo_status=StatusColeta.CONCLUIDA,
-            campo_data="data_hora_conclusao",
-        )
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    quantidade_sacas_coletada = ?,
+                    quantidade_kg_coletado = ?,
+                    observacao_operacional = ?,
+                    status = ?,
+                    data_hora_conclusao = CURRENT_TIMESTAMP,
+                    atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = ?
+                  AND status = ?
+                """,
+                (
+                    quantidade_coletada,
+                    peso_coletado_kg,
+                    observacao_operacional,
+                    StatusColeta.CONCLUIDA,
+                    solicitacao_id,
+                    StatusColeta.EM_COLETA,
+                ),
+            )
+
+            return cursor.rowcount > 0
 
     def cancelar_coleta(
             self,
@@ -1041,7 +1062,7 @@ class AgendaRepository:
 
                 s.organizacao_id,
                 s.estabelecimento_id,
-                
+
                 COALESCE(
                     o.nome,
                     e.nome,
@@ -1055,6 +1076,12 @@ class AgendaRepository:
                 v.placa AS veiculo_placa,
                 v.marca AS veiculo_marca,
                 v.modelo AS veiculo_modelo,
+
+                s.tipo_residuo,
+                s.forma_acondicionamento,
+                s.quantidade_prevista,
+                s.peso_estimado_kg,
+                s.tipo_operacao,
 
                 s.quantidade_sacas_prevista,
                 s.quantidade_kg_previsto,
@@ -1084,7 +1111,7 @@ class AgendaRepository:
 
             LEFT JOIN organizacoes AS o
                 ON o.id = s.organizacao_id
-            
+
             LEFT JOIN estabelecimentos AS e
                 ON e.id = s.estabelecimento_id
 

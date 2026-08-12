@@ -146,11 +146,19 @@ class ColetasAgendadasController:
         )
 
     def concluir_coleta(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
+            quantidade_coletada: int,
+            peso_coletado_kg: float,
+            observacao_operacional: str = "",
     ):
+        """Conclui uma coleta registrando os dados da execução."""
+
         return self.service.concluir_coleta(
-            solicitacao_id,
+            solicitacao_id=solicitacao_id,
+            quantidade_coletada=quantidade_coletada,
+            peso_coletado_kg=peso_coletado_kg,
+            observacao_operacional=observacao_operacional,
         )
 
     def cancelar_coleta(

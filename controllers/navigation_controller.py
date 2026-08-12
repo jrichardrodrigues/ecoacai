@@ -19,6 +19,7 @@ from controllers.solicitacao_coleta_controller import (
 from views.detalhe_solicitacao_gestor_view import (
     DetalheSolicitacaoGestorView,
 )
+from views.detalhe_coleta_view import DetalheColetaView
 
 
 class NavigationController:
@@ -226,7 +227,47 @@ class NavigationController:
 
         return ColetasAgendadasView(
             page=self.page,
+            on_visualizar_coleta=self.abrir_detalhe_coleta,
         ).build()
+
+    def _coletas_agendadas(self) -> ft.Control:
+        """Abre a tela de coletas agendadas."""
+
+        return ColetasAgendadasView(
+            page=self.page,
+            on_visualizar_coleta=self.abrir_detalhe_coleta,
+        ).build()
+
+    def _coletas_agendadas(self) -> ft.Control:
+        """Abre a tela de coletas agendadas."""
+
+        return ColetasAgendadasView(
+            page=self.page,
+            on_visualizar_coleta=self.abrir_detalhe_coleta,
+        ).build()
+
+    def abrir_detalhe_coleta(
+            self,
+            coleta: dict,
+    ) -> None:
+        """Abre a tela de detalhes de uma coleta."""
+
+        view = DetalheColetaView(
+            page=self.page,
+            coleta=coleta,
+            on_voltar=self.abrir_coletas_agendadas,
+        )
+
+        self._mostrar(
+            view.build()
+        )
+
+    def abrir_coletas_agendadas(self) -> None:
+        """Abre a tela de coletas agendadas."""
+
+        self._mostrar(
+            self._coletas_agendadas()
+        )
 
     def abrir_motoristas(self) -> None:
         """Retorna à listagem de motoristas."""

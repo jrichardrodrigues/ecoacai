@@ -634,12 +634,10 @@ class SolicitacaoFormView:
             self,
     ) -> tuple[dict | None, str | None]:
         """
-        Lê, converte e valida os dados informados no formulário.
+        Lê, converte e valida os dados da solicitação.
 
-        Returns:
-            Uma tupla contendo:
-            - dicionário com os dados convertidos, quando válidos;
-            - mensagem de erro, quando algum dado for inválido.
+        O agendamento operacional — data, motorista e veículo —
+        é definido posteriormente pelo Gestor.
         """
 
         estabelecimento_valor = (
@@ -686,7 +684,10 @@ class SolicitacaoFormView:
 
         try:
             quantidade_kg_previsto = float(
-                quantidade_kg_previsto_texto.replace(",", ".")
+                quantidade_kg_previsto_texto.replace(
+                    ",",
+                    ".",
+                )
             )
 
         except (TypeError, ValueError):
@@ -701,41 +702,14 @@ class SolicitacaoFormView:
                 "A quantidade em kg não pode ser negativa.",
             )
 
-        motorista_texto = (
-                self.motorista.value or ""
-        ).strip()
-
-        veiculo_texto = (
-                self.veiculo.value or ""
-        ).strip()
-
-        try:
-            motorista_id = (
-                int(motorista_texto)
-                if motorista_texto
-                else None
-            )
-        except ValueError:
-            return None, "Motorista inválido."
-
-        try:
-            veiculo_id = (
-                int(veiculo_texto)
-                if veiculo_texto
-                else None
-            )
-        except ValueError:
-            return None, "Veículo inválido."
-
         dados = {
             "estabelecimento_id": estabelecimento_id,
-            "quantidade_sacas_prevista": quantidade_sacas_prevista,
-            "quantidade_kg_previsto": quantidade_kg_previsto,
-            "data_hora_agendada": (
-                    self.data_agendada.value or ""
-            ).strip(),
-            "motorista_id": motorista_id,
-            "veiculo_id": veiculo_id,
+            "quantidade_sacas_prevista": (
+                quantidade_sacas_prevista
+            ),
+            "quantidade_kg_previsto": (
+                quantidade_kg_previsto
+            ),
             "observacao_cliente": (
                     self.observacao.value or ""
             ).strip(),
@@ -797,28 +771,26 @@ class SolicitacaoFormView:
     ) -> tuple[bool, str]:
         """Cadastra uma nova solicitação com os dados do formulário."""
 
+        quantidade_prevista = int(
+            dados.get("quantidade_prevista")
+            or dados.get("quantidade_sacas_prevista")
+            or 0
+        )
+
+        forma_acondicionamento = str(
+            dados.get("forma_acondicionamento")
+            or "SACA"
+        ).strip().upper()
+
         sucesso, mensagem, _ = self.controller.criar(
-            estabelecimento_id=dados[
+            quantidade_prevista=quantidade_prevista,
+            forma_acondicionamento=forma_acondicionamento,
+            estabelecimento_id=dados.get(
                 "estabelecimento_id"
-            ],
-            quantidade_sacas_prevista=dados[
-                "quantidade_sacas_prevista"
-            ],
-            quantidade_kg_previsto=dados[
-                "quantidade_kg_previsto"
-            ],
-            data_hora_agendada=dados[
-                "data_hora_agendada"
-            ],
-            motorista_id=dados[
-                "motorista_id"
-            ],
-            veiculo_id=dados[
-                "veiculo_id"
-            ],
-            observacao_cliente=dados[
+            ),
+            observacao_cliente=dados.get(
                 "observacao_cliente"
-            ],
+            ) or "",
         )
 
         return sucesso, mensagem
@@ -946,20 +918,6 @@ class SolicitacaoFormView:
                         controls=[
                             self.quantidade_sacas_prevista,
                             self.quantidade_kg_previsto,
-                        ],
-                        spacing=15,
-                    ),
-
-                    ft.Row(
-                        controls=[
-                            self.data_agendada,
-                        ],
-                    ),
-
-                    ft.Row(
-                        controls=[
-                            self.motorista,
-                            self.veiculo,
                         ],
                         spacing=15,
                     ),

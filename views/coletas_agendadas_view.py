@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Callable
+from pprint import pprint
 
 import flet as ft
 
@@ -36,10 +37,12 @@ class ColetasAgendadasView:
         StatusColeta.CONCLUIDA,
         StatusColeta.CANCELADA,
     }
+
     def __init__(
-        self,
-        page: ft.Page,
-        controller: ColetasAgendadasController | None = None,
+            self,
+            page: ft.Page,
+            controller: ColetasAgendadasController | None = None,
+            on_visualizar_coleta: Callable[[dict], None] | None = None,
     ) -> None:
         self.page = page
 
@@ -48,6 +51,8 @@ class ColetasAgendadasView:
             if controller is not None
             else ColetasAgendadasController()
         )
+
+        self.on_visualizar_coleta = on_visualizar_coleta
 
         self.motorista_controller = MotoristaController()
 
@@ -59,6 +64,7 @@ class ColetasAgendadasView:
 
         self._construir_controles()
         self._construir_dialog_agendamento()
+        self._construir_dialog_conclusao()
 
     # ==========================================================
     # CONSTRUÇÃO
@@ -72,9 +78,10 @@ class ColetasAgendadasView:
         self.campo_data_inicial = ft.TextField(
             label="Data inicial",
             value=hoje.strftime("%d/%m/%Y"),
-            width=145,
+            width=150,
             dense=True,
             read_only=True,
+            on_click=self._abrir_seletor_data_inicial,
         )
 
         self.botao_data_inicial = ft.IconButton(
@@ -86,9 +93,10 @@ class ColetasAgendadasView:
         self.campo_data_final = ft.TextField(
             label="Data final",
             value=hoje.strftime("%d/%m/%Y"),
-            width=145,
+            width=150,
             dense=True,
             read_only=True,
+            on_click=self._abrir_seletor_data_final,
         )
 
         self.botao_data_final = ft.IconButton(
@@ -376,6 +384,147 @@ class ColetasAgendadasView:
                 self.indicador_dialog,
                 self.botao_cancelar_agendamento,
                 self.botao_confirmar_agendamento,
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+    def _construir_dialog_conclusao(self) -> None:
+        """
+        Cria os controles e o AlertDialog utilizado
+        para concluir uma coleta em andamento.
+        """
+
+        self.solicitacao_id_conclusao: int | None = None
+
+        self.texto_coleta_conclusao = ft.Text(
+            value="",
+            size=14,
+            weight=ft.FontWeight.BOLD,
+        )
+
+        self.texto_previsto_conclusao = ft.Text(
+            value="",
+            size=13,
+            color=ft.Colors.GREY_700,
+        )
+
+        self.campo_quantidade_coletada = ft.TextField(
+            label="Quantidade coletada",
+            hint_text="Informe a quantidade efetivamente coletada",
+            width=250,
+            dense=True,
+        )
+
+        self.campo_peso_coletado = ft.TextField(
+            label="Peso coletado (kg)",
+            hint_text="Informe o peso efetivamente coletado",
+            width=250,
+            dense=True,
+        )
+
+        self.campo_observacao_operacional = ft.TextField(
+            label="Observação operacional",
+            hint_text=(
+                "Registre ocorrências ou informações "
+                "relevantes da coleta"
+            ),
+            multiline=True,
+            min_lines=3,
+            max_lines=5,
+            width=520,
+        )
+
+        self.texto_mensagem_conclusao = ft.Text(
+            value="",
+            size=13,
+            color=ft.Colors.RED,
+            visible=False,
+        )
+
+        self.indicador_conclusao = ft.ProgressRing(
+            width=22,
+            height=22,
+            visible=False,
+        )
+
+        self.botao_cancelar_conclusao = ft.OutlinedButton(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.CLOSE,
+                        size=18,
+                    ),
+                    ft.Text("Cancelar"),
+                ],
+                spacing=8,
+                tight=True,
+            ),
+            on_click=self._fechar_dialog_conclusao,
+        )
+
+        self.botao_confirmar_conclusao = ft.FilledButton(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.CHECK_CIRCLE,
+                        size=18,
+                    ),
+                    ft.Text("Concluir coleta"),
+                ],
+                spacing=8,
+                tight=True,
+            ),
+            on_click=self._confirmar_conclusao,
+        )
+
+        conteudo_dialog = ft.Column(
+            controls=[
+                ft.Text(
+                    "Informe os dados efetivamente registrados "
+                    "na operação antes de concluir a coleta.",
+                    size=13,
+                ),
+                self.texto_coleta_conclusao,
+                self.texto_previsto_conclusao,
+                ft.Row(
+                    controls=[
+                        self.campo_quantidade_coletada,
+                        self.campo_peso_coletado,
+                    ],
+                    spacing=16,
+                    wrap=True,
+                ),
+                self.campo_observacao_operacional,
+                self.texto_mensagem_conclusao,
+            ],
+            spacing=16,
+            tight=True,
+            scroll=ft.ScrollMode.AUTO,
+        )
+
+        self.dialog_conclusao = ft.AlertDialog(
+            modal=True,
+            title=ft.Row(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.TASK_ALT,
+                        size=24,
+                    ),
+                    ft.Text(
+                        "Concluir coleta",
+                        weight=ft.FontWeight.BOLD,
+                    ),
+                ],
+                spacing=10,
+            ),
+            content=ft.Container(
+                content=conteudo_dialog,
+                width=540,
+            ),
+            actions=[
+                self.indicador_conclusao,
+                self.botao_cancelar_conclusao,
+                self.botao_confirmar_conclusao,
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -716,6 +865,7 @@ class ColetasAgendadasView:
             controls=[
                 self.tabela,
             ],
+            alignment=ft.MainAxisAlignment.CENTER,
             scroll=ft.ScrollMode.AUTO,
         )
 
@@ -913,7 +1063,17 @@ class ColetasAgendadasView:
             self.dropdown_veiculo.value
         )
 
-        if data_inicial and data_final:
+        # Solicitações em análise ainda não possuem
+        # data_hora_agendada. Portanto não podem ser
+        # pesquisadas pelo período da agenda.
+        if status == StatusColeta.EM_ANALISE:
+            resultado = self.controller.pesquisar(
+                status=status,
+                motorista_id=motorista_id,
+                veiculo_id=veiculo_id,
+            )
+
+        elif data_inicial and data_final:
             resultado = self.controller.agenda_periodo(
                 data_inicial=data_inicial,
                 data_final=data_final,
@@ -1420,12 +1580,17 @@ class ColetasAgendadasView:
         self._atualizar_pagina()
 
     def _atualizar(
-        self,
-        _evento: ft.Event,
+            self,
+            _evento: ft.Event,
     ) -> None:
         """Atualiza os dados da tela."""
 
         self.carregar_dados()
+
+        self._mostrar_mensagem(
+            "Agenda atualizada."
+        )
+
         self._atualizar_pagina()
 
     def _nova_coleta(
@@ -1478,9 +1643,11 @@ class ColetasAgendadasView:
         )
 
     def _visualizar(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
     ) -> None:
+        """Abre os detalhes da coleta selecionada."""
+
         resultado = self.controller.obter_por_id(
             solicitacao_id
         )
@@ -1490,24 +1657,49 @@ class ColetasAgendadasView:
                 resultado.mensagem,
                 erro=True,
             )
-        else:
-            coleta = resultado.dados
+            self._atualizar_pagina()
+            return
 
+        coleta = resultado.dados
+
+        if self.on_visualizar_coleta is None:
             self._mostrar_mensagem(
-                f"{coleta['codigo']} — "
-                f"{coleta['estabelecimento_nome']} — "
-                f"{StatusColeta.descricao(coleta['status'])}"
+                "A visualização da coleta não está disponível.",
+                erro=True,
             )
+            self._atualizar_pagina()
+            return
 
-        self._atualizar_pagina()
+        self.on_visualizar_coleta(
+            coleta
+        )
 
     def _agendar(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
     ) -> None:
-        self._acao_pendente(
-            "Agendar",
-            solicitacao_id,
+        """Abre o diálogo de agendamento para a solicitação selecionada."""
+
+        self._carregar_solicitacoes_pendentes()
+        self._carregar_motoristas_dialog()
+
+        self.dropdown_solicitacao_dialog.value = str(
+            solicitacao_id
+        )
+
+        self.dropdown_motorista_dialog.value = None
+        self.dropdown_veiculo_dialog.value = None
+
+        self.campo_hora_agendamento.value = "08:00"
+
+        self.texto_mensagem_dialog.value = ""
+        self.texto_mensagem_dialog.visible = False
+
+        self.botao_confirmar_agendamento.disabled = False
+        self.indicador_dialog.visible = False
+
+        self.page.show_dialog(
+            self.dialog_agendamento
         )
 
     def _reagendar(
@@ -1532,10 +1724,98 @@ class ColetasAgendadasView:
         )
 
     def _concluir(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
     ) -> None:
-        resultado = self.controller.concluir_coleta(
+        """Abre o diálogo para conclusão da coleta."""
+
+        resultado = self.controller.obter_por_id(
+            solicitacao_id
+        )
+
+        if resultado.falhou:
+            self._mostrar_mensagem(
+                resultado.mensagem,
+                erro=True,
+            )
+            self._atualizar_pagina()
+            return
+
+        coleta = resultado.dados
+
+        self.solicitacao_id_conclusao = solicitacao_id
+
+        codigo = str(
+            coleta.get("codigo") or "-"
+        )
+
+        forma = str(
+            coleta.get("forma_acondicionamento") or "SACA"
+        ).strip().upper()
+
+        quantidade_prevista = int(
+            coleta.get("quantidade_prevista") or 0
+        )
+
+        peso_estimado = float(
+            coleta.get("peso_estimado_kg") or 0
+        )
+
+        if forma == "BAG":
+            unidade = (
+                "Bag"
+                if quantidade_prevista == 1
+                else "Bags"
+            )
+        else:
+            unidade = (
+                "Saca"
+                if quantidade_prevista == 1
+                else "Sacas"
+            )
+
+        self.texto_coleta_conclusao.value = (
+            f"{codigo} • "
+            f"{quantidade_prevista} {unidade}"
+        )
+
+        self.texto_previsto_conclusao.value = (
+            f"Previsto: {quantidade_prevista} {unidade} • "
+            f"{peso_estimado:,.0f} kg"
+            .replace(",", ".")
+        )
+
+        self.campo_quantidade_coletada.label = (
+            f"Quantidade coletada ({unidade})"
+        )
+
+        self.campo_quantidade_coletada.value = str(
+            quantidade_prevista
+        )
+
+        self.campo_peso_coletado.value = (
+            f"{peso_estimado:.0f}"
+            if peso_estimado > 0
+            else ""
+        )
+
+        self.campo_observacao_operacional.value = ""
+
+        self.texto_mensagem_conclusao.value = ""
+        self.texto_mensagem_conclusao.visible = False
+
+        self.indicador_conclusao.visible = False
+        self.botao_confirmar_conclusao.disabled = False
+
+        self.page.show_dialog(
+            self.dialog_conclusao
+        )
+
+    def _cancelar(
+            self,
+            solicitacao_id: int,
+    ) -> None:
+        resultado = self.controller.cancelar_coleta(
             solicitacao_id
         )
 
@@ -1543,13 +1823,111 @@ class ColetasAgendadasView:
             resultado
         )
 
-    def _cancelar(
-        self,
-        solicitacao_id: int,
+    def _fechar_dialog_conclusao(
+            self,
+            _evento: ft.Event,
     ) -> None:
-        resultado = self.controller.cancelar_coleta(
-            solicitacao_id
+        """Fecha o diálogo de conclusão."""
+
+        self.page.pop_dialog()
+
+        self.solicitacao_id_conclusao = None
+
+    def _confirmar_conclusao(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Valida e conclui a coleta."""
+
+        if self.solicitacao_id_conclusao is None:
+
+            self.texto_mensagem_conclusao.value = (
+                "Coleta não identificada."
+            )
+            self.texto_mensagem_conclusao.visible = True
+            self._atualizar_pagina()
+            return
+
+        quantidade_texto = str(
+            self.campo_quantidade_coletada.value or ""
+        ).strip()
+
+        peso_texto = str(
+            self.campo_peso_coletado.value or ""
+        ).strip()
+
+        observacao = str(
+            self.campo_observacao_operacional.value or ""
+        ).strip()
+
+        try:
+            quantidade_coletada = int(
+                quantidade_texto
+            )
+        except ValueError:
+            print("ERRO - quantidade inválida")
+
+            self.texto_mensagem_conclusao.value = (
+                "Informe uma quantidade coletada válida."
+            )
+            self.texto_mensagem_conclusao.visible = True
+            self._atualizar_pagina()
+            return
+
+        try:
+            peso_coletado_kg = float(
+                peso_texto.replace(",", ".")
+            )
+        except ValueError:
+
+            self.texto_mensagem_conclusao.value = (
+                "Informe um peso coletado válido."
+            )
+            self.texto_mensagem_conclusao.visible = True
+            self._atualizar_pagina()
+            return
+
+        if quantidade_coletada <= 0:
+            self.texto_mensagem_conclusao.value = (
+                "A quantidade coletada deve ser maior que zero."
+            )
+            self.texto_mensagem_conclusao.visible = True
+            self._atualizar_pagina()
+            return
+
+        if peso_coletado_kg <= 0:
+            self.texto_mensagem_conclusao.value = (
+                "O peso coletado deve ser maior que zero."
+            )
+            self.texto_mensagem_conclusao.visible = True
+            self._atualizar_pagina()
+            return
+
+        resultado = self.controller.concluir_coleta(
+            solicitacao_id=self.solicitacao_id_conclusao,
+            quantidade_coletada=quantidade_coletada,
+            peso_coletado_kg=peso_coletado_kg,
+            observacao_operacional=observacao,
         )
+
+        self.indicador_conclusao.visible = False
+        self.botao_confirmar_conclusao.disabled = False
+
+        if resultado.falhou:
+
+            self.texto_mensagem_conclusao.value = (
+                resultado.mensagem
+            )
+            self.texto_mensagem_conclusao.color = (
+                ft.Colors.RED
+            )
+            self.texto_mensagem_conclusao.visible = True
+            self._atualizar_pagina()
+            return
+
+        self.page.pop_dialog()
+
+        self.solicitacao_id_conclusao = None
 
         self._processar_resultado_operacao(
             resultado
