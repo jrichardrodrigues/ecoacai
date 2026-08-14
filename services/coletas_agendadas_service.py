@@ -491,6 +491,47 @@ class ColetasAgendadasService:
                 erro,
             )
 
+    def registrar_chegada(
+            self,
+            solicitacao_id: int,
+    ) -> RepositoryResult:
+        """Registra a chegada da equipe ao local da coleta."""
+
+        validacao = self._validar_status_atual(
+            solicitacao_id=solicitacao_id,
+            status_esperado=StatusColeta.EM_COLETA,
+            mensagem=(
+                "Somente coletas em andamento podem registrar chegada."
+            ),
+        )
+
+        if validacao.falhou:
+            return validacao
+
+        try:
+            sucesso = self.repository.registrar_chegada(
+                solicitacao_id
+            )
+
+            if not sucesso:
+                return self._falha(
+                    "Não foi possível registrar a chegada."
+                )
+
+            return RepositoryResult(
+                sucesso=True,
+                mensagem="Chegada registrada com sucesso.",
+                dados=self.repository.obter_por_id(
+                    solicitacao_id
+                ),
+            )
+
+        except Exception as erro:
+            return self._erro_inesperado(
+                "Não foi possível registrar a chegada.",
+                erro,
+            )
+
     def concluir_coleta(
             self,
             solicitacao_id: int,

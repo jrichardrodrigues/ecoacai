@@ -145,6 +145,14 @@ class ColetasAgendadasController:
             solicitacao_id,
         )
 
+    def registrar_chegada(
+            self,
+            solicitacao_id: int,
+    ):
+        return self.service.registrar_chegada(
+            solicitacao_id,
+        )
+
     def concluir_coleta(
             self,
             solicitacao_id: int,

@@ -580,6 +580,72 @@ class AgendaRepository:
             campo_data="data_hora_inicio",
         )
 
+    def registrar_chegada(
+            self,
+            solicitacao_id: int,
+    ) -> bool:
+        """
+        Registra a chegada da equipe ao local da coleta.
+
+        A coleta deve estar em andamento.
+        O status permanece EM_COLETA.
+
+        Se a chegada já estiver registrada, mantém o horário
+        original e considera a operação válida.
+        """
+
+        if solicitacao_id <= 0:
+            return False
+
+        with self.database.obter_conexao() as conexao:
+            registro = conexao.execute(
+                """
+                SELECT
+                    status,
+                    data_hora_chegada
+                FROM solicitacoes
+                WHERE id = ?
+                  AND ativo = 1
+                LIMIT 1
+                """,
+                (solicitacao_id,),
+            ).fetchone()
+
+            if registro is None:
+                return False
+
+            status_atual = str(
+                registro["status"] or ""
+            ).strip().upper()
+
+            if status_atual != StatusColeta.EM_COLETA:
+                return False
+
+            chegada_atual = str(
+                registro["data_hora_chegada"] or ""
+            ).strip()
+
+            if chegada_atual:
+                return True
+
+            cursor = conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    data_hora_chegada = CURRENT_TIMESTAMP,
+                    atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = ?
+                  AND ativo = 1
+                  AND status = ?
+                """,
+                (
+                    solicitacao_id,
+                    StatusColeta.EM_COLETA,
+                ),
+            )
+
+            return cursor.rowcount > 0
+
     def concluir_coleta(
             self,
             solicitacao_id: int,

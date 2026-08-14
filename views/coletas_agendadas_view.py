@@ -1668,6 +1668,9 @@ class ColetasAgendadasView:
                     self._criar_menu_acoes(
                         solicitacao_id=solicitacao_id,
                         status=status,
+                        data_hora_chegada=registro.get(
+                            "data_hora_chegada"
+                        ),
                     ),
                 ),
             ],
@@ -1702,16 +1705,17 @@ class ColetasAgendadasView:
         )
 
     def _criar_menu_acoes(
-        self,
-        *,
-        solicitacao_id: int,
-        status: str,
+            self,
+            *,
+            solicitacao_id: int,
+            status: str,
+            data_hora_chegada: str | None = None,
     ) -> ft.PopupMenuButton:
         """Cria o menu de ações permitido para cada status."""
 
         itens: list[ft.PopupMenuItem] = [
             ft.PopupMenuItem(
-                content=ft.Text("Visualizar"),
+                content="Visualizar",
                 on_click=lambda _:
                 self._visualizar(solicitacao_id),
             ),
@@ -1720,12 +1724,12 @@ class ColetasAgendadasView:
         if status == StatusColeta.EM_ANALISE:
             itens.extend([
                 ft.PopupMenuItem(
-                    content=ft.Text("Agendar"),
+                    content="Agendar",
                     on_click=lambda _:
                     self._agendar(solicitacao_id),
                 ),
                 ft.PopupMenuItem(
-                    content=ft.Text("Cancelar"),
+                    content="Cancelar",
                     on_click=lambda _:
                     self._cancelar(solicitacao_id),
                 ),
@@ -1734,29 +1738,48 @@ class ColetasAgendadasView:
         elif status == StatusColeta.AGENDADA:
             itens.extend([
                 ft.PopupMenuItem(
-                    content=ft.Text("Reagendar"),
+                    content="Reagendar",
                     on_click=lambda _:
                     self._reagendar(solicitacao_id),
                 ),
                 ft.PopupMenuItem(
-                    content=ft.Text("Iniciar coleta"),
+                    content="Iniciar coleta",
                     on_click=lambda _:
                     self._iniciar(solicitacao_id),
                 ),
                 ft.PopupMenuItem(
-                    content=ft.Text("Cancelar"),
+                    content="Cancelar",
                     on_click=lambda _:
                     self._cancelar(solicitacao_id),
                 ),
             ])
 
-
         elif status == StatusColeta.EM_COLETA:
+
+            chegada_registrada = bool(
+                str(
+                    data_hora_chegada or ""
+                ).strip()
+            )
+
+            if not chegada_registrada:
+                itens.append(
+                    ft.PopupMenuItem(
+                        content="Registrar chegada",
+                        on_click=lambda _:
+                        self._registrar_chegada(
+                            solicitacao_id
+                        ),
+                    )
+                )
+
             itens.append(
                 ft.PopupMenuItem(
-                    content=ft.Text("Concluir coleta"),
+                    content="Concluir coleta",
                     on_click=lambda _:
-                    self._concluir(solicitacao_id),
+                    self._concluir(
+                        solicitacao_id
+                    ),
                 )
             )
 
@@ -2130,6 +2153,20 @@ class ColetasAgendadasView:
             resultado
         )
 
+    def _registrar_chegada(
+            self,
+            solicitacao_id: int,
+    ) -> None:
+        """Registra a chegada da equipe ao local da coleta."""
+
+        resultado = self.controller.registrar_chegada(
+            solicitacao_id
+        )
+
+        self._processar_resultado_operacao(
+            resultado
+        )
+
     def _concluir(
             self,
             solicitacao_id: int,
@@ -2263,18 +2300,18 @@ class ColetasAgendadasView:
         )
 
     def _processar_resultado_operacao(
-        self,
-        resultado: Any,
+            self,
+            resultado: Any,
     ) -> None:
         """Atualiza a interface depois de uma operação."""
+
+        if resultado.sucesso:
+            self.carregar_dados()
 
         self._mostrar_mensagem(
             resultado.mensagem,
             erro=resultado.falhou,
         )
-
-        if resultado.sucesso:
-            self.carregar_dados()
 
         self._atualizar_pagina()
 
