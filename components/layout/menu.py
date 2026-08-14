@@ -28,7 +28,7 @@ def criar_menu(on_change):
             ft.NavigationRailDestination(
                 icon=ft.Icons.STORE_OUTLINED,
                 selected_icon=ft.Icons.STORE,
-                label="Estabelecimentos",
+                label="Solicitantes",
             ),
             ft.NavigationRailDestination(
                 icon=ft.Icons.LOCAL_SHIPPING_OUTLINED,

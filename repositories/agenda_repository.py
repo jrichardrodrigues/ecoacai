@@ -319,7 +319,38 @@ class AgendaRepository:
 
         consulta += """
             WHERE s.ativo = 1
-              AND DATE(s.data_hora_agendada)
+              AND DATE(
+                    CASE
+                        WHEN s.status = 'CONCLUIDA'
+                            THEN COALESCE(
+                                s.data_hora_conclusao,
+                                s.data_hora_agendada,
+                                s.data_solicitacao
+                            )
+
+                        WHEN s.status = 'EM_COLETA'
+                            THEN COALESCE(
+                                s.data_hora_inicio,
+                                s.data_hora_agendada,
+                                s.data_solicitacao
+                            )
+
+                        WHEN s.status = 'CANCELADA'
+                            THEN COALESCE(
+                                s.data_hora_cancelamento,
+                                s.data_hora_agendada,
+                                s.data_solicitacao
+                            )
+
+                        WHEN s.status = 'AGENDADA'
+                            THEN COALESCE(
+                                s.data_hora_agendada,
+                                s.data_solicitacao
+                            )
+
+                        ELSE s.data_solicitacao
+                    END
+                  )
                   BETWEEN DATE(?) AND DATE(?)
         """
 
@@ -590,18 +621,40 @@ class AgendaRepository:
     def cancelar_coleta(
             self,
             solicitacao_id: int,
+            motivo: str,
     ) -> bool:
         """
-        Cancela uma solicitação pendente ou agendada.
-
-        Não registra data específica de cancelamento,
-        pois a tabela ainda não possui esse campo.
+        Cancela uma solicitação registrando
+        o motivo e a data/hora do cancelamento.
         """
 
-        return self._atualizar_status(
-            solicitacao_id=solicitacao_id,
-            novo_status=StatusColeta.CANCELADA,
-        )
+        motivo_normalizado = str(
+            motivo or ""
+        ).strip()
+
+        if not motivo_normalizado:
+            return False
+
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    status = ?,
+                    motivo_cancelamento = ?,
+                    data_hora_cancelamento = CURRENT_TIMESTAMP,
+                    atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = ?
+                  AND ativo = 1
+                """,
+                (
+                    StatusColeta.CANCELADA,
+                    motivo_normalizado,
+                    solicitacao_id,
+                ),
+            )
+
+            return cursor.rowcount > 0
 
     # ==========================================================
     # DISPONIBILIDADE
@@ -961,7 +1014,8 @@ class AgendaRepository:
         """
         Retorna a quantidade de solicitações agrupadas por status.
 
-        Quando um período é informado, considera a data da solicitação.
+        Quando um período é informado, utiliza a data operacional
+        correspondente ao status atual da solicitação.
         Sem período, contabiliza todas as solicitações ativas.
         """
 
@@ -992,14 +1046,47 @@ class AgendaRepository:
             else None
         )
 
+        data_operacional = """
+            CASE
+                WHEN status = 'CONCLUIDA'
+                    THEN COALESCE(
+                        NULLIF(TRIM(data_hora_conclusao), ''),
+                        NULLIF(TRIM(data_hora_agendada), ''),
+                        data_solicitacao
+                    )
+
+                WHEN status = 'EM_COLETA'
+                    THEN COALESCE(
+                        NULLIF(TRIM(data_hora_inicio), ''),
+                        NULLIF(TRIM(data_hora_agendada), ''),
+                        data_solicitacao
+                    )
+
+                WHEN status = 'CANCELADA'
+                    THEN COALESCE(
+                        NULLIF(TRIM(data_hora_cancelamento), ''),
+                        NULLIF(TRIM(data_hora_agendada), ''),
+                        data_solicitacao
+                    )
+
+                WHEN status = 'AGENDADA'
+                    THEN COALESCE(
+                        NULLIF(TRIM(data_hora_agendada), ''),
+                        data_solicitacao
+                    )
+
+                ELSE data_solicitacao
+            END
+        """
+
         if inicio and fim:
             if inicio > fim:
                 raise ValueError(
                     "A data inicial não pode ser maior que a data final."
                 )
 
-            consulta += """
-                AND DATE(data_solicitacao)
+            consulta += f"""
+                AND DATE({data_operacional})
                     BETWEEN DATE(?) AND DATE(?)
             """
 
@@ -1009,8 +1096,8 @@ class AgendaRepository:
             ])
 
         elif inicio:
-            consulta += """
-                AND DATE(data_solicitacao) >= DATE(?)
+            consulta += f"""
+                AND DATE({data_operacional}) >= DATE(?)
             """
 
             parametros.append(
@@ -1018,8 +1105,8 @@ class AgendaRepository:
             )
 
         elif fim:
-            consulta += """
-                AND DATE(data_solicitacao) <= DATE(?)
+            consulta += f"""
+                AND DATE({data_operacional}) <= DATE(?)
             """
 
             parametros.append(
@@ -1099,6 +1186,8 @@ class AgendaRepository:
 
                 s.observacao_cliente,
                 s.observacao_operacional,
+                s.motivo_cancelamento,
+                s.data_hora_cancelamento,
 
                 s.latitude,
                 s.longitude,

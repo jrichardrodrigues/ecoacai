@@ -553,10 +553,11 @@ class ColetasAgendadasService:
             )
 
     def cancelar_coleta(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
+            motivo: str,
     ) -> RepositoryResult:
-        """Cancela uma solicitação solicitada, em análise ou agendada."""
+        """Cancela uma solicitação e registra o motivo."""
 
         if not self._id_valido(solicitacao_id):
             return self._falha(
@@ -586,9 +587,19 @@ class ColetasAgendadasService:
                 "ou agendadas podem ser canceladas."
             )
 
+        motivo_normalizado = str(
+            motivo or ""
+        ).strip()
+
+        if not motivo_normalizado:
+            return self._falha(
+                "Informe o motivo do cancelamento."
+            )
+
         try:
             sucesso = self.repository.cancelar_coleta(
-                solicitacao_id
+                solicitacao_id=solicitacao_id,
+                motivo=motivo_normalizado,
             )
 
             if not sucesso:

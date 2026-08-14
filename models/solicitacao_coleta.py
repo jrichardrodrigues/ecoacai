@@ -28,6 +28,7 @@ PESO_MEDIO_SACA_KG = 50.0
 PESO_MEDIO_BAG_KG = 1000.0
 
 UNIDADE_SACAS = "SACAS"
+UNIDADE_BAGS = "BAGS"
 UNIDADE_KG = "KG"
 UNIDADE_UNIDADES = "UNIDADES"
 UNIDADE_METRO_CUBICO = "M3"
@@ -174,7 +175,7 @@ class SolicitacaoColeta:
     def atualizar_tipo_operacao(self) -> str:
         if self.forma_acondicionamento == FORMA_BAG:
             self.tipo_operacao = OPERACAO_MUNCK
-            self.unidade_medida = UNIDADE_UNIDADES
+            self.unidade_medida = UNIDADE_BAGS
         else:
             self.tipo_operacao = OPERACAO_MANUAL
             self.unidade_medida = UNIDADE_SACAS
@@ -192,7 +193,7 @@ class SolicitacaoColeta:
         else:
             # Valor técnico temporário para satisfazer a restrição
             # legada CHECK (quantidade_sacas_prevista > 0).
-            self.quantidade_sacas_prevista = 1
+            self.quantidade_sacas_prevista = 0
 
     def atualizar_planejamento(self) -> None:
         self.atualizar_tipo_operacao()

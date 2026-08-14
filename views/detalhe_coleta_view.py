@@ -24,20 +24,35 @@ class DetalheColetaView:
     def construir(self) -> ft.Control:
         """Constrói e retorna a tela de detalhes da coleta."""
 
+        controles = [
+            self._cabecalho(),
+            ft.Divider(),
+            self._barra_superior(),
+            ft.Divider(),
+            self._secao_identificacao(),
+            ft.Divider(),
+            self._secao_solicitacao(),
+            ft.Divider(),
+            self._secao_operacao(),
+            ft.Divider(),
+            self._secao_execucao(),
+        ]
+
+        status = self._texto(
+            self.coleta.get("status"),
+            "",
+        ).strip().upper()
+
+        if status == StatusColeta.CANCELADA:
+            controles.extend(
+                [
+                    ft.Divider(),
+                    self._secao_cancelamento(),
+                ]
+            )
+
         conteudo = ft.Column(
-            controls=[
-                self._cabecalho(),
-                ft.Divider(),
-                self._barra_superior(),
-                ft.Divider(),
-                self._secao_identificacao(),
-                ft.Divider(),
-                self._secao_solicitacao(),
-                ft.Divider(),
-                self._secao_operacao(),
-                ft.Divider(),
-                self._secao_execucao(),
-            ],
+            controls=controles,
             spacing=16,
             scroll=ft.ScrollMode.AUTO,
         )
@@ -274,6 +289,31 @@ class DetalheColetaView:
                             "observacao_operacional"
                         ),
                         "Nenhuma observação registrada.",
+                    ),
+                ),
+            ],
+            spacing=12,
+        )
+
+    def _secao_cancelamento(self) -> ft.Control:
+        """Exibe os dados de cancelamento da coleta."""
+
+        return ft.Column(
+            controls=[
+                self._titulo_secao("Cancelamento"),
+                self._linha_dado(
+                    "Motivo",
+                    self._texto(
+                        self.coleta.get("motivo_cancelamento"),
+                        "Não informado",
+                    ),
+                ),
+                self._linha_dado(
+                    "Cancelada em",
+                    self._formatar_data_hora(
+                        self.coleta.get(
+                            "data_hora_cancelamento"
+                        )
                     ),
                 ),
             ],

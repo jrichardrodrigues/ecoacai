@@ -162,11 +162,15 @@ class ColetasAgendadasController:
         )
 
     def cancelar_coleta(
-        self,
-        solicitacao_id: int,
+            self,
+            solicitacao_id: int,
+            motivo: str,
     ):
+        """Cancela uma coleta registrando o motivo."""
+
         return self.service.cancelar_coleta(
-            solicitacao_id,
+            solicitacao_id=solicitacao_id,
+            motivo=motivo,
         )
 
     # ======================================================

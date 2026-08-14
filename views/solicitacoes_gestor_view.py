@@ -68,19 +68,19 @@ class SolicitacoesGestorView:
 
     @staticmethod
     def _formatar_quantidade(
-        dados: dict,
+            dados: dict,
     ) -> str:
-        unidade = str(
-            dados.get("unidade_medida") or ""
-        ).upper()
+        forma_acondicionamento = str(
+            dados.get("forma_acondicionamento") or ""
+        ).strip().upper()
 
-        if unidade == "UNIDADES":
-            quantidade = int(
-                dados.get("quantidade_prevista")
-                or dados.get("quantidade_sacas_prevista")
-                or 0
-            )
+        quantidade = int(
+            dados.get("quantidade_prevista")
+            or dados.get("quantidade_sacas_prevista")
+            or 0
+        )
 
+        if forma_acondicionamento == "BAG":
             unidade_texto = (
                 "Bag"
                 if quantidade == 1
@@ -92,19 +92,19 @@ class SolicitacoesGestorView:
                 f"{unidade_texto} (1 m³)"
             )
 
-        quantidade = int(
-            dados.get("quantidade_prevista")
-            or dados.get("quantidade_sacas_prevista")
-            or 0
-        )
+        if forma_acondicionamento == "SACA":
+            unidade_texto = (
+                "Saca"
+                if quantidade == 1
+                else "Sacas"
+            )
 
-        unidade_texto = (
-            "Saca"
-            if quantidade == 1
-            else "Sacas"
-        )
+            return (
+                f"{quantidade} "
+                f"{unidade_texto} (50 kg)"
+            )
 
-        return f"{quantidade} {unidade_texto}"
+        return f"{quantidade} unidade(s)"
 
     # ==========================================================
     # DADOS
@@ -229,6 +229,11 @@ class SolicitacoesGestorView:
                         ),
 
                         ft.Text(
+                            "Peso estimado: "
+                            + self._formatar_peso_estimado(dados)
+                        ),
+
+                        ft.Text(
                             "Solicitada em: "
                             f"{dados.get('data_solicitacao') or '-'}"
                         ),
@@ -241,6 +246,28 @@ class SolicitacoesGestorView:
                     spacing=8,
                 ),
             ),
+        )
+
+    @staticmethod
+    def _formatar_peso_estimado(
+            dados: dict,
+    ) -> str:
+        peso = float(
+            dados.get("peso_estimado_kg") or 0
+        )
+
+        if peso <= 0:
+            return "Não informado"
+
+        if peso.is_integer():
+            return f"{int(peso):,}".replace(",", ".") + " kg"
+
+        return (
+                f"{peso:,.2f}"
+                .replace(",", "X")
+                .replace(".", ",")
+                .replace("X", ".")
+                + " kg"
         )
 
     # ==========================================================

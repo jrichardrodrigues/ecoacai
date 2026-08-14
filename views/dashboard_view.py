@@ -594,18 +594,6 @@ class DashboardView:
             limite=5,
         )
 
-        print("ULTIMAS SOLICITACOES:")
-
-        for item in ultimas_solicitacoes:
-            print(
-                item.get("codigo"),
-                "| status:", item.get("status"),
-                "| sacas_previstas:", item.get("quantidade_sacas_prevista"),
-                "| kg_previsto:", item.get("quantidade_kg_previsto"),
-                "| sacas_coletadas:", item.get("quantidade_sacas_coletada"),
-                "| kg_coletado:", item.get("quantidade_kg_coletado"),
-            )
-
         cards_status_data = self._obter_cards_status(
             total_solicitacoes=total,
             total_estabelecimentos=total_estabelecimentos,

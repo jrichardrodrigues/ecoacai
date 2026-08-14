@@ -753,21 +753,38 @@ class SolicitacaoFormView:
                 "Solicitante inválido.",
             )
 
+        forma_acondicionamento = str(
+            self.forma_acondicionamento.value or "SACA"
+        ).strip().upper()
+
+        if forma_acondicionamento not in (
+                "SACA",
+                "BAG",
+        ):
+            return (
+                None,
+                "Forma de acondicionamento inválida.",
+            )
+
         try:
-            quantidade_sacas_prevista = int(
+            quantidade_prevista = int(
                 self.quantidade_sacas_prevista.value or ""
             )
 
         except (TypeError, ValueError):
             return (
                 None,
-                "Quantidade de sacas inválida.",
+                "Quantidade informada inválida.",
             )
 
-        if quantidade_sacas_prevista <= 0:
+        if quantidade_prevista <= 0:
             return (
                 None,
-                "Informe pelo menos uma saca.",
+                (
+                    "Informe pelo menos um bag."
+                    if forma_acondicionamento == "BAG"
+                    else "Informe pelo menos uma saca."
+                ),
             )
 
         quantidade_kg_previsto_texto = (
@@ -788,20 +805,17 @@ class SolicitacaoFormView:
                 "Quantidade em kg inválida.",
             )
 
-        if quantidade_kg_previsto < 0:
+        if quantidade_kg_previsto <= 0:
             return (
                 None,
-                "A quantidade em kg não pode ser negativa.",
+                "O peso previsto deve ser maior que zero.",
             )
 
         dados = {
             "estabelecimento_id": estabelecimento_id,
-            "quantidade_sacas_prevista": (
-                quantidade_sacas_prevista
-            ),
-            "quantidade_kg_previsto": (
-                quantidade_kg_previsto
-            ),
+            "forma_acondicionamento": forma_acondicionamento,
+            "quantidade_prevista": quantidade_prevista,
+            "quantidade_kg_previsto": quantidade_kg_previsto,
             "observacao_cliente": (
                     self.observacao.value or ""
             ).strip(),
@@ -864,14 +878,11 @@ class SolicitacaoFormView:
         """Cadastra uma nova solicitação com os dados do formulário."""
 
         quantidade_prevista = int(
-            dados.get("quantidade_prevista")
-            or dados.get("quantidade_sacas_prevista")
-            or 0
+            dados.get("quantidade_prevista") or 0
         )
 
         forma_acondicionamento = str(
-            dados.get("forma_acondicionamento")
-            or "SACA"
+            dados.get("forma_acondicionamento") or "SACA"
         ).strip().upper()
 
         sucesso, mensagem, _ = self.controller.criar(
