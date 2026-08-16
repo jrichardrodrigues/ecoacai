@@ -194,22 +194,121 @@ class SolicitacaoColetaService:
         )
 
     def obter_estatisticas(
-        self,
-        organizacao_id: int | None = None,
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> dict:
         return self.repository.obter_estatisticas(
             organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
+        )
+
+    def obter_tempo_medio_atendimento(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """Retorna o tempo médio de atendimento em minutos."""
+
+        return self.repository.obter_tempo_medio_atendimento(
+            organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
+        )
+
+    def obter_tempo_medio_coleta(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """Retorna o tempo médio de coleta em minutos."""
+
+        return self.repository.obter_tempo_medio_coleta(
+            organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
+        )
+
+    def obter_tempo_medio_espera(
+        self,
+        organizacao_id: int | None = None,
+        data_inicial: str | None = None,
+        data_final: str | None = None,
+    ) -> float:
+        """Retorna o tempo médio de espera em minutos."""
+
+        return self.repository.obter_tempo_medio_espera(
+            organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
+        )
+
+    def obter_taxa_cumprimento_agendamento(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """
+        Retorna a taxa percentual de cumprimento do agendamento.
+
+        Considera pontual a chegada realizada até 15 minutos
+        após o horário agendado.
+        """
+
+        return self.repository.obter_taxa_cumprimento_agendamento(
+            organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
+        )
+
+    def obter_eficiencia_volume_coletado(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """Retorna a eficiência do volume coletado, em percentual."""
+
+        return self.repository.obter_eficiencia_volume_coletado(
+            organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
+        )
+
+    def obter_evolucao_solicitacoes(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> list[dict]:
+        """
+        Retorna a evolução diária das solicitações e
+        das coletas concluídas.
+        """
+        return self.repository.obter_evolucao_solicitacoes(
+            organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
         )
 
     def listar_ultimas(
-        self,
-        limite: int = 5,
-        *,
-        organizacao_id: int | None = None,
+            self,
+            limite: int = 5,
+            *,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> list[dict]:
         return self.repository.listar_ultimas(
             limite=limite,
             organizacao_id=organizacao_id,
+            data_inicial=data_inicial,
+            data_final=data_final,
         )
 
     def contar_agendadas_hoje(

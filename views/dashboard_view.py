@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 import flet as ft
 import flet_charts as fch
 
@@ -23,7 +25,42 @@ class DashboardView:
     def __init__(self, page: ft.Page) -> None:
         self.page = page
         self.controller = DashboardController()
-        self.estatisticas = self.controller.obter_estatisticas()
+
+        self.data_inicial: str | None = None
+        self.data_final: str | None = None
+
+        self.campo_data_inicial = ft.TextField(
+            label="Data inicial",
+            hint_text="dd/mm/aaaa",
+            width=180,
+            dense=True,
+            read_only=True,
+            on_click=self._abrir_data_inicial,
+        )
+
+        self.campo_data_final = ft.TextField(
+            label="Data final",
+            hint_text="dd/mm/aaaa",
+            width=180,
+            dense=True,
+            read_only=True,
+            on_click=self._abrir_data_final,
+        )
+
+        self.estatisticas = self.controller.obter_estatisticas(
+            data_inicial=self.data_inicial,
+            data_final=self.data_final,
+        )
+
+        self.conteudo_dashboard = ft.Column(
+            spacing=Spacing.LG,
+            scroll=ft.ScrollMode.ADAPTIVE,
+            expand=True,
+        )
+
+        self.conteudo_dashboard = ft.Column(
+            spacing=Spacing.LG,
+        )
 
     @staticmethod
     def _formatar_numero(valor: int | float | None) -> str:
@@ -46,6 +83,46 @@ class DashboardView:
         """Formata um percentual no padrão brasileiro."""
         percentual = (valor / total * 100) if total > 0 else 0
         return f"{percentual:.1f}%".replace(".", ",")
+
+    @staticmethod
+    def _formatar_duracao(
+        minutos: int | float | None,
+    ) -> str:
+        """Formata uma duração em minutos para leitura amigável."""
+
+        if minutos is None or minutos <= 0:
+            return "0 min"
+
+        total_minutos = int(round(minutos))
+
+        dias, restante = divmod(
+            total_minutos,
+            1440,
+        )
+
+        horas, minutos_restantes = divmod(
+            restante,
+            60,
+        )
+
+        partes: list[str] = []
+
+        if dias > 0:
+            partes.append(
+                f"{dias}d"
+            )
+
+        if horas > 0:
+            partes.append(
+                f"{horas}h"
+            )
+
+        if minutos_restantes > 0 or not partes:
+            partes.append(
+                f"{minutos_restantes}min"
+            )
+
+        return " ".join(partes)
 
     @staticmethod
     def _criar_item_legenda(
@@ -434,6 +511,188 @@ class DashboardView:
             ),
         )
 
+    def _criar_grafico_evolucao(
+            self,
+            dados: list[dict],
+    ) -> ft.Control:
+        """Cria o gráfico de evolução das solicitações."""
+
+        if not dados:
+            return ft.Container(
+                height=300,
+                alignment=ft.Alignment.CENTER,
+                content=ft.Text(
+                    "Não há dados para o período selecionado.",
+                ),
+            )
+
+        pontos_solicitacoes: list[fch.LineChartDataPoint] = []
+        pontos_concluidas: list[fch.LineChartDataPoint] = []
+
+        for indice, item in enumerate(dados):
+            pontos_solicitacoes.append(
+                fch.LineChartDataPoint(
+                    indice,
+                    item.get("solicitacoes", 0),
+                )
+            )
+
+            pontos_concluidas.append(
+                fch.LineChartDataPoint(
+                    indice,
+                    item.get("concluidas", 0),
+                )
+            )
+
+        maior_valor = max(
+            max(
+                item.get("solicitacoes", 0),
+                item.get("concluidas", 0),
+            )
+            for item in dados
+        )
+
+        max_y = max(
+            maior_valor + 1,
+            5,
+        )
+
+        series = [
+            fch.LineChartData(
+                points=pontos_solicitacoes,
+                color=ft.Colors.BLUE_600,
+                stroke_width=3,
+                curved=False,
+                point=True,
+            ),
+            fch.LineChartData(
+                points=pontos_concluidas,
+                color=ft.Colors.GREEN_600,
+                stroke_width=3,
+                curved=False,
+                point=True,
+            ),
+        ]
+        labels_datas = []
+
+        for indice, item in enumerate(dados):
+            data = item.get("data", "")
+
+            if data:
+                partes = data.split("-")
+
+                if len(partes) == 3:
+                    data_formatada = f"{partes[2]}/{partes[1]}"
+                else:
+                    data_formatada = data
+            else:
+                data_formatada = ""
+
+            labels_datas.append(
+                fch.ChartAxisLabel(
+                    value=indice,
+                    label=ft.Text(
+                        data_formatada,
+                        size=11,
+                        color=ft.Colors.GREY_700,
+                    ),
+                )
+            )
+
+        labels_y = [
+            fch.ChartAxisLabel(
+                value=valor,
+                label=ft.Text(
+                    str(valor),
+                    size=11,
+                    color=ft.Colors.GREY_700,
+                ),
+            )
+            for valor in range(
+                0,
+                int(max_y) + 1,
+            )
+        ]
+
+        grafico = fch.LineChart(
+            data_series=series,
+            bottom_axis=fch.ChartAxis(
+                labels=labels_datas,
+                label_size=32,
+                show_min=True,
+                show_max=True,
+            ),
+            left_axis=fch.ChartAxis(
+                labels=labels_y,
+                label_size=32,
+                show_min=True,
+                show_max=True,
+            ),
+            min_x=0,
+            max_x=max(
+                len(dados) - 1,
+                1,
+            ),
+            min_y=0,
+            max_y=max_y,
+            interactive=True,
+            expand=True,
+        )
+
+        return ft.Container(
+            padding=20,
+            border=ft.Border.all(
+                1,
+                ft.Colors.GREY_200,
+            ),
+            border_radius=12,
+            bgcolor=ft.Colors.WHITE,
+            content=ft.Column(
+                controls=[
+                    ft.Row(
+                        controls=[
+                            ft.Text(
+                                "Evolução das solicitações",
+                                size=16,
+                                weight=ft.FontWeight.W_600,
+                            ),
+                            ft.Row(
+                                controls=[
+                                    ft.Icon(
+                                        ft.Icons.CIRCLE,
+                                        size=10,
+                                        color=ft.Colors.BLUE_600,
+                                    ),
+                                    ft.Text(
+                                        "Solicitações",
+                                        size=12,
+                                        color=ft.Colors.GREY_700,
+                                    ),
+                                    ft.Icon(
+                                        ft.Icons.CIRCLE,
+                                        size=10,
+                                        color=ft.Colors.GREEN_600,
+                                    ),
+                                    ft.Text(
+                                        "Concluídas",
+                                        size=12,
+                                        color=ft.Colors.GREY_700,
+                                    ),
+                                ],
+                                spacing=6,
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                    ft.Container(
+                        height=280,
+                        content=grafico,
+                    ),
+                ],
+                spacing=16,
+            ),
+        )
+
     def _obter_cards_status(
             self,
             total_solicitacoes: int,
@@ -558,8 +817,176 @@ class DashboardView:
             },
         ]
 
-    def build(self) -> ft.Control:
-        """Constrói e retorna o Dashboard."""
+    @staticmethod
+    def _converter_data_filtro(valor: str) -> str | None:
+        """Converte dd/mm/aaaa para aaaa-mm-dd."""
+
+        texto = str(valor or "").strip()
+
+        if not texto:
+            return None
+
+        try:
+            data = datetime.strptime(
+                texto,
+                "%d/%m/%Y",
+            )
+        except ValueError as erro:
+            raise ValueError(
+                "Informe a data no formato dd/mm/aaaa."
+            ) from erro
+
+        return data.strftime("%Y-%m-%d")
+
+    def _aplicar_filtro(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Aplica o período informado ao Dashboard."""
+
+        try:
+            self.data_inicial = self._converter_data_filtro(
+                self.campo_data_inicial.value
+            )
+
+            self.data_final = self._converter_data_filtro(
+                self.campo_data_final.value
+            )
+
+            if (
+                    self.data_inicial
+                    and self.data_final
+                    and self.data_inicial > self.data_final
+            ):
+                raise ValueError(
+                    "A data inicial não pode ser maior que a data final."
+                )
+
+            self.estatisticas = (
+                self.controller.obter_estatisticas(
+                    data_inicial=self.data_inicial,
+                    data_final=self.data_final,
+                )
+            )
+
+            self.conteudo_dashboard.controls = (
+                self._montar_conteudo_dashboard()
+            )
+
+            self.page.update()
+
+        except ValueError as erro:
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text(
+                    str(erro)
+                )
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+
+    def _limpar_filtro(
+        self,
+        _evento: ft.Event,
+    ) -> None:
+        """Remove o período e restaura o Dashboard completo."""
+
+        self.data_inicial = None
+        self.data_final = None
+
+        self.campo_data_inicial.value = ""
+        self.campo_data_final.value = ""
+
+        self.estatisticas = (
+            self.controller.obter_estatisticas(
+                data_inicial=None,
+                data_final=None,
+            )
+        )
+
+        self.conteudo_dashboard.controls = (
+            self._montar_conteudo_dashboard()
+        )
+
+        self.page.update()
+
+    def _abrir_data_inicial(
+        self,
+        _evento: ft.Event,
+    ) -> None:
+        """Abre o calendário para selecionar a data inicial."""
+
+        hoje = date.today()
+
+        seletor = ft.DatePicker(
+            first_date=date(2020, 1, 1),
+            last_date=date(
+                hoje.year + 2,
+                12,
+                31,
+            ),
+            on_change=self._selecionar_data_inicial,
+        )
+
+        self.page.show_dialog(seletor)
+
+    def _selecionar_data_inicial(
+        self,
+        evento: ft.Event,
+    ) -> None:
+        """Atualiza o campo de data inicial."""
+
+        valor = evento.control.value
+
+        if valor is None:
+            return
+
+        self.campo_data_inicial.value = (
+            valor.strftime("%d/%m/%Y")
+        )
+
+        self.page.update()
+
+    def _abrir_data_final(
+        self,
+        _evento: ft.Event,
+    ) -> None:
+        """Abre o calendário para selecionar a data final."""
+
+        hoje = date.today()
+
+        seletor = ft.DatePicker(
+            first_date=date(2020, 1, 1),
+            last_date=date(
+                hoje.year + 2,
+                12,
+                31,
+            ),
+            on_change=self._selecionar_data_final,
+        )
+
+        self.page.show_dialog(seletor)
+
+    def _selecionar_data_final(
+        self,
+        evento: ft.Event,
+    ) -> None:
+        """Atualiza o campo de data final."""
+
+        valor = evento.control.value
+
+        if valor is None:
+            return
+
+        self.campo_data_final.value = (
+            valor.strftime("%d/%m/%Y")
+        )
+
+        self.page.update()
+
+    def _montar_conteudo_dashboard(
+            self,
+    ) -> list[ft.Control]:
+        """Monta os controles internos do Dashboard."""
         total = self.estatisticas.get("total", 0)
         total_estabelecimentos = self.estatisticas.get(
             "total_estabelecimentos",
@@ -570,6 +997,43 @@ class DashboardView:
         coletas_hoje = self.estatisticas.get("coletas_hoje", 0)
         em_coleta = self.estatisticas.get("em_coleta", 0)
         concluidas = self.estatisticas.get("concluidas", 0)
+
+        tempo_medio_atendimento = self.estatisticas.get(
+            "tempo_medio_atendimento",
+            0,
+        )
+
+        tempo_medio_coleta = self.estatisticas.get(
+            "tempo_medio_coleta",
+            0,
+        )
+
+        tempo_medio_espera = self.estatisticas.get(
+            "tempo_medio_espera",
+            0,
+        )
+
+        taxa_cumprimento_agendamento = self.estatisticas.get(
+            "taxa_cumprimento_agendamento",
+            0,
+        )
+
+        eficiencia_volume_coletado = self.estatisticas.get(
+            "eficiencia_volume_coletado",
+            0,
+        )
+
+        evolucao_solicitacoes = self.estatisticas.get(
+            "evolucao_solicitacoes",
+            [],
+        )
+
+        taxa_conclusao = (
+            (concluidas / total) * 100
+            if total > 0
+            else 0
+        )
+
         total_sacas = self.estatisticas.get(
             "sacas_coletadas",
             0,
@@ -592,6 +1056,8 @@ class DashboardView:
 
         ultimas_solicitacoes = self.controller.listar_ultimas(
             limite=5,
+            data_inicial=self.data_inicial,
+            data_final=self.data_final,
         )
 
         cards_status_data = self._obter_cards_status(
@@ -629,6 +1095,110 @@ class DashboardView:
             ],
         )
 
+        cards_desempenho = ft.ResponsiveRow(
+            spacing=Spacing.MD,
+            run_spacing=Spacing.MD,
+            controls=[
+                self._criar_container_card(
+                    titulo="Tempo médio de atendimento",
+                    valor=self._formatar_duracao(
+                        tempo_medio_atendimento
+                    ),
+                    icone=ft.Icons.SCHEDULE,
+                    cor=ft.Colors.INDIGO_700,
+                    cor_fundo=ft.Colors.INDIGO_50,
+                    subtitulo="Da solicitação até a conclusão",
+                    col={
+                        "sm": 12,
+                        "md": 6,
+                        "lg": 2,
+                    },
+                ),
+                self._criar_container_card(
+                    titulo="Tempo médio de espera",
+                    valor=self._formatar_duracao(
+                        tempo_medio_espera
+                    ),
+                    icone=ft.Icons.HOURGLASS_EMPTY,
+                    cor=ft.Colors.AMBER_800,
+                    cor_fundo=ft.Colors.AMBER_50,
+                    subtitulo="Da solicitação até o início",
+                    col={
+                        "sm": 12,
+                        "md": 6,
+                        "lg": 2,
+                    },
+                ),
+                self._criar_container_card(
+                    titulo="Tempo médio de coleta",
+                    valor=self._formatar_duracao(
+                        tempo_medio_coleta
+                    ),
+                    icone=ft.Icons.TIMER_OUTLINED,
+                    cor=ft.Colors.BLUE_700,
+                    cor_fundo=ft.Colors.BLUE_50,
+                    subtitulo="Do início até a conclusão",
+                    col={
+                        "sm": 12,
+                        "md": 6,
+                        "lg": 2,
+                    },
+                ),
+                self._criar_container_card(
+                    titulo="Taxa de conclusão",
+                    valor=(
+                        f"{taxa_conclusao:.1f}%"
+                        .replace(".", ",")
+                    ),
+                    icone=ft.Icons.CHECK_CIRCLE_OUTLINE,
+                    cor=ft.Colors.GREEN_700,
+                    cor_fundo=ft.Colors.GREEN_50,
+                    subtitulo="Solicitações concluídas no período",
+                    col={
+                        "sm": 12,
+                        "md": 6,
+                        "lg": 2,
+                    },
+                ),
+                self._criar_container_card(
+                    titulo="Cumprimento do agendamento",
+                    valor=(
+                        f"{taxa_cumprimento_agendamento:.1f}%"
+                        .replace(".", ",")
+                    ),
+                    icone=ft.Icons.EVENT_AVAILABLE,
+                    cor=ft.Colors.TEAL_700,
+                    cor_fundo=ft.Colors.TEAL_50,
+                    subtitulo="Chegada dentro da tolerância de 15 min",
+                    col={
+                        "sm": 12,
+                        "md": 6,
+                        "lg": 2,
+                    },
+                ),
+                self._criar_container_card(
+                    titulo="Eficiência do volume coletado",
+                    valor=(
+                        f"{eficiencia_volume_coletado:.1f}%"
+                        .replace(".", ",")
+                    ),
+                    icone=ft.Icons.SCALE,
+                    cor=ft.Colors.PURPLE_700,
+                    cor_fundo=ft.Colors.PURPLE_50,
+                    subtitulo="Peso coletado em relação ao previsto",
+                    col={
+                        "sm": 12,
+                        "md": 6,
+                        "lg": 2,
+                    },
+                ),
+            ],
+        )
+
+        painel_evolucao = self._criar_grafico_evolucao(
+            evolucao_solicitacoes,
+        )
+
         cabecalho_executivo = ExecutiveHeader(
             total_estabelecimentos=self._formatar_numero(
                 total_estabelecimentos
@@ -646,21 +1216,85 @@ class DashboardView:
             canceladas=canceladas,
         )
 
+        filtro_periodo = ft.Container(
+            padding=16,
+            border=ft.Border.all(
+                1,
+                ft.Colors.GREY_300,
+            ),
+            border_radius=Radius.LG,
+            bgcolor=ft.Colors.WHITE,
+            content=ft.Row(
+                controls=[
+                    self.campo_data_inicial,
+                    self.campo_data_final,
+                    ft.FilledButton(
+                        content=ft.Row(
+                            controls=[
+                                ft.Icon(
+                                    ft.Icons.FILTER_ALT,
+                                    size=18,
+                                ),
+                                ft.Text("Aplicar"),
+                            ],
+                            spacing=8,
+                            tight=True,
+                        ),
+                        on_click=self._aplicar_filtro,
+                    ),
+                    ft.OutlinedButton(
+                        content=ft.Row(
+                            controls=[
+                                ft.Icon(
+                                    ft.Icons.CLEAR,
+                                    size=18,
+                                ),
+                                ft.Text("Limpar"),
+                            ],
+                            spacing=8,
+                            tight=True,
+                        ),
+                        on_click=self._limpar_filtro,
+                    ),
+                ],
+                spacing=12,
+                wrap=True,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+        )
+
+        return [
+            cabecalho_executivo,
+            filtro_periodo,
+            Section(
+                title="Solicitações",
+                content=cards_status,
+            ),
+            Section(
+                title="Volumes registrados",
+                content=cards_totais,
+            ),
+            Section(
+                title="Desempenho operacional",
+                content=cards_desempenho,
+            ),
+            painel_evolucao,
+            painel_distribuicao,
+            DashboardTable(
+                solicitacoes=ultimas_solicitacoes,
+            ),
+        ]
+
+    def build(self) -> ft.Control:
+        """Constrói e retorna o Dashboard."""
+
+        self.conteudo_dashboard.controls = (
+            self._montar_conteudo_dashboard()
+        )
+
         return ft.Column(
             controls=[
-                cabecalho_executivo,
-                Section(
-                    title="Solicitações",
-                    content=cards_status,
-                ),
-                Section(
-                    title="Volumes registrados",
-                    content=cards_totais,
-                ),
-                painel_distribuicao,
-                DashboardTable(
-                    solicitacoes=ultimas_solicitacoes,
-                ),
+                self.conteudo_dashboard,
             ],
             spacing=Spacing.LG,
             scroll=ft.ScrollMode.ADAPTIVE,

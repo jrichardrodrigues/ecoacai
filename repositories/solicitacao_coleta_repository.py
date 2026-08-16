@@ -517,26 +517,109 @@ class SolicitacaoColetaRepository:
     # ==========================================================
 
     def obter_estatisticas(
-        self,
-        organizacao_id: int | None = None,
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> dict:
         """Retorna indicadores das solicitações ativas."""
 
         filtro_organizacao = ""
         parametros: list[Any] = []
 
+        inicio = (
+            data_inicial.strip()
+            if data_inicial and data_inicial.strip()
+            else None
+        )
+
+        fim = (
+            data_final.strip()
+            if data_final and data_final.strip()
+            else None
+        )
+
+        if inicio and fim and inicio > fim:
+            raise ValueError(
+                "A data inicial não pode ser maior que a data final."
+            )
+
         if organizacao_id is not None:
             filtro_organizacao = """
                 AND organizacao_id = ?
             """
-            parametros.append(organizacao_id)
+            parametros.append(
+                organizacao_id
+            )
+
+        filtro_periodo_demanda = ""
+        parametros_demanda = list(parametros)
+
+        filtro_periodo_execucao = ""
+        parametros_execucao = list(parametros)
+
+        if inicio and fim:
+            filtro_periodo_demanda = """
+                AND DATE(data_solicitacao)
+                    BETWEEN DATE(?) AND DATE(?)
+            """
+            parametros_demanda.extend([
+                inicio,
+                fim,
+            ])
+
+            filtro_periodo_execucao = """
+                AND DATE(data_hora_conclusao)
+                    BETWEEN DATE(?) AND DATE(?)
+            """
+            parametros_execucao.extend([
+                inicio,
+                fim,
+            ])
+
+        elif inicio:
+            filtro_periodo_demanda = """
+                AND DATE(data_solicitacao) >= DATE(?)
+            """
+            parametros_demanda.append(
+                inicio
+            )
+
+            filtro_periodo_execucao = """
+                AND DATE(data_hora_conclusao) >= DATE(?)
+            """
+            parametros_execucao.append(
+                inicio
+            )
+
+        elif fim:
+            filtro_periodo_demanda = """
+                AND DATE(data_solicitacao) <= DATE(?)
+            """
+            parametros_demanda.append(
+                fim
+            )
+
+            filtro_periodo_execucao = """
+                AND DATE(data_hora_conclusao) <= DATE(?)
+            """
+            parametros_execucao.append(
+                fim
+            )
 
         with self.database.obter_conexao() as conexao:
-            row = conexao.execute(
+            row_demanda = conexao.execute(
                 f"""
-                SELECT
+                                SELECT
                     COUNT(*) AS total,
 
+                    COUNT(
+                        DISTINCT estabelecimento_id
+                    ) AS estabelecimentos_periodo,
+                    
+                    -- Pendentes = solicitações ainda não agendadas:
+                    -- SOLICITADA + EM_ANALISE
+                    
                     SUM(
                         CASE
                             WHEN status IN (
@@ -613,20 +696,39 @@ class SolicitacaoColetaRepository:
                     ) AS sacas_previstas,
 
                     COALESCE(
+                        SUM(quantidade_kg_previsto),
+                        0
+                    ) AS kg_previstos
+
+                FROM solicitacoes
+
+                WHERE ativo = 1
+                {filtro_organizacao}
+                {filtro_periodo_demanda}
+                """,
+                tuple(parametros_demanda),
+            ).fetchone()
+
+            row_execucao = conexao.execute(
+                f"""
+                SELECT
+                    COALESCE(
                         SUM(
                             CASE
-                                WHEN forma_acondicionamento = 'SACA'
+                                WHEN status = 'CONCLUIDA'
+                                     AND forma_acondicionamento = 'SACA'
                                 THEN quantidade_sacas_coletada
                                 ELSE 0
                             END
                         ),
                         0
                     ) AS sacas_coletadas,
-                    
+
                     COALESCE(
                         SUM(
                             CASE
-                                WHEN forma_acondicionamento = 'BAG'
+                                WHEN status = 'CONCLUIDA'
+                                     AND forma_acondicionamento = 'BAG'
                                 THEN quantidade_sacas_coletada
                                 ELSE 0
                             END
@@ -635,12 +737,13 @@ class SolicitacaoColetaRepository:
                     ) AS bags_coletados,
 
                     COALESCE(
-                        SUM(quantidade_kg_previsto),
-                        0
-                    ) AS kg_previstos,
-
-                    COALESCE(
-                        SUM(quantidade_kg_coletado),
+                        SUM(
+                            CASE
+                                WHEN status = 'CONCLUIDA'
+                                THEN quantidade_kg_coletado
+                                ELSE 0
+                            END
+                        ),
                         0
                     ) AS kg_coletados
 
@@ -648,17 +751,470 @@ class SolicitacaoColetaRepository:
 
                 WHERE ativo = 1
                 {filtro_organizacao}
+                {filtro_periodo_execucao}
                 """,
+                tuple(parametros_execucao),
+            ).fetchone()
+
+        estatisticas = dict(row_demanda)
+        estatisticas.update(
+            dict(row_execucao)
+        )
+
+        return estatisticas
+
+    def obter_tempo_medio_atendimento(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """
+        Retorna o tempo médio de atendimento, em minutos,
+        das solicitações concluídas.
+
+        O tempo de atendimento corresponde ao intervalo entre
+        a solicitação e a conclusão da coleta.
+
+        O período informado considera a data de conclusão.
+        """
+
+        consulta = """
+            SELECT
+                AVG(
+                    (
+                        julianday(data_hora_conclusao)
+                        - julianday(data_solicitacao)
+                    ) * 24 * 60
+                ) AS tempo_medio_minutos
+
+            FROM solicitacoes
+
+            WHERE ativo = 1
+              AND status = 'CONCLUIDA'
+              AND data_solicitacao IS NOT NULL
+              AND data_hora_conclusao IS NOT NULL
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        if data_inicial:
+            consulta += """
+                AND DATE(data_hora_conclusao) >= DATE(?)
+            """
+            parametros.append(data_inicial)
+
+        if data_final:
+            consulta += """
+                AND DATE(data_hora_conclusao) <= DATE(?)
+            """
+            parametros.append(data_final)
+
+        with self.database.obter_conexao() as conexao:
+            row = conexao.execute(
+                consulta,
                 tuple(parametros),
             ).fetchone()
 
-        return dict(row)
+        if row is None:
+            return 0.0
+
+        valor = row["tempo_medio_minutos"]
+
+        return float(valor or 0)
+
+    def obter_tempo_medio_coleta(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """
+        Retorna o tempo médio de coleta, em minutos,
+        das solicitações concluídas.
+
+        O tempo de coleta corresponde ao intervalo entre
+        a chegada ao local e a conclusão da coleta.
+
+        O período informado considera a data de conclusão.
+        """
+
+        consulta = """
+            SELECT
+                AVG(
+                    (
+                        julianday(data_hora_conclusao)
+                        - julianday(data_hora_chegada)
+                    ) * 24 * 60
+                ) AS tempo_medio_minutos
+
+            FROM solicitacoes
+
+            WHERE ativo = 1
+              AND status = 'CONCLUIDA'
+              AND data_hora_chegada IS NOT NULL
+              AND data_hora_conclusao IS NOT NULL
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        if data_inicial:
+            consulta += """
+                AND DATE(data_hora_conclusao) >= DATE(?)
+            """
+            parametros.append(data_inicial)
+
+        if data_final:
+            consulta += """
+                AND DATE(data_hora_conclusao) <= DATE(?)
+            """
+            parametros.append(data_final)
+
+        with self.database.obter_conexao() as conexao:
+            row = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchone()
+
+        if row is None:
+            return 0.0
+
+        valor = row["tempo_medio_minutos"]
+
+        return float(valor or 0)
+
+    def obter_tempo_medio_espera(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """
+        Retorna o tempo médio de espera, em minutos,
+        das solicitações concluídas.
+
+        O tempo de espera corresponde ao intervalo entre
+        a solicitação e a chegada ao local da coleta.
+
+        O período informado considera a data de conclusão.
+        """
+
+        consulta = """
+            SELECT
+                AVG(
+                    (
+                        julianday(data_hora_chegada)
+                        - julianday(data_solicitacao)
+                    ) * 24 * 60
+                ) AS tempo_medio_minutos
+
+            FROM solicitacoes
+
+            WHERE ativo = 1
+              AND status = 'CONCLUIDA'
+              AND data_solicitacao IS NOT NULL
+              AND data_hora_chegada IS NOT NULL
+              AND data_hora_conclusao IS NOT NULL
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        if data_inicial:
+            consulta += """
+                AND DATE(data_hora_conclusao) >= DATE(?)
+            """
+            parametros.append(data_inicial)
+
+        if data_final:
+            consulta += """
+                AND DATE(data_hora_conclusao) <= DATE(?)
+            """
+            parametros.append(data_final)
+
+        with self.database.obter_conexao() as conexao:
+            row = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchone()
+
+        if row is None:
+            return 0.0
+
+        valor = row["tempo_medio_minutos"]
+
+        return float(valor or 0)
+
+    def obter_taxa_cumprimento_agendamento(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """
+        Retorna a taxa percentual de cumprimento do agendamento.
+
+        Considera-se pontual a coleta cuja chegada ocorra
+        até 15 minutos após o horário agendado.
+
+        O período informado considera a data de conclusão.
+        """
+
+        consulta = """
+            SELECT
+                COUNT(*) AS total_avaliadas,
+
+                SUM(
+                    CASE
+                        WHEN datetime(data_hora_chegada)
+                             <= datetime(
+                                 data_hora_agendada,
+                                 '+15 minutes'
+                             )
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS no_prazo
+
+            FROM solicitacoes
+
+            WHERE ativo = 1
+              AND status = 'CONCLUIDA'
+              AND data_hora_agendada IS NOT NULL
+              AND data_hora_chegada IS NOT NULL
+              AND data_hora_conclusao IS NOT NULL
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        if data_inicial:
+            consulta += """
+                AND DATE(data_hora_conclusao) >= DATE(?)
+            """
+            parametros.append(data_inicial)
+
+        if data_final:
+            consulta += """
+                AND DATE(data_hora_conclusao) <= DATE(?)
+            """
+            parametros.append(data_final)
+
+        with self.database.obter_conexao() as conexao:
+            row = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchone()
+
+        if row is None:
+            return 0.0
+
+        total_avaliadas = int(
+            row["total_avaliadas"] or 0
+        )
+
+        no_prazo = int(
+            row["no_prazo"] or 0
+        )
+
+        if total_avaliadas == 0:
+            return 0.0
+
+        return (
+            no_prazo
+            / total_avaliadas
+        ) * 100
+
+    def obter_eficiencia_volume_coletado(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> float:
+        """
+        Retorna a eficiência do volume coletado, em percentual.
+
+        A eficiência corresponde à relação entre o peso efetivamente
+        coletado e o peso previsto das solicitações concluídas.
+
+        O período informado considera a data de conclusão.
+        """
+
+        consulta = """
+            SELECT
+                SUM(quantidade_kg_coletado) AS total_coletado,
+                SUM(quantidade_kg_previsto) AS total_previsto
+
+            FROM solicitacoes
+
+            WHERE ativo = 1
+              AND status = 'CONCLUIDA'
+              AND quantidade_kg_previsto > 0
+              AND quantidade_kg_coletado >= 0
+              AND data_hora_conclusao IS NOT NULL
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        if data_inicial:
+            consulta += """
+                AND DATE(data_hora_conclusao) >= DATE(?)
+            """
+            parametros.append(data_inicial)
+
+        if data_final:
+            consulta += """
+                AND DATE(data_hora_conclusao) <= DATE(?)
+            """
+            parametros.append(data_final)
+
+        with self.database.obter_conexao() as conexao:
+            row = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchone()
+
+        if row is None:
+            return 0.0
+
+        total_coletado = float(row["total_coletado"] or 0)
+        total_previsto = float(row["total_previsto"] or 0)
+
+        if total_previsto <= 0:
+            return 0.0
+
+        return (total_coletado / total_previsto) * 100
+
+    def obter_evolucao_solicitacoes(
+            self,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> list[dict]:
+        """
+        Retorna a evolução diária das solicitações e conclusões.
+
+        Solicitações são agrupadas pela data da solicitação.
+        Conclusões são agrupadas pela data da conclusão.
+        """
+
+        consulta = """
+            WITH eventos AS (
+
+                SELECT
+                    DATE(data_solicitacao) AS data,
+                    1 AS solicitacoes,
+                    0 AS concluidas
+
+                FROM solicitacoes
+
+                WHERE ativo = 1
+                  AND data_solicitacao IS NOT NULL
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                  AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        consulta += """
+
+                UNION ALL
+
+                SELECT
+                    DATE(data_hora_conclusao) AS data,
+                    0 AS solicitacoes,
+                    1 AS concluidas
+
+                FROM solicitacoes
+
+                WHERE ativo = 1
+                  AND status = 'CONCLUIDA'
+                  AND data_hora_conclusao IS NOT NULL
+        """
+
+        if organizacao_id is not None:
+            consulta += """
+                  AND organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        consulta += """
+            )
+
+            SELECT
+                data,
+                SUM(solicitacoes) AS solicitacoes,
+                SUM(concluidas) AS concluidas
+
+            FROM eventos
+
+            WHERE 1 = 1
+        """
+
+        if data_inicial:
+            consulta += """
+                AND DATE(data) >= DATE(?)
+            """
+            parametros.append(data_inicial)
+
+        if data_final:
+            consulta += """
+                AND DATE(data) <= DATE(?)
+            """
+            parametros.append(data_final)
+
+        consulta += """
+            GROUP BY data
+            ORDER BY data
+        """
+
+        with self.database.obter_conexao() as conexao:
+            rows = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchall()
+
+        return [dict(row) for row in rows]
 
     def listar_ultimas(
-        self,
-        limite: int = 5,
-        *,
-        organizacao_id: int | None = None,
+            self,
+            limite: int = 5,
+            *,
+            organizacao_id: int | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> list[dict]:
         """Retorna as últimas solicitações com o solicitante."""
 
@@ -678,12 +1234,12 @@ class SolicitacaoColetaRepository:
                 s.tipo_residuo,
                 s.unidade_medida,
                 s.status,
-                
+
                 s.quantidade_sacas_prevista,
                 s.quantidade_kg_previsto,
                 s.quantidade_sacas_coletada,
                 s.quantidade_kg_coletado,
-                
+
                 strftime(
                     '%d/%m/%Y %H:%M',
                     s.data_solicitacao
@@ -706,13 +1262,34 @@ class SolicitacaoColetaRepository:
             consulta += """
                 AND s.organizacao_id = ?
             """
-            parametros.append(organizacao_id)
+            parametros.append(
+                organizacao_id
+            )
+
+        if data_inicial:
+            consulta += """
+                AND DATE(s.data_solicitacao) >= DATE(?)
+            """
+            parametros.append(
+                data_inicial
+            )
+
+        if data_final:
+            consulta += """
+                AND DATE(s.data_solicitacao) <= DATE(?)
+            """
+            parametros.append(
+                data_final
+            )
 
         consulta += """
             ORDER BY s.id DESC
             LIMIT ?
         """
-        parametros.append(max(1, int(limite)))
+
+        parametros.append(
+            max(1, int(limite))
+        )
 
         with self.database.obter_conexao() as conexao:
             rows = conexao.execute(
@@ -720,19 +1297,26 @@ class SolicitacaoColetaRepository:
                 tuple(parametros),
             ).fetchall()
 
-        return [dict(row) for row in rows]
+        return [
+            dict(row)
+            for row in rows
+        ]
 
     def contar_agendadas_hoje(
-        self,
-        organizacao_id: int | None = None,
+            self,
+            organizacao_id: int | None = None,
     ) -> int:
-        """Retorna a quantidade de coletas agendadas para hoje."""
+        """Retorna a quantidade de coletas previstas para hoje."""
 
         consulta = """
             SELECT COUNT(*)
             FROM solicitacoes
             WHERE ativo = 1
-              AND status = 'AGENDADA'
+              AND status IN (
+                  'AGENDADA',
+                  'EM_DESLOCAMENTO',
+                  'EM_COLETA'
+              )
               AND DATE(data_hora_agendada)
                   = DATE('now', 'localtime')
         """

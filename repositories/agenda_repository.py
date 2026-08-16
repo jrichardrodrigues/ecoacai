@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from repositories.sqlite_database import SQLiteDatabase
 from config.constants import StatusColeta
 
 
 class AgendaRepository:
     """Repositório responsável pelas operações da agenda de coletas."""
+
+    _FUSO_HORARIO = ZoneInfo("America/Belem")
 
     _STATUS_VALIDOS = {
         StatusColeta.SOLICITADA,
@@ -484,15 +489,18 @@ class AgendaRepository:
                 if veiculo_existe is None:
                     return False
 
+            agora_local = self._agora_local()
+
             consulta = """
                 UPDATE solicitacoes
                    SET data_hora_agendada = ?,
                        status = 'AGENDADA',
-                       atualizado_em = CURRENT_TIMESTAMP
+                       atualizado_em = ?
             """
 
             parametros: list[object] = [
                 data_hora_normalizada,
+                agora_local,
             ]
 
             if motorista_id is not None:
@@ -628,17 +636,21 @@ class AgendaRepository:
             if chegada_atual:
                 return True
 
+            agora_local = self._agora_local()
+
             cursor = conexao.execute(
                 """
                 UPDATE solicitacoes
                 SET
-                    data_hora_chegada = CURRENT_TIMESTAMP,
-                    atualizado_em = CURRENT_TIMESTAMP
+                    data_hora_chegada = ?,
+                    atualizado_em = ?
                 WHERE id = ?
                   AND ativo = 1
                   AND status = ?
                 """,
                 (
+                    agora_local,
+                    agora_local,
                     solicitacao_id,
                     StatusColeta.EM_COLETA,
                 ),
@@ -659,6 +671,7 @@ class AgendaRepository:
         """
 
         with self.database.obter_conexao() as conexao:
+            agora_local = self._agora_local()
             cursor = conexao.execute(
                 """
                 UPDATE solicitacoes
@@ -667,8 +680,8 @@ class AgendaRepository:
                     quantidade_kg_coletado = ?,
                     observacao_operacional = ?,
                     status = ?,
-                    data_hora_conclusao = CURRENT_TIMESTAMP,
-                    atualizado_em = CURRENT_TIMESTAMP
+                    data_hora_conclusao = ?,
+                    atualizado_em = ?
                 WHERE id = ?
                   AND status = ?
                 """,
@@ -677,6 +690,8 @@ class AgendaRepository:
                     peso_coletado_kg,
                     observacao_operacional,
                     StatusColeta.CONCLUIDA,
+                    agora_local,  # data_hora_conclusao
+                    agora_local,  # atualizado_em
                     solicitacao_id,
                     StatusColeta.EM_COLETA,
                 ),
@@ -702,20 +717,23 @@ class AgendaRepository:
             return False
 
         with self.database.obter_conexao() as conexao:
+            agora_local = self._agora_local()
             cursor = conexao.execute(
                 """
                 UPDATE solicitacoes
                 SET
                     status = ?,
                     motivo_cancelamento = ?,
-                    data_hora_cancelamento = CURRENT_TIMESTAMP,
-                    atualizado_em = CURRENT_TIMESTAMP
+                    data_hora_cancelamento = ?,
+                    atualizado_em = ?
                 WHERE id = ?
                   AND ativo = 1
                 """,
                 (
                     StatusColeta.CANCELADA,
                     motivo_normalizado,
+                    agora_local,  # data_hora_cancelamento
+                    agora_local,  # atualizado_em
                     solicitacao_id,
                 ),
             )
@@ -1204,6 +1222,14 @@ class AgendaRepository:
     # MÉTODOS INTERNOS
     # ==========================================================
 
+    @classmethod
+    def _agora_local(cls) -> str:
+        """Retorna a data e hora atual no fuso operacional."""
+
+        return datetime.now(
+            cls._FUSO_HORARIO
+        ).strftime("%Y-%m-%d %H:%M:%S")
+
     @staticmethod
     def _consulta_base() -> str:
         """Retorna a consulta base utilizada pela agenda."""
@@ -1367,20 +1393,27 @@ class AgendaRepository:
             if status_normalizado not in transicoes_permitidas:
                 return False
 
+            agora_local = self._agora_local()
+
             consulta = """
                 UPDATE solicitacoes
                    SET status = ?,
-                       atualizado_em = CURRENT_TIMESTAMP
+                       atualizado_em = ?
             """
 
             parametros: list[object] = [
                 status_normalizado,
+                agora_local,
             ]
 
             if campo_data is not None:
                 consulta += f"""
-                    , {campo_data} = CURRENT_TIMESTAMP
+                    , {campo_data} = ?
                 """
+
+                parametros.append(
+                    agora_local
+                )
 
             consulta += """
                  WHERE id = ?
