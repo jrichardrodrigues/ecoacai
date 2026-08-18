@@ -255,6 +255,13 @@ class DashboardView:
             canceladas: int,
     ) -> ft.Control:
         """Cria o painel executivo de distribuição por status."""
+
+        pendentes = pendentes or 0
+        agendadas = agendadas or 0
+        em_coleta = em_coleta or 0
+        concluidas = concluidas or 0
+        canceladas = canceladas or 0
+
         dados = [
             (
                 "Pendentes",

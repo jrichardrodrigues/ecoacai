@@ -1,3 +1,5 @@
+from datetime import date
+
 from controllers.estabelecimento_controller import (
     EstabelecimentoController,
 )
@@ -84,10 +86,26 @@ class DashboardController:
             )
         )
 
-        estatisticas["coletas_hoje"] = (
-            self.solicitacao_service
-            .contar_agendadas_hoje()
-        )
+        hoje = date.today().isoformat()
+
+        if data_inicial or data_final:
+            hoje_no_periodo = True
+
+            if data_inicial and hoje < data_inicial:
+                hoje_no_periodo = False
+
+            if data_final and hoje > data_final:
+                hoje_no_periodo = False
+
+            estatisticas["coletas_hoje"] = (
+                self.solicitacao_service.contar_agendadas_hoje()
+                if hoje_no_periodo
+                else 0
+            )
+        else:
+            estatisticas["coletas_hoje"] = (
+                self.solicitacao_service.contar_agendadas_hoje()
+            )
 
         return estatisticas
 
