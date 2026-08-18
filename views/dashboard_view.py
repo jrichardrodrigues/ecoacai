@@ -910,14 +910,26 @@ class DashboardView:
         self.page.update()
 
     def _abrir_data_inicial(
-        self,
-        _evento: ft.Event,
+            self,
+            _evento: ft.Event,
     ) -> None:
         """Abre o calendário para selecionar a data inicial."""
 
         hoje = date.today()
 
+        data_selecionada = hoje
+
+        if self.campo_data_inicial.value:
+            try:
+                data_selecionada = datetime.strptime(
+                    self.campo_data_inicial.value,
+                    "%d/%m/%Y",
+                ).date()
+            except ValueError:
+                data_selecionada = hoje
+
         seletor = ft.DatePicker(
+            value=data_selecionada,
             first_date=date(2020, 1, 1),
             last_date=date(
                 hoje.year + 2,
@@ -947,14 +959,26 @@ class DashboardView:
         self.page.update()
 
     def _abrir_data_final(
-        self,
-        _evento: ft.Event,
+            self,
+            _evento: ft.Event,
     ) -> None:
         """Abre o calendário para selecionar a data final."""
 
         hoje = date.today()
 
+        data_selecionada = hoje
+
+        if self.campo_data_final.value:
+            try:
+                data_selecionada = datetime.strptime(
+                    self.campo_data_final.value,
+                    "%d/%m/%Y",
+                ).date()
+            except ValueError:
+                data_selecionada = hoje
+
         seletor = ft.DatePicker(
+            value=data_selecionada,
             first_date=date(2020, 1, 1),
             last_date=date(
                 hoje.year + 2,
