@@ -86,11 +86,12 @@ class SolicitacaoColetaController:
         )
 
     def listar_operacional(
-        self,
-        *,
-        status: str | None = None,
-        organizacao_id: int | None = None,
-        empresa_parceira_id: int | None = None,
+            self,
+            *,
+            status: str | None = None,
+            organizacao_id: int | None = None,
+            empresa_parceira_id: int | None = None,
+            data_agendada: str | None = None,
     ) -> list[dict]:
         """Lista solicitações com seus vínculos operacionais."""
 
@@ -98,6 +99,7 @@ class SolicitacaoColetaController:
             status=status,
             organizacao_id=organizacao_id,
             empresa_parceira_id=empresa_parceira_id,
+            data_agendada=data_agendada,
         )
 
     def listar_com_estabelecimento(

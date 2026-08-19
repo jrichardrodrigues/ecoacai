@@ -171,7 +171,7 @@ class ExecutiveHeader(ft.Container):
     ) -> ft.Control:
         dados = [
             (
-                "Estabelecimentos",
+                "Solicitantes",
                 total_estabelecimentos,
                 ft.Icons.STORE,
                 Colors.Dashboard.ESTABLISHMENTS_BG,

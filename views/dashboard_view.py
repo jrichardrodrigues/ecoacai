@@ -22,8 +22,29 @@ from controllers import DashboardController
 class DashboardView:
     """Dashboard com indicadores e gráficos das solicitações."""
 
-    def __init__(self, page: ft.Page) -> None:
+    def __init__(
+            self,
+            page: ft.Page,
+            on_abrir_solicitacoes=None,
+            on_abrir_agendadas=None,
+            on_abrir_em_coleta=None,
+            on_abrir_concluidas=None,
+            on_abrir_canceladas=None,
+            on_abrir_para_hoje=None,
+            on_abrir_todas_solicitacoes=None,
+            on_abrir_solicitantes=None,
+    ) -> None:
         self.page = page
+        self.on_abrir_solicitacoes = on_abrir_solicitacoes
+        self.on_abrir_agendadas = on_abrir_agendadas
+        self.on_abrir_em_coleta = on_abrir_em_coleta
+        self.on_abrir_concluidas = on_abrir_concluidas
+        self.on_abrir_canceladas = on_abrir_canceladas
+        self.on_abrir_para_hoje = on_abrir_para_hoje
+        self.on_abrir_todas_solicitacoes = on_abrir_todas_solicitacoes
+        self.on_abrir_solicitantes = on_abrir_solicitantes
+
+
         self.controller = DashboardController()
 
         self.data_inicial: str | None = None
@@ -150,23 +171,25 @@ class DashboardView:
         )
 
     @staticmethod
+    @staticmethod
     def _criar_container_card(
-        titulo: str,
-        valor: str,
-        icone: str,
-        cor: str,
-        cor_fundo: str,
-        subtitulo: str = "",
-        col: dict | None = None,
+            titulo: str,
+            valor: str,
+            icone: str,
+            cor: str,
+            cor_fundo: str,
+            subtitulo: str = "",
+            col: dict | None = None,
+            on_click=None,
     ) -> ft.Control:
         """Cria um card executivo dentro da grade responsiva."""
         return ft.Container(
             col=col
-            or {
-                "sm": 12,
-                "md": 6,
-                "lg": 4,
-            },
+                or {
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 4,
+                },
             content=ExecutiveCard(
                 titulo=titulo,
                 valor=valor,
@@ -175,6 +198,7 @@ class DashboardView:
                 cor_fundo=cor_fundo,
                 subtitulo=subtitulo,
             ),
+            on_click=on_click,
         )
 
     def _criar_card_status_grafico(
@@ -721,15 +745,17 @@ class DashboardView:
                 "cor_fundo": ft.Colors.BLUE_50,
                 "subtitulo": "Total de solicitações",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_todas_solicitacoes,
             },
             {
-                "titulo": "Estabelecimentos",
+                "titulo": "Solicitantes",
                 "valor": self._formatar_numero(total_estabelecimentos),
                 "icone": ft.Icons.STORE,
                 "cor": ft.Colors.CYAN_700,
                 "cor_fundo": ft.Colors.CYAN_50,
                 "subtitulo": "Total cadastrados",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_solicitantes,
             },
             {
                 "titulo": "Pendentes",
@@ -739,6 +765,7 @@ class DashboardView:
                 "cor_fundo": ft.Colors.AMBER_50,
                 "subtitulo": "Aguardando atendimento",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_solicitacoes,
             },
             {
                 "titulo": "Agendadas",
@@ -748,6 +775,7 @@ class DashboardView:
                 "cor_fundo": ft.Colors.PURPLE_50,
                 "subtitulo": "Coletas programadas",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_agendadas,
             },
             {
                 "titulo": "Para hoje",
@@ -757,6 +785,7 @@ class DashboardView:
                 "cor_fundo": ft.Colors.INDIGO_50,
                 "subtitulo": "Coletas previstas hoje",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_para_hoje,
             },
             {
                 "titulo": "Em coleta",
@@ -766,6 +795,7 @@ class DashboardView:
                 "cor_fundo": ft.Colors.DEEP_ORANGE_50,
                 "subtitulo": "Coletas em andamento",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_em_coleta,
             },
             {
                 "titulo": "Concluídas",
@@ -775,6 +805,7 @@ class DashboardView:
                 "cor_fundo": ft.Colors.GREEN_50,
                 "subtitulo": "Coletas finalizadas",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_concluidas,
             },
             {
                 "titulo": "Canceladas",
@@ -784,6 +815,7 @@ class DashboardView:
                 "cor_fundo": ft.Colors.RED_50,
                 "subtitulo": "Solicitações canceladas",
                 "col": {"sm": 12, "md": 6, "lg": 3},
+                "on_click": self.on_abrir_canceladas,
             },
         ]
 

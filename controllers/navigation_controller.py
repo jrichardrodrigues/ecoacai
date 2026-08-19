@@ -1,5 +1,7 @@
 from collections.abc import Callable
 
+from datetime import date
+
 import flet as ft
 
 from models import Estabelecimento, Motorista, Solicitacao, Veiculo
@@ -60,6 +62,14 @@ class NavigationController:
 
         return DashboardView(
             page=self.page,
+            on_abrir_solicitacoes=self.abrir_solicitacoes_pendentes,
+            on_abrir_agendadas=self.abrir_solicitacoes_agendadas,
+            on_abrir_em_coleta=self.abrir_solicitacoes_em_coleta,
+            on_abrir_concluidas=self.abrir_solicitacoes_concluidas,
+            on_abrir_canceladas=self.abrir_solicitacoes_canceladas,
+            on_abrir_para_hoje=self.abrir_solicitacoes_para_hoje,
+            on_abrir_todas_solicitacoes=self.abrir_todas_solicitacoes,
+            on_abrir_solicitantes=self.abrir_solicitantes,
         ).build()
 
     def _home(self) -> ft.Control:
@@ -96,14 +106,88 @@ class NavigationController:
             ao_voltar=self._home,
         ).build()
 
-    def _solicitacoes(self) -> ft.Control:
+    def _solicitacoes(
+            self,
+            status_inicial: str | None = None,
+            data_agendada_inicial: str | None = None,
+            titulo: str = "Solicitações",
+            subtitulo: str = "Analise as solicitações de coleta recebidas dos Geradores.",
+    ) -> ft.Control:
         """Abre a fila de solicitações recebidas pelo Gestor."""
 
         return SolicitacoesGestorView(
             page=self.page,
             controller=self.solicitacao_coleta_controller,
             on_ver_detalhes=self.abrir_detalhe_solicitacao,
+            status_inicial=status_inicial,
+            data_agendada_inicial=data_agendada_inicial,
+            titulo=titulo,
+            subtitulo=subtitulo,
         ).build()
+
+    def abrir_solicitacoes_pendentes(self) -> None:
+        self._mostrar(
+            self._solicitacoes(
+                status_inicial="PENDENTES",
+                titulo="Solicitações Pendentes",
+                subtitulo="Solicitações aguardando análise ou atendimento.",
+            )
+        )
+
+    def abrir_solicitacoes_agendadas(self) -> None:
+        self._mostrar(
+            self._solicitacoes(
+                status_inicial="AGENDADA",
+                titulo="Coletas Agendadas",
+                subtitulo="Coletas programadas para execução.",
+            )
+        )
+
+    def abrir_solicitacoes_em_coleta(self) -> None:
+        self._mostrar(
+            self._solicitacoes(
+                status_inicial="EM_COLETA",
+                titulo="Coletas em Andamento",
+                subtitulo="Coletas atualmente em execução.",
+            )
+        )
+
+    def abrir_solicitacoes_concluidas(self) -> None:
+        self._mostrar(
+            self._solicitacoes(
+                status_inicial="CONCLUIDA",
+                titulo="Coletas Concluídas",
+                subtitulo="Coletas finalizadas pela operação.",
+            )
+        )
+
+    def abrir_solicitacoes_canceladas(self) -> None:
+        self._mostrar(
+            self._solicitacoes(
+                status_inicial="CANCELADA",
+                titulo="Solicitações Canceladas",
+                subtitulo="Solicitações que foram canceladas.",
+            )
+        )
+
+    def abrir_solicitacoes_para_hoje(self) -> None:
+        hoje = date.today().isoformat()
+
+        self._mostrar(
+            self._solicitacoes(
+                data_agendada_inicial=hoje,
+                titulo="Coletas para Hoje",
+                subtitulo="Coletas programadas para a data de hoje.",
+            )
+        )
+
+    def abrir_todas_solicitacoes(self) -> None:
+        self._mostrar(
+            self._solicitacoes(
+                titulo="Todas as Solicitações",
+                subtitulo="Consulte todas as solicitações cadastradas no sistema.",
+            )
+        )
 
     def abrir_detalhe_solicitacao(
             self,
@@ -180,6 +264,12 @@ class NavigationController:
         """Retorna para a lista de solicitações."""
 
         self._mostrar(self._solicitacoes())
+
+    def abrir_solicitantes(self) -> None:
+        """Abre a relação de solicitantes cadastrados."""
+        self._mostrar(
+            self._estabelecimentos()
+        )
 
     def abrir_nova_solicitacao(self) -> None:
         """Abre o formulário de nova solicitação."""

@@ -19,11 +19,21 @@ class SolicitacoesGestorView:
         page: ft.Page,
         controller: SolicitacaoColetaController | None = None,
         on_ver_detalhes: Callable[[int, str], None] | None = None,
+        status_inicial: str | None = None,
+        data_agendada_inicial: str | None = None,
+        titulo: str = "Solicitações",
+        subtitulo: str = "Analise as solicitações de coleta recebidas dos Geradores.",
     ) -> None:
         self.page = page
         self.controller = (
-            controller or SolicitacaoColetaController()
+                controller or SolicitacaoColetaController()
         )
+
+        self.status_inicial = status_inicial
+        self.data_agendada_inicial = data_agendada_inicial
+
+        self.titulo = titulo
+        self.subtitulo = subtitulo
 
         self.lista = ft.Column(
             spacing=12,
@@ -111,7 +121,10 @@ class SolicitacoesGestorView:
     # ==========================================================
 
     def _carregar(self) -> None:
-        solicitacoes = self.controller.listar_operacional()
+        solicitacoes = self.controller.listar_operacional(
+            status=self.status_inicial,
+            data_agendada=self.data_agendada_inicial,
+        )
 
         self.lista.controls.clear()
 
@@ -347,11 +360,8 @@ class SolicitacoesGestorView:
         )
 
         return BasePage(
-            title="Solicitações",
-            subtitle=(
-                "Analise as solicitações de coleta "
-                "recebidas dos Geradores."
-            ),
+            title=self.titulo,
+            subtitle=self.subtitulo,
             content=conteudo,
             max_width=1100,
         )

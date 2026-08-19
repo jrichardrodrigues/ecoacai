@@ -1338,11 +1338,14 @@ class SolicitacaoColetaRepository:
         return int(row[0] or 0)
 
     def listar_operacional(
-        self,
-        *,
-        status: str | None = None,
-        organizacao_id: int | None = None,
-        empresa_parceira_id: int | None = None,
+            self,
+            *,
+            status: str | None = None,
+            organizacao_id: int | None = None,
+            empresa_parceira_id: int | None = None,
+            data_agendada: str | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> list[dict]:
         """
         Lista solicitações com os principais vínculos operacionais.
@@ -1431,25 +1434,75 @@ class SolicitacaoColetaRepository:
 
         parametros: list[Any] = []
 
-        if status:
-            consulta += """
-                AND s.status = ?
-            """
-            parametros.append(
-                str(status).strip().upper()
+        inicio = (
+            data_inicial.strip()
+            if data_inicial and data_inicial.strip()
+            else None
+        )
+
+        fim = (
+            data_final.strip()
+            if data_final and data_final.strip()
+            else None
+        )
+
+        if inicio and fim and inicio > fim:
+            raise ValueError(
+                "A data inicial não pode ser maior que a data final."
             )
 
-        if organizacao_id is not None:
-            consulta += """
-                AND s.organizacao_id = ?
-            """
-            parametros.append(organizacao_id)
+        if status:
+            status_normalizado = str(status).strip().upper()
 
-        if empresa_parceira_id is not None:
+            if status_normalizado == "PENDENTES":
+                consulta += """
+                    AND s.status IN (
+                        'SOLICITADA',
+                        'EM_ANALISE'
+                    )
+                """
+
+            elif status_normalizado == "EM_COLETA":
+                consulta += """
+                    AND s.status IN (
+                        'EM_DESLOCAMENTO',
+                        'EM_COLETA'
+                    )
+                """
+
+            else:
+                consulta += """
+                    AND s.status = ?
+                """
+                parametros.append(status_normalizado)
+
+        if inicio and fim:
             consulta += """
-                AND s.empresa_parceira_id = ?
+                AND DATE(s.data_solicitacao)
+                    BETWEEN DATE(?) AND DATE(?)
             """
-            parametros.append(empresa_parceira_id)
+            parametros.extend([
+                inicio,
+                fim,
+            ])
+
+        elif inicio:
+            consulta += """
+                AND DATE(s.data_solicitacao) >= DATE(?)
+            """
+            parametros.append(inicio)
+
+        elif fim:
+            consulta += """
+                AND DATE(s.data_solicitacao) <= DATE(?)
+            """
+            parametros.append(fim)
+
+        if data_agendada:
+            consulta += """
+                AND DATE(s.data_hora_agendada) = DATE(?)
+            """
+            parametros.append(data_agendada)
 
         consulta += """
             ORDER BY s.id DESC

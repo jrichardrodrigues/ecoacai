@@ -32,7 +32,7 @@ class EstabelecimentosView:
         self.controller = EstabelecimentoController()
 
         self.toolbar = Toolbar(
-            titulo="Estabelecimentos",
+            titulo="Solicitantes",
             on_search=self.pesquisar,
             on_add=self.novo,
         )
@@ -92,7 +92,7 @@ class EstabelecimentosView:
         quantidade = len(estabelecimentos)
 
         self.total.value = (
-            f"Total de estabelecimentos: {quantidade}"
+            f"Total de solicitantes: {quantidade}"
         )
 
         self.tabela.carregar(estabelecimentos)
