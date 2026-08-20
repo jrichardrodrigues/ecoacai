@@ -1151,6 +1151,20 @@ class SQLiteDatabase:
             "TEXT NOT NULL DEFAULT 'MANUAL'",
         )
 
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "motivo_recusa",
+            "TEXT",
+        )
+
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "data_hora_recusa",
+            "TEXT",
+        )
+
         cls._preencher_codigos_solicitacoes(conexao)
         cls._criar_indices_solicitacoes(conexao)
 
@@ -1318,12 +1332,20 @@ class SQLiteDatabase:
 
                 observacao_cliente TEXT NOT NULL
                     DEFAULT '',
-
+                
                 observacao_operacional TEXT NOT NULL
                     DEFAULT '',
-
+                
+                motivo_cancelamento TEXT,
+                
+                data_hora_cancelamento TEXT,
+                
+                motivo_recusa TEXT,
+                
+                data_hora_recusa TEXT,
+                
                 latitude REAL,
-
+                
                 longitude REAL,
 
                 ativo INTEGER NOT NULL
