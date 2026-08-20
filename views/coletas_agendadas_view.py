@@ -69,6 +69,7 @@ class ColetasAgendadasView:
         self._construir_dialog_agendamento()
         self._construir_dialog_conclusao()
         self._construir_dialog_cancelamento()
+        self._construir_dialog_recusa()
 
     # ==========================================================
     # CONSTRUÇÃO
@@ -130,6 +131,10 @@ class ColetasAgendadasView:
                 ft.DropdownOption(
                     key=StatusColeta.CANCELADA,
                     text="Cancelada",
+                ),
+                ft.DropdownOption(
+                    key=StatusColeta.RECUSADA,
+                    text="Recusada",
                 ),
             ],
         )
@@ -604,6 +609,102 @@ class ColetasAgendadasView:
             actions=[
                 self.botao_cancelar_dialog_cancelamento,
                 self.botao_confirmar_cancelamento,
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+    def _construir_dialog_recusa(self) -> None:
+        """Cria o diálogo utilizado para recusar uma solicitação."""
+
+        self.solicitacao_recusa_id: int | None = None
+
+        self.texto_coleta_recusa = ft.Text(
+            "",
+            size=14,
+            weight=ft.FontWeight.BOLD,
+        )
+
+        self.campo_motivo_recusa = ft.TextField(
+            label="Motivo da recusa",
+            hint_text="Informe o motivo da recusa",
+            multiline=True,
+            min_lines=3,
+            max_lines=5,
+            width=520,
+        )
+
+        self.texto_mensagem_recusa = ft.Text(
+            "",
+            size=13,
+            color=ft.Colors.RED,
+            visible=False,
+        )
+
+        self.botao_cancelar_dialog_recusa = ft.OutlinedButton(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.CLOSE,
+                        size=18,
+                    ),
+                    ft.Text("Voltar"),
+                ],
+                spacing=8,
+                tight=True,
+            ),
+            on_click=self._fechar_dialog_recusa,
+        )
+
+        self.botao_confirmar_recusa = ft.FilledButton(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.BLOCK,
+                        size=18,
+                    ),
+                    ft.Text("Recusar solicitação"),
+                ],
+                spacing=8,
+                tight=True,
+            ),
+            on_click=self._confirmar_recusa,
+        )
+
+        self.dialog_recusa = ft.AlertDialog(
+            modal=True,
+            title=ft.Row(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.BLOCK,
+                        size=24,
+                    ),
+                    ft.Text(
+                        "Recusar solicitação",
+                        weight=ft.FontWeight.BOLD,
+                    ),
+                ],
+                spacing=10,
+            ),
+            content=ft.Container(
+                width=540,
+                content=ft.Column(
+                    controls=[
+                        ft.Text(
+                            "A solicitação permanecerá no histórico "
+                            "com status Recusada.",
+                            size=13,
+                        ),
+                        self.texto_coleta_recusa,
+                        self.campo_motivo_recusa,
+                        self.texto_mensagem_recusa,
+                    ],
+                    spacing=16,
+                    tight=True,
+                ),
+            ),
+            actions=[
+                self.botao_cancelar_dialog_recusa,
+                self.botao_confirmar_recusa,
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -1729,6 +1830,11 @@ class ColetasAgendadasView:
                     self._agendar(solicitacao_id),
                 ),
                 ft.PopupMenuItem(
+                    content="Recusar",
+                    on_click=lambda _:
+                    self._recusar(solicitacao_id),
+                ),
+                ft.PopupMenuItem(
                     content="Cancelar",
                     on_click=lambda _:
                     self._cancelar(solicitacao_id),
@@ -1755,7 +1861,6 @@ class ColetasAgendadasView:
             ])
 
         elif status == StatusColeta.EM_COLETA:
-
             chegada_registrada = bool(
                 str(
                     data_hora_chegada or ""
@@ -1773,15 +1878,16 @@ class ColetasAgendadasView:
                     )
                 )
 
-            itens.append(
-                ft.PopupMenuItem(
-                    content="Concluir coleta",
-                    on_click=lambda _:
-                    self._concluir(
-                        solicitacao_id
-                    ),
+            else:
+                itens.append(
+                    ft.PopupMenuItem(
+                        content="Concluir coleta",
+                        on_click=lambda _:
+                        self._concluir(
+                            solicitacao_id
+                        ),
+                    )
                 )
-            )
 
         return ft.PopupMenuButton(
             icon=ft.Icons.MORE_VERT,
@@ -2298,6 +2404,112 @@ class ColetasAgendadasView:
         self.page.show_dialog(
             self.dialog_cancelamento
         )
+
+    def _recusar(
+            self,
+            solicitacao_id: int,
+    ) -> None:
+        """Abre o diálogo para recusar uma solicitação."""
+
+        resultado = self.controller.obter_por_id(
+            solicitacao_id
+        )
+
+        if resultado.falhou:
+            self._mostrar_mensagem(
+                resultado.mensagem,
+                erro=True,
+            )
+            self._atualizar_pagina()
+            return
+
+        coleta = resultado.dados
+
+        self.solicitacao_recusa_id = solicitacao_id
+
+        codigo = str(
+            coleta.get("codigo") or "-"
+        )
+
+        solicitante = str(
+            coleta.get("estabelecimento_nome")
+            or "Solicitante não identificado"
+        )
+
+        self.texto_coleta_recusa.value = (
+            f"{codigo} • {solicitante}"
+        )
+
+        self.campo_motivo_recusa.value = ""
+
+        self.texto_mensagem_recusa.value = ""
+        self.texto_mensagem_recusa.visible = False
+
+        self.page.show_dialog(
+            self.dialog_recusa
+        )
+
+    def _confirmar_recusa(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Valida e confirma a recusa da solicitação."""
+
+        if self.solicitacao_recusa_id is None:
+            self.texto_mensagem_recusa.value = (
+                "Não foi possível identificar a solicitação."
+            )
+            self.texto_mensagem_recusa.visible = True
+            self._atualizar_pagina()
+            return
+
+        motivo = str(
+            self.campo_motivo_recusa.value or ""
+        ).strip()
+
+        if not motivo:
+            self.texto_mensagem_recusa.value = (
+                "Informe o motivo da recusa."
+            )
+            self.texto_mensagem_recusa.visible = True
+            self._atualizar_pagina()
+            return
+
+        resultado = self.controller.recusar_coleta(
+            solicitacao_id=self.solicitacao_recusa_id,
+            motivo=motivo,
+        )
+
+        if resultado.falhou:
+            self.texto_mensagem_recusa.value = (
+                resultado.mensagem
+            )
+            self.texto_mensagem_recusa.visible = True
+            self._atualizar_pagina()
+            return
+
+        self.page.pop_dialog()
+
+        self.solicitacao_recusa_id = None
+
+        self._processar_resultado_operacao(
+            resultado
+        )
+
+    def _fechar_dialog_recusa(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Fecha o diálogo de recusa."""
+
+        self.page.pop_dialog()
+
+        self.solicitacao_recusa_id = None
+        self.campo_motivo_recusa.value = ""
+        self.texto_mensagem_recusa.value = ""
+        self.texto_mensagem_recusa.visible = False
+
+        self._atualizar_pagina()
 
     def _processar_resultado_operacao(
             self,

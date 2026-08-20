@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from models import SolicitacaoColeta
@@ -793,6 +793,7 @@ class SolicitacaoColetaRepository:
             WHERE ativo = 1
               AND status = 'CONCLUIDA'
               AND data_solicitacao IS NOT NULL
+              AND data_hora_chegada IS NOT NULL
               AND data_hora_conclusao IS NOT NULL
         """
 
@@ -858,6 +859,7 @@ class SolicitacaoColetaRepository:
 
             WHERE ativo = 1
               AND status = 'CONCLUIDA'
+              AND data_solicitacao IS NOT NULL
               AND data_hora_chegada IS NOT NULL
               AND data_hora_conclusao IS NOT NULL
         """
@@ -1206,7 +1208,42 @@ class SolicitacaoColetaRepository:
                 tuple(parametros),
             ).fetchall()
 
-        return [dict(row) for row in rows]
+        dados = [dict(row) for row in rows]
+
+        # Se não houver um intervalo completo informado,
+        # mantém o comportamento atual.
+        if not data_inicial or not data_final:
+            return dados
+
+        inicio = date.fromisoformat(data_inicial)
+        fim = date.fromisoformat(data_final)
+
+        dados_por_data = {
+            item["data"]: item
+            for item in dados
+        }
+
+        resultado: list[dict] = []
+
+        data_atual = inicio
+
+        while data_atual <= fim:
+            data_iso = data_atual.isoformat()
+
+            resultado.append(
+                dados_por_data.get(
+                    data_iso,
+                    {
+                        "data": data_iso,
+                        "solicitacoes": 0,
+                        "concluidas": 0,
+                    },
+                )
+            )
+
+            data_atual += timedelta(days=1)
+
+        return resultado
 
     def listar_ultimas(
             self,

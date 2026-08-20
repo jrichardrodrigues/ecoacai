@@ -79,10 +79,6 @@ class DashboardView:
             expand=True,
         )
 
-        self.conteudo_dashboard = ft.Column(
-            spacing=Spacing.LG,
-        )
-
     @staticmethod
     def _formatar_numero(valor: int | float | None) -> str:
         """Formata números no padrão brasileiro."""
@@ -171,7 +167,6 @@ class DashboardView:
         )
 
     @staticmethod
-    @staticmethod
     def _criar_container_card(
             titulo: str,
             valor: str,
@@ -180,6 +175,7 @@ class DashboardView:
             cor_fundo: str,
             subtitulo: str = "",
             col: dict | None = None,
+            height: int = 200,
             on_click=None,
     ) -> ft.Control:
         """Cria um card executivo dentro da grade responsiva."""
@@ -197,6 +193,7 @@ class DashboardView:
                 cor=cor,
                 cor_fundo=cor_fundo,
                 subtitulo=subtitulo,
+                height=height,
             ),
             on_click=on_click,
         )
@@ -277,6 +274,7 @@ class DashboardView:
             em_coleta: int,
             concluidas: int,
             canceladas: int,
+            recusadas: int,
     ) -> ft.Control:
         """Cria o painel executivo de distribuição por status."""
 
@@ -285,6 +283,7 @@ class DashboardView:
         em_coleta = em_coleta or 0
         concluidas = concluidas or 0
         canceladas = canceladas or 0
+        recusadas = recusadas or 0
 
         dados = [
             (
@@ -322,9 +321,19 @@ class DashboardView:
                 ft.Colors.GREY_700,
                 ft.Colors.GREY_100,
             ),
+            (
+                "Recusadas",
+                recusadas,
+                ft.Icons.BLOCK,
+                ft.Colors.PURPLE_700,
+                ft.Colors.PURPLE_50,
+            ),
         ]
 
-        total = sum(valor for _, valor, _, _, _ in dados)
+        total = sum(
+            valor
+            for _, valor, _, _, _ in dados
+        )
 
         if total == 0:
             conteudo_principal: ft.Control = ft.Container(
@@ -348,6 +357,7 @@ class DashboardView:
                     ],
                 ),
             )
+
         else:
             secoes = [
                 fch.PieChartSection(
@@ -357,7 +367,7 @@ class DashboardView:
                         f"({self._formatar_percentual(valor, total)})"
                     ),
                     color=cor,
-                    radius=92,
+                    radius=108,
                     title_style=ft.TextStyle(
                         size=13,
                         weight=ft.FontWeight.BOLD,
@@ -371,7 +381,7 @@ class DashboardView:
             grafico = fch.PieChart(
                 sections=secoes,
                 sections_space=2,
-                center_space_radius=58,
+                center_space_radius=68,
                 center_space_color=ft.Colors.WHITE,
                 expand=True,
             )
@@ -414,6 +424,14 @@ class DashboardView:
                         cor=dados[1][3],
                         cor_fundo=dados[1][4],
                     ),
+                    self._criar_card_status_grafico(
+                        titulo=dados[5][0],
+                        valor=dados[5][1],
+                        total=total,
+                        icone=dados[5][2],
+                        cor=dados[5][3],
+                        cor_fundo=dados[5][4],
+                    ),
                 ],
             )
 
@@ -436,21 +454,20 @@ class DashboardView:
                         cor=dados[3][3],
                         cor_fundo=dados[3][4],
                     ),
+                    self._criar_card_status_grafico(
+                        titulo=dados[4][0],
+                        valor=dados[4][1],
+                        total=total,
+                        icone=dados[4][2],
+                        cor=dados[4][3],
+                        cor_fundo=dados[4][4],
+                    ),
                 ],
             )
 
-            card_canceladas = self._criar_card_status_grafico(
-                titulo=dados[4][0],
-                valor=dados[4][1],
-                total=total,
-                icone=dados[4][2],
-                cor=dados[4][3],
-                cor_fundo=dados[4][4],
-            )
-
             area_grafico = ft.Container(
-                width=420,
-                height=320,
+                width=500,
+                height=380,
                 padding=ft.Padding(
                     left=8,
                     top=0,
@@ -475,9 +492,6 @@ class DashboardView:
                             coluna_direita,
                         ],
                     ),
-
-                    card_canceladas,
-
                     legenda,
                 ],
             )
@@ -604,16 +618,41 @@ class DashboardView:
                 point=True,
             ),
         ]
+
         labels_datas = []
 
+        quantidade_dias = len(dados)
+
+        if quantidade_dias <= 15:
+            passo_rotulo = 1
+        elif quantidade_dias <= 31:
+            passo_rotulo = 2
+        elif quantidade_dias <= 62:
+            passo_rotulo = 5
+        else:
+            passo_rotulo = 7
+
         for indice, item in enumerate(dados):
+
+            # Reduz apenas os rótulos visíveis no eixo X.
+            # Todos os pontos continuam sendo desenhados no gráfico.
+            exibir_rotulo = (
+                    indice % passo_rotulo == 0
+                    or indice == quantidade_dias - 1
+            )
+
+            if not exibir_rotulo:
+                continue
+
             data = item.get("data", "")
 
             if data:
                 partes = data.split("-")
 
                 if len(partes) == 3:
-                    data_formatada = f"{partes[2]}/{partes[1]}"
+                    data_formatada = (
+                        f"{partes[2]}/{partes[1]}"
+                    )
                 else:
                     data_formatada = data
             else:
@@ -1117,6 +1156,11 @@ class DashboardView:
             0,
         )
 
+        recusadas = self.estatisticas.get(
+            "recusadas",
+            0,
+        )
+
         ultimas_solicitacoes = self.controller.listar_ultimas(
             limite=5,
             data_inicial=self.data_inicial,
@@ -1170,7 +1214,8 @@ class DashboardView:
                     icone=ft.Icons.SCHEDULE,
                     cor=ft.Colors.INDIGO_700,
                     cor_fundo=ft.Colors.INDIGO_50,
-                    subtitulo="Da solicitação até a conclusão",
+                    subtitulo="Da solicitação até a conclusão da coleta",
+                    height=220,
                     col={
                         "sm": 12,
                         "md": 6,
@@ -1185,7 +1230,8 @@ class DashboardView:
                     icone=ft.Icons.HOURGLASS_EMPTY,
                     cor=ft.Colors.AMBER_800,
                     cor_fundo=ft.Colors.AMBER_50,
-                    subtitulo="Da solicitação até o início",
+                    subtitulo="Da solicitação até a chegada ao local da coleta",
+                    height=220,
                     col={
                         "sm": 12,
                         "md": 6,
@@ -1200,7 +1246,8 @@ class DashboardView:
                     icone=ft.Icons.TIMER_OUTLINED,
                     cor=ft.Colors.BLUE_700,
                     cor_fundo=ft.Colors.BLUE_50,
-                    subtitulo="Do início até a conclusão",
+                    subtitulo="Da chegada ao local da coleta até a conclusão",
+                    height=220,
                     col={
                         "sm": 12,
                         "md": 6,
@@ -1216,7 +1263,8 @@ class DashboardView:
                     icone=ft.Icons.CHECK_CIRCLE_OUTLINE,
                     cor=ft.Colors.GREEN_700,
                     cor_fundo=ft.Colors.GREEN_50,
-                    subtitulo="Solicitações concluídas no período",
+                    subtitulo="Percentual das solicitações concluídas",
+                    height=220,
                     col={
                         "sm": 12,
                         "md": 6,
@@ -1232,7 +1280,8 @@ class DashboardView:
                     icone=ft.Icons.EVENT_AVAILABLE,
                     cor=ft.Colors.TEAL_700,
                     cor_fundo=ft.Colors.TEAL_50,
-                    subtitulo="Chegada dentro da tolerância de 15 min",
+                    subtitulo="Chegada até 15 min após o agendado",
+                    height=220,
                     col={
                         "sm": 12,
                         "md": 6,
@@ -1249,6 +1298,7 @@ class DashboardView:
                     cor=ft.Colors.PURPLE_700,
                     cor_fundo=ft.Colors.PURPLE_50,
                     subtitulo="Peso coletado em relação ao previsto",
+                    height=220,
                     col={
                         "sm": 12,
                         "md": 6,
@@ -1277,6 +1327,7 @@ class DashboardView:
             em_coleta=em_coleta,
             concluidas=concluidas,
             canceladas=canceladas,
+            recusadas=recusadas,
         )
 
         filtro_periodo = ft.Container(

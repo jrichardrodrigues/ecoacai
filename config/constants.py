@@ -107,6 +107,7 @@ class StatusColeta:
     EM_COLETA = "EM_COLETA"
     CONCLUIDA = "CONCLUIDA"
     CANCELADA = "CANCELADA"
+    RECUSADA = "RECUSADA"
 
     OPCOES = [
         (SOLICITADA, "Solicitada"),
@@ -115,6 +116,7 @@ class StatusColeta:
         (EM_COLETA, "Em coleta"),
         (CONCLUIDA, "Concluída"),
         (CANCELADA, "Cancelada"),
+        (RECUSADA, "Recusada"),
     ]
 
     @classmethod

@@ -642,6 +642,15 @@ class DashboardTable(ft.Container):
 
         status_normalizado = status.upper().strip()
 
+        rotulos = {
+            "SOLICITADA": "PENDENTE",
+            "AGENDADA": "AGENDADA",
+            "EM_COLETA": "EM COLETA",
+            "CONCLUIDA": "CONCLUÍDA",
+            "CANCELADA": "CANCELADA",
+            "RECUSADA": "RECUSADA",
+        }
+
         configuracoes = {
             "PENDENTE": (
                 ft.Colors.AMBER_100,
@@ -663,10 +672,15 @@ class DashboardTable(ft.Container):
                 ft.Colors.GREEN_900,
                 ft.Icons.CHECK_CIRCLE_OUTLINE,
             ),
-            "CONCLUÍDA": (
-                ft.Colors.GREEN_100,
-                ft.Colors.GREEN_900,
-                ft.Icons.CHECK_CIRCLE_OUTLINE,
+            "CANCELADA": (
+                ft.Colors.GREY_200,
+                ft.Colors.GREY_800,
+                ft.Icons.CANCEL,
+            ),
+            "RECUSADA": (
+                ft.Colors.PURPLE_100,
+                ft.Colors.PURPLE_800,
+                ft.Icons.BLOCK,
             ),
         }
 
@@ -677,6 +691,11 @@ class DashboardTable(ft.Container):
                 ft.Colors.GREY_800,
                 ft.Icons.INFO_OUTLINE,
             ),
+        )
+
+        rotulo = rotulos.get(
+            status_normalizado,
+            status_normalizado.replace("_", " "),
         )
 
         return ft.Container(
@@ -699,7 +718,7 @@ class DashboardTable(ft.Container):
                         color=cor_texto,
                     ),
                     ft.Text(
-                        status_normalizado.replace("_", " "),
+                        rotulo,
                         size=Typography.SMALL,
                         weight=ft.FontWeight.BOLD,
                         color=cor_texto,

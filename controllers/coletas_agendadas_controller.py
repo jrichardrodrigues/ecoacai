@@ -181,6 +181,18 @@ class ColetasAgendadasController:
             motivo=motivo,
         )
 
+    def recusar_coleta(
+            self,
+            solicitacao_id: int,
+            motivo: str,
+    ):
+        """Recusa uma solicitação registrando o motivo."""
+
+        return self.service.recusar_coleta(
+            solicitacao_id=solicitacao_id,
+            motivo=motivo,
+        )
+
     # ======================================================
     # DISPONIBILIDADE
     # ======================================================

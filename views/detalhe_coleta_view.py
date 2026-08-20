@@ -51,6 +51,14 @@ class DetalheColetaView:
                 ]
             )
 
+        elif status == StatusColeta.RECUSADA:
+            controles.extend(
+                [
+                    ft.Divider(),
+                    self._secao_recusa(),
+                ]
+            )
+
         conteudo = ft.Column(
             controls=controles,
             spacing=16,
@@ -313,6 +321,31 @@ class DetalheColetaView:
                     self._formatar_data_hora(
                         self.coleta.get(
                             "data_hora_cancelamento"
+                        )
+                    ),
+                ),
+            ],
+            spacing=12,
+        )
+
+    def _secao_recusa(self) -> ft.Control:
+        """Exibe os dados da recusa da solicitação."""
+
+        return ft.Column(
+            controls=[
+                self._titulo_secao("Recusa"),
+                self._linha_dado(
+                    "Motivo",
+                    self._texto(
+                        self.coleta.get("motivo_recusa"),
+                        padrao="Não informado",
+                    ),
+                ),
+                self._linha_dado(
+                    "Recusada em",
+                    self._formatar_data_hora(
+                        self.coleta.get(
+                            "data_hora_recusa"
                         )
                     ),
                 ),

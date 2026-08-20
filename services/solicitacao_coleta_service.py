@@ -611,12 +611,12 @@ class SolicitacaoColetaService:
         )
 
     def concluir(
-        self,
-        solicitacao_id: int,
-        *,
-        quantidade_sacas_coletada: int | None = None,
-        quantidade_kg_coletado: float | None = None,
-        observacao_operacional: str | None = None,
+            self,
+            solicitacao_id: int,
+            *,
+            quantidade_sacas_coletada: int | None = None,
+            quantidade_kg_coletado: float | None = None,
+            observacao_operacional: str | None = None,
     ) -> tuple[bool, str, SolicitacaoColeta | None]:
         solicitacao = self.repository.buscar_por_id(solicitacao_id)
 
@@ -630,6 +630,20 @@ class SolicitacaoColetaService:
                 None,
             )
 
+        if not solicitacao.data_hora_inicio:
+            return (
+                False,
+                "Inicie a coleta antes de concluí-la.",
+                None,
+            )
+
+        if not solicitacao.data_hora_chegada:
+            return (
+                False,
+                "Registre a chegada ao local antes de concluir a coleta.",
+                None,
+            )
+
         if quantidade_sacas_coletada is not None:
             if quantidade_sacas_coletada < 0:
                 return (
@@ -637,6 +651,7 @@ class SolicitacaoColetaService:
                     "A quantidade de sacas coletada é inválida.",
                     None,
                 )
+
             solicitacao.quantidade_sacas_coletada = (
                 quantidade_sacas_coletada
             )
@@ -648,7 +663,10 @@ class SolicitacaoColetaService:
                     "A quantidade coletada em quilos é inválida.",
                     None,
                 )
-            solicitacao.quantidade_kg_coletado = quantidade_kg_coletado
+
+            solicitacao.quantidade_kg_coletado = (
+                quantidade_kg_coletado
+            )
 
         if observacao_operacional is not None:
             solicitacao.observacao_operacional = (

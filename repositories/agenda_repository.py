@@ -19,6 +19,7 @@ class AgendaRepository:
         StatusColeta.EM_COLETA,
         StatusColeta.CONCLUIDA,
         StatusColeta.CANCELADA,
+        StatusColeta.RECUSADA,
     }
 
     _CAMPOS_DATA_STATUS = {
@@ -36,6 +37,7 @@ class AgendaRepository:
         StatusColeta.EM_ANALISE: {
             StatusColeta.AGENDADA,
             StatusColeta.CANCELADA,
+            StatusColeta.RECUSADA,
         },
 
         StatusColeta.AGENDADA: {
@@ -50,6 +52,8 @@ class AgendaRepository:
         StatusColeta.CONCLUIDA: set(),
 
         StatusColeta.CANCELADA: set(),
+
+        StatusColeta.RECUSADA: set(),
     }
 
     def __init__(
@@ -740,6 +744,48 @@ class AgendaRepository:
 
             return cursor.rowcount > 0
 
+    def recusar_coleta(
+            self,
+            solicitacao_id: int,
+            motivo: str,
+    ) -> bool:
+        """
+        Recusa uma solicitação registrando
+        o motivo e a data/hora da recusa.
+        """
+
+        motivo_normalizado = str(
+            motivo or ""
+        ).strip()
+
+        if not motivo_normalizado:
+            return False
+
+        with self.database.obter_conexao() as conexao:
+            agora_local = self._agora_local()
+
+            cursor = conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    status = ?,
+                    motivo_recusa = ?,
+                    data_hora_recusa = ?,
+                    atualizado_em = ?
+                WHERE id = ?
+                  AND ativo = 1
+                """,
+                (
+                    StatusColeta.RECUSADA,
+                    motivo_normalizado,
+                    agora_local,
+                    agora_local,
+                    solicitacao_id,
+                ),
+            )
+
+            return cursor.rowcount > 0
+
     # ==========================================================
     # DISPONIBILIDADE
     # ==========================================================
@@ -1280,6 +1326,11 @@ class AgendaRepository:
                 s.observacao_operacional,
                 s.motivo_cancelamento,
                 s.data_hora_cancelamento,
+                s.motivo_recusa,
+                s.data_hora_recusa,
+                
+                s.latitude,
+                s.longitude,
 
                 s.latitude,
                 s.longitude,

@@ -20,12 +20,13 @@ class ExecutiveCard(ft.Container):
         cor: str = Colors.Dashboard.REQUESTS,
         cor_fundo: str = Colors.Dashboard.REQUESTS_BG,
         subtitulo: str = "",
+        height: int = 200,
         on_click=None,
     ) -> None:
         super().__init__()
 
         self.expand = True
-        self.height = 170
+        self.height = height
 
         self.padding = ft.Padding(
             left=18,
@@ -87,11 +88,10 @@ class ExecutiveCard(ft.Container):
                 ),
                 ft.Text(
                     subtitulo,
-                    size=Typography.SMALL,
+                    size=11,
                     color=ft.Colors.GREY_600,
                     text_align=ft.TextAlign.CENTER,
                     max_lines=2,
-                    overflow=ft.TextOverflow.ELLIPSIS,
                 ),
             ],
         )

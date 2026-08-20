@@ -662,6 +662,70 @@ class ColetasAgendadasService:
                 erro,
             )
 
+    def recusar_coleta(
+            self,
+            solicitacao_id: int,
+            motivo: str,
+    ) -> RepositoryResult:
+        """Recusa uma solicitação em análise e registra o motivo."""
+
+        if not self._id_valido(solicitacao_id):
+            return self._falha(
+                "Identificador da solicitação inválido."
+            )
+
+        solicitacao = self.repository.obter_por_id(
+            solicitacao_id
+        )
+
+        if solicitacao is None:
+            return self._falha(
+                "Solicitação não encontrada."
+            )
+
+        status_atual = self._normalizar_texto(
+            solicitacao.get("status")
+        )
+
+        if status_atual != StatusColeta.EM_ANALISE:
+            return self._falha(
+                "Somente solicitações em análise podem ser recusadas."
+            )
+
+        motivo_normalizado = str(
+            motivo or ""
+        ).strip()
+
+        if not motivo_normalizado:
+            return self._falha(
+                "Informe o motivo da recusa."
+            )
+
+        try:
+            sucesso = self.repository.recusar_coleta(
+                solicitacao_id=solicitacao_id,
+                motivo=motivo_normalizado,
+            )
+
+            if not sucesso:
+                return self._falha(
+                    "Não foi possível recusar a solicitação."
+                )
+
+            return RepositoryResult(
+                sucesso=True,
+                mensagem="Solicitação recusada com sucesso.",
+                dados=self.repository.obter_por_id(
+                    solicitacao_id
+                ),
+            )
+
+        except Exception as erro:
+            return self._erro_inesperado(
+                "Não foi possível recusar a solicitação.",
+                erro,
+            )
+
     # ==========================================================
     # DISPONIBILIDADE
     # ==========================================================
