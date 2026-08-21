@@ -32,9 +32,11 @@ class ColetasAgendadasView:
         StatusColeta.SOLICITADA,
         StatusColeta.EM_ANALISE,
         StatusColeta.AGENDADA,
+        StatusColeta.EM_DESLOCAMENTO,
         StatusColeta.EM_COLETA,
         StatusColeta.CONCLUIDA,
         StatusColeta.CANCELADA,
+        StatusColeta.RECUSADA,
     }
 
     def __init__(
@@ -121,6 +123,10 @@ class ColetasAgendadasView:
                     text="Agendada",
                 ),
                 ft.DropdownOption(
+                    key=StatusColeta.EM_DESLOCAMENTO,
+                    text="Em deslocamento",
+                ),
+                ft.DropdownOption(
                     key=StatusColeta.EM_COLETA,
                     text="Em coleta",
                 ),
@@ -172,6 +178,7 @@ class ColetasAgendadasView:
 
         self.texto_total_pendentes = self._criar_texto_total()
         self.texto_total_agendadas = self._criar_texto_total()
+        self.texto_total_em_deslocamento = self._criar_texto_total()
         self.texto_total_em_coleta = self._criar_texto_total()
         self.texto_total_concluidas = self._criar_texto_total()
         self.texto_total_canceladas = self._criar_texto_total()
@@ -419,13 +426,14 @@ class ColetasAgendadasView:
             width=250,
             dense=True,
             keyboard_type=ft.KeyboardType.NUMBER,
+            on_change=self._atualizar_peso_coletado,
         )
 
         self.campo_peso_coletado = ft.TextField(
             label="Peso coletado (kg)",
             width=250,
             dense=True,
-            keyboard_type=ft.KeyboardType.NUMBER,
+            read_only=True,
         )
 
         self.campo_observacao_operacional = ft.TextField(
@@ -1072,6 +1080,11 @@ class ColetasAgendadasView:
                 icone=ft.Icons.EVENT_AVAILABLE,
             ),
             self._criar_card_indicador(
+                titulo="Em deslocamento",
+                texto_total=self.texto_total_em_deslocamento,
+                icone=ft.Icons.LOCAL_SHIPPING_OUTLINED,
+            ),
+            self._criar_card_indicador(
                 titulo="Em coleta",
                 texto_total=self.texto_total_em_coleta,
                 icone=ft.Icons.LOCAL_SHIPPING,
@@ -1096,11 +1109,11 @@ class ColetasAgendadasView:
         )
 
     def _criar_card_indicador(
-        self,
-        *,
-        titulo: str,
-        texto_total: ft.Text,
-        icone: Any,
+            self,
+            *,
+            titulo: str,
+            texto_total: ft.Text,
+            icone: Any,
     ) -> ft.Control:
         """Cria um card de indicador."""
 
@@ -1110,10 +1123,10 @@ class ColetasAgendadasView:
                     ft.Container(
                         content=ft.Icon(
                             icone,
-                            size=28,
+                            size=26,
                         ),
-                        width=48,
-                        height=48,
+                        width=42,
+                        height=42,
                         alignment=ft.Alignment.CENTER,
                         border_radius=10,
                     ),
@@ -1128,17 +1141,16 @@ class ColetasAgendadasView:
                         spacing=2,
                     ),
                 ],
-                spacing=12,
+                spacing=10,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            width=190,
-            padding=16,
+            width=178,
+            padding=12,
             border=ft.Border.all(
                 width=1,
             ),
             border_radius=12,
         )
-
     def _criar_area_mensagem(self) -> ft.Control:
         """Cria a área de mensagens da tela."""
 
@@ -1312,6 +1324,10 @@ class ColetasAgendadasView:
 
         self.texto_total_agendadas.value = str(
             totais.get(StatusColeta.AGENDADA, 0)
+        )
+
+        self.texto_total_em_deslocamento.value = str(
+            totais.get(StatusColeta.EM_DESLOCAMENTO, 0)
         )
 
         self.texto_total_em_coleta.value = str(
@@ -1849,9 +1865,9 @@ class ColetasAgendadasView:
                     self._reagendar(solicitacao_id),
                 ),
                 ft.PopupMenuItem(
-                    content="Iniciar coleta",
+                    content="Iniciar deslocamento",
                     on_click=lambda _:
-                    self._iniciar(solicitacao_id),
+                    self._iniciar_deslocamento(solicitacao_id),
                 ),
                 ft.PopupMenuItem(
                     content="Cancelar",
@@ -1860,34 +1876,27 @@ class ColetasAgendadasView:
                 ),
             ])
 
-        elif status == StatusColeta.EM_COLETA:
-            chegada_registrada = bool(
-                str(
-                    data_hora_chegada or ""
-                ).strip()
+        elif status == StatusColeta.EM_DESLOCAMENTO:
+            itens.append(
+                ft.PopupMenuItem(
+                    content="Registrar chegada",
+                    on_click=lambda _:
+                    self._registrar_chegada(
+                        solicitacao_id
+                    ),
+                )
             )
 
-            if not chegada_registrada:
-                itens.append(
-                    ft.PopupMenuItem(
-                        content="Registrar chegada",
-                        on_click=lambda _:
-                        self._registrar_chegada(
-                            solicitacao_id
-                        ),
-                    )
+        elif status == StatusColeta.EM_COLETA:
+            itens.append(
+                ft.PopupMenuItem(
+                    content="Concluir coleta",
+                    on_click=lambda _:
+                    self._concluir(
+                        solicitacao_id
+                    ),
                 )
-
-            else:
-                itens.append(
-                    ft.PopupMenuItem(
-                        content="Concluir coleta",
-                        on_click=lambda _:
-                        self._concluir(
-                            solicitacao_id
-                        ),
-                    )
-                )
+            )
 
         return ft.PopupMenuButton(
             icon=ft.Icons.MORE_VERT,
@@ -2247,11 +2256,13 @@ class ColetasAgendadasView:
             self.dialog_agendamento
         )
 
-    def _iniciar(
-        self,
-        solicitacao_id: int,
+    def _iniciar_deslocamento(
+            self,
+            solicitacao_id: int,
     ) -> None:
-        resultado = self.controller.iniciar_coleta(
+        """Inicia o deslocamento para uma coleta agendada."""
+
+        resultado = self.controller.iniciar_deslocamento(
             solicitacao_id
         )
 
@@ -2309,6 +2320,8 @@ class ColetasAgendadasView:
             or "SACA"
         ).strip().upper()
 
+        self.forma_acondicionamento_conclusao = forma
+
         quantidade_prevista = int(
             coleta.get("quantidade_prevista") or 0
         )
@@ -2360,6 +2373,54 @@ class ColetasAgendadasView:
         self.page.show_dialog(
             self.dialog_conclusao
         )
+
+    def _atualizar_peso_coletado(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Atualiza o peso coletado conforme a quantidade informada."""
+
+        valor_quantidade = str(
+            self.campo_quantidade_coletada.value or ""
+        ).strip()
+
+        if not valor_quantidade:
+            self.campo_peso_coletado.value = ""
+            self._atualizar_pagina()
+            return
+
+        try:
+            quantidade = int(valor_quantidade)
+        except ValueError:
+            self.campo_peso_coletado.value = ""
+            self._atualizar_pagina()
+            return
+
+        if quantidade < 0:
+            self.campo_peso_coletado.value = ""
+            self._atualizar_pagina()
+            return
+
+        forma = str(
+            getattr(
+                self,
+                "forma_acondicionamento_conclusao",
+                "SACA",
+            )
+        ).strip().upper()
+
+        if forma == "BAG":
+            peso_por_unidade = 1000
+        else:
+            peso_por_unidade = 50
+
+        peso_total = quantidade * peso_por_unidade
+
+        self.campo_peso_coletado.value = str(
+            peso_total
+        )
+
+        self._atualizar_pagina()
 
     def _cancelar(
             self,

@@ -16,6 +16,7 @@ class AgendaRepository:
         StatusColeta.SOLICITADA,
         StatusColeta.EM_ANALISE,
         StatusColeta.AGENDADA,
+        StatusColeta.EM_DESLOCAMENTO,
         StatusColeta.EM_COLETA,
         StatusColeta.CONCLUIDA,
         StatusColeta.CANCELADA,
@@ -41,8 +42,12 @@ class AgendaRepository:
         },
 
         StatusColeta.AGENDADA: {
-            StatusColeta.EM_COLETA,
+            StatusColeta.EM_DESLOCAMENTO,
             StatusColeta.CANCELADA,
+        },
+
+        StatusColeta.EM_DESLOCAMENTO: {
+            StatusColeta.EM_COLETA,
         },
 
         StatusColeta.EM_COLETA: {
@@ -328,38 +333,7 @@ class AgendaRepository:
 
         consulta += """
             WHERE s.ativo = 1
-              AND DATE(
-                    CASE
-                        WHEN s.status = 'CONCLUIDA'
-                            THEN COALESCE(
-                                s.data_hora_conclusao,
-                                s.data_hora_agendada,
-                                s.data_solicitacao
-                            )
-
-                        WHEN s.status = 'EM_COLETA'
-                            THEN COALESCE(
-                                s.data_hora_inicio,
-                                s.data_hora_agendada,
-                                s.data_solicitacao
-                            )
-
-                        WHEN s.status = 'CANCELADA'
-                            THEN COALESCE(
-                                s.data_hora_cancelamento,
-                                s.data_hora_agendada,
-                                s.data_solicitacao
-                            )
-
-                        WHEN s.status = 'AGENDADA'
-                            THEN COALESCE(
-                                s.data_hora_agendada,
-                                s.data_solicitacao
-                            )
-
-                        ELSE s.data_solicitacao
-                    END
-                  )
+              AND DATE(s.data_hora_agendada)
                   BETWEEN DATE(?) AND DATE(?)
         """
 
@@ -575,20 +549,20 @@ class AgendaRepository:
             veiculo_id=veiculo_id,
         )
 
-    def iniciar_coleta(
+    def iniciar_deslocamento(
             self,
             solicitacao_id: int,
     ) -> bool:
         """
-        Inicia uma coleta agendada.
+        Inicia o deslocamento para uma coleta agendada.
 
-        Altera o status para EM_COLETA e registra
+        Altera o status para EM_DESLOCAMENTO e registra
         a data e a hora de início.
         """
 
         return self._atualizar_status(
             solicitacao_id=solicitacao_id,
-            novo_status=StatusColeta.EM_COLETA,
+            novo_status=StatusColeta.EM_DESLOCAMENTO,
             campo_data="data_hora_inicio",
         )
 
@@ -599,11 +573,14 @@ class AgendaRepository:
         """
         Registra a chegada da equipe ao local da coleta.
 
-        A coleta deve estar em andamento.
-        O status permanece EM_COLETA.
+        A coleta deve estar em deslocamento.
 
-        Se a chegada já estiver registrada, mantém o horário
-        original e considera a operação válida.
+        Ao registrar a chegada:
+        - altera o status para EM_COLETA;
+        - registra a data e a hora da chegada.
+
+        Se a chegada já estiver registrada e a coleta
+        estiver EM_COLETA, considera a operação válida.
         """
 
         if solicitacao_id <= 0:
@@ -630,15 +607,21 @@ class AgendaRepository:
                 registro["status"] or ""
             ).strip().upper()
 
-            if status_atual != StatusColeta.EM_COLETA:
-                return False
-
             chegada_atual = str(
                 registro["data_hora_chegada"] or ""
             ).strip()
 
-            if chegada_atual:
+            # Operação já realizada anteriormente.
+            if (
+                    status_atual == StatusColeta.EM_COLETA
+                    and chegada_atual
+            ):
                 return True
+
+            # A chegada só pode ocorrer após
+            # o início do deslocamento.
+            if status_atual != StatusColeta.EM_DESLOCAMENTO:
+                return False
 
             agora_local = self._agora_local()
 
@@ -646,6 +629,7 @@ class AgendaRepository:
                 """
                 UPDATE solicitacoes
                 SET
+                    status = ?,
                     data_hora_chegada = ?,
                     atualizado_em = ?
                 WHERE id = ?
@@ -653,10 +637,11 @@ class AgendaRepository:
                   AND status = ?
                 """,
                 (
+                    StatusColeta.EM_COLETA,
                     agora_local,
                     agora_local,
                     solicitacao_id,
-                    StatusColeta.EM_COLETA,
+                    StatusColeta.EM_DESLOCAMENTO,
                 ),
             )
 

@@ -450,17 +450,17 @@ class ColetasAgendadasService:
                 erro,
             )
 
-    def iniciar_coleta(
-        self,
-        solicitacao_id: int,
+    def iniciar_deslocamento(
+            self,
+            solicitacao_id: int,
     ) -> RepositoryResult:
-        """Inicia uma coleta que esteja agendada."""
+        """Inicia o deslocamento de uma coleta agendada."""
 
         validacao = self._validar_status_atual(
             solicitacao_id=solicitacao_id,
             status_esperado=StatusColeta.AGENDADA,
             mensagem=(
-                "Somente coletas agendadas podem ser iniciadas."
+                "Somente coletas agendadas podem iniciar deslocamento."
             ),
         )
 
@@ -468,18 +468,18 @@ class ColetasAgendadasService:
             return validacao
 
         try:
-            sucesso = self.repository.iniciar_coleta(
+            sucesso = self.repository.iniciar_deslocamento(
                 solicitacao_id
             )
 
             if not sucesso:
                 return self._falha(
-                    "Não foi possível iniciar a coleta."
+                    "Não foi possível iniciar o deslocamento."
                 )
 
             return RepositoryResult(
                 sucesso=True,
-                mensagem="Coleta iniciada com sucesso.",
+                mensagem="Deslocamento iniciado com sucesso.",
                 dados=self.repository.obter_por_id(
                     solicitacao_id
                 ),
@@ -487,7 +487,7 @@ class ColetasAgendadasService:
 
         except Exception as erro:
             return self._erro_inesperado(
-                "Não foi possível iniciar a coleta.",
+                "Não foi possível iniciar o deslocamento.",
                 erro,
             )
 
@@ -499,9 +499,9 @@ class ColetasAgendadasService:
 
         validacao = self._validar_status_atual(
             solicitacao_id=solicitacao_id,
-            status_esperado=StatusColeta.EM_COLETA,
+            status_esperado=StatusColeta.EM_DESLOCAMENTO,
             mensagem=(
-                "Somente coletas em andamento podem registrar chegada."
+                "Somente coletas em deslocamento podem registrar chegada."
             ),
         )
 
@@ -565,6 +565,45 @@ class ColetasAgendadasService:
         observacao_operacional = str(
             observacao_operacional or ""
         ).strip()
+
+        solicitacao = self.repository.obter_por_id(
+            solicitacao_id
+        )
+
+        if solicitacao is None:
+            return self._falha(
+                "Solicitação não encontrada."
+            )
+
+        quantidade_prevista = int(
+            solicitacao.get("quantidade_prevista")
+            or solicitacao.get("quantidade_sacas_prevista")
+            or 0
+        )
+
+        peso_previsto_kg = float(
+            solicitacao.get("peso_estimado_kg")
+            or solicitacao.get("quantidade_kg_previsto")
+            or 0
+        )
+
+        coleta_abaixo_previsto = (
+                (
+                        quantidade_prevista > 0
+                        and quantidade_coletada < quantidade_prevista
+                )
+                or
+                (
+                        peso_previsto_kg > 0
+                        and peso_coletado_kg < peso_previsto_kg
+                )
+        )
+
+        if coleta_abaixo_previsto and not observacao_operacional:
+            return self._falha(
+                "Informe uma observação justificando "
+                "a quantidade ou o peso coletado abaixo do previsto."
+            )
 
         try:
             sucesso = self.repository.concluir_coleta(

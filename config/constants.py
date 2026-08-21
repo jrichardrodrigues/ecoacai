@@ -104,6 +104,7 @@ class StatusColeta:
     SOLICITADA = "SOLICITADA"
     EM_ANALISE = "EM_ANALISE"
     AGENDADA = "AGENDADA"
+    EM_DESLOCAMENTO = "EM_DESLOCAMENTO"
     EM_COLETA = "EM_COLETA"
     CONCLUIDA = "CONCLUIDA"
     CANCELADA = "CANCELADA"
@@ -113,6 +114,7 @@ class StatusColeta:
         (SOLICITADA, "Solicitada"),
         (EM_ANALISE, "Em análise"),
         (AGENDADA, "Agendada"),
+        (EM_DESLOCAMENTO, "Em deslocamento"),
         (EM_COLETA, "Em coleta"),
         (CONCLUIDA, "Concluída"),
         (CANCELADA, "Cancelada"),

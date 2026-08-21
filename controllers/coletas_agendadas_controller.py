@@ -137,11 +137,11 @@ class ColetasAgendadasController:
             janela_minutos=janela_minutos,
         )
 
-    def iniciar_coleta(
-        self,
-        solicitacao_id: int,
+    def iniciar_deslocamento(
+            self,
+            solicitacao_id: int,
     ):
-        return self.service.iniciar_coleta(
+        return self.service.iniciar_deslocamento(
             solicitacao_id,
         )
 
