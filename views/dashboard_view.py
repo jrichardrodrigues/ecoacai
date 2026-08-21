@@ -1085,6 +1085,62 @@ class DashboardView:
 
         self.page.update()
 
+    def _abrir_calendario_consulta(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Abre o calendário para uma consulta rápida por dia."""
+
+        hoje = date.today()
+
+        seletor = ft.DatePicker(
+            value=hoje,
+            first_date=date(2020, 1, 1),
+            last_date=date(
+                hoje.year + 2,
+                12,
+                31,
+            ),
+            on_change=self._selecionar_data_consulta,
+        )
+
+        self.page.show_dialog(seletor)
+
+    def _selecionar_data_consulta(
+            self,
+            evento: ft.Event,
+    ) -> None:
+        """Aplica ao Dashboard a data escolhida no calendário executivo."""
+
+        valor = evento.control.value
+
+        if valor is None:
+            return
+
+        data_tela = valor.strftime("%d/%m/%Y")
+        data_filtro = valor.strftime("%Y-%m-%d")
+
+        # Mostra a mesma data nos dois campos,
+        # caracterizando uma consulta de dia único.
+        self.campo_data_inicial.value = data_tela
+        self.campo_data_final.value = data_tela
+
+        self.data_inicial = data_filtro
+        self.data_final = data_filtro
+
+        self.estatisticas = (
+            self.controller.obter_estatisticas(
+                data_inicial=self.data_inicial,
+                data_final=self.data_final,
+            )
+        )
+
+        self.conteudo_dashboard.controls = (
+            self._montar_conteudo_dashboard()
+        )
+
+        self.page.update()
+
     def _montar_conteudo_dashboard(
             self,
     ) -> list[ft.Control]:
@@ -1313,12 +1369,7 @@ class DashboardView:
         )
 
         cabecalho_executivo = ExecutiveHeader(
-            total_estabelecimentos=self._formatar_numero(
-                total_estabelecimentos
-            ),
-            total_solicitacoes=self._formatar_numero(total),
-            total_sacas=self._formatar_numero(total_sacas),
-            total_kg=self._formatar_numero(total_kg),
+            on_calendario_click=self._abrir_calendario_consulta,
         )
 
         painel_distribuicao = self._criar_grafico_status(

@@ -793,7 +793,6 @@ class SolicitacaoColetaRepository:
             WHERE ativo = 1
               AND status = 'CONCLUIDA'
               AND data_solicitacao IS NOT NULL
-              AND data_hora_chegada IS NOT NULL
               AND data_hora_conclusao IS NOT NULL
         """
 

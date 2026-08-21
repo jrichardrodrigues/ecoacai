@@ -10,14 +10,11 @@ class ExecutiveHeader(ft.Container):
 
     def __init__(
         self,
-        total_estabelecimentos: str,
-        total_solicitacoes: str,
-        total_sacas: str,
-        total_kg: str,
         titulo: str = "Dashboard Executivo",
         descricao: str = (
             "Visão estratégica das operações do EcoAçaí."
         ),
+        on_calendario_click=None,
     ) -> None:
         super().__init__()
 
@@ -25,81 +22,54 @@ class ExecutiveHeader(ft.Container):
         self.border_radius = Radius.XL
         self.bgcolor = Colors.Brand.PRIMARY
 
-        self.content = ft.Column(
-            spacing=Spacing.LG,
-            controls=[
-                self._criar_linha_superior(
-                    titulo=titulo,
-                    descricao=descricao,
-                ),
-                self._criar_resumo(
-                    total_estabelecimentos=total_estabelecimentos,
-                    total_solicitacoes=total_solicitacoes,
-                    total_sacas=total_sacas,
-                    total_kg=total_kg,
-                ),
-            ],
-        )
-
-    @staticmethod
-    def _criar_indicador(
-        titulo: str,
-        valor: str,
-        icone: str,
-        cor: str,
-    ) -> ft.Control:
-        return ft.Container(
-            padding=ft.Padding(
-                left=16,
-                top=10,
-                right=16,
-                bottom=10,
-            ),
-            border_radius=Radius.LG,
-            bgcolor=ft.Colors.with_opacity(
-                0.12,
-                Colors.Text.ON_PRIMARY,
-            ),
-            content=ft.Row(
-                tight=True,
-                spacing=Spacing.MD,
-                controls=[
-                    ft.Icon(
-                        icone,
-                        color=cor,
-                        size=22,
-                    ),
-                    ft.Column(
-                        tight=True,
-                        spacing=Spacing.XS,
-                        controls=[
-                            ft.Text(
-                                titulo,
-                                size=Typography.LABEL,
-                                color=ft.Colors.with_opacity(
-                                    0.70,
-                                    Colors.Text.ON_PRIMARY,
-                                ),
-                            ),
-                            ft.Text(
-                                valor,
-                                size=Typography.H4,
-                                weight=ft.FontWeight.BOLD,
-                                color=Colors.Text.ON_PRIMARY,
-                            ),
-                        ],
-                    ),
-                ],
-            ),
+        self.content = self._criar_linha_superior(
+            titulo=titulo,
+            descricao=descricao,
+            on_calendario_click=on_calendario_click,
         )
 
     @staticmethod
     def _criar_linha_superior(
-        titulo: str,
-        descricao: str,
+            titulo: str,
+            descricao: str,
+            on_calendario_click=None,
     ) -> ft.Control:
         data_hora = datetime.now().strftime(
             "%d/%m/%Y às %H:%M"
+        )
+
+        consulta_calendario = ft.Container(
+            padding=ft.Padding(
+                left=10,
+                top=8,
+                right=10,
+                bottom=8,
+            ),
+            border_radius=Radius.LG,
+            tooltip="Consultar Dashboard por data",
+            on_click=on_calendario_click,
+            content=ft.Row(
+                tight=True,
+                spacing=Spacing.SM,
+                controls=[
+                    ft.Icon(
+                        ft.Icons.CALENDAR_MONTH,
+                        color=ft.Colors.with_opacity(
+                            0.75,
+                            Colors.Text.ON_PRIMARY,
+                        ),
+                        size=18,
+                    ),
+                    ft.Text(
+                        data_hora,
+                        size=Typography.SMALL,
+                        color=ft.Colors.with_opacity(
+                            0.75,
+                            Colors.Text.ON_PRIMARY,
+                        ),
+                    ),
+                ],
+            ),
         )
 
         return ft.ResponsiveRow(
@@ -111,7 +81,7 @@ class ExecutiveHeader(ft.Container):
                         "md": 8,
                     },
                     content=ft.Column(
-                        spacing=Spacing.SM,
+                        spacing=Spacing.XS,
                         controls=[
                             ft.Text(
                                 titulo,
@@ -136,83 +106,7 @@ class ExecutiveHeader(ft.Container):
                         "md": 4,
                     },
                     alignment=ft.Alignment.CENTER_RIGHT,
-                    content=ft.Row(
-                        alignment=ft.MainAxisAlignment.END,
-                        spacing=Spacing.MD,
-                        controls=[
-                            ft.Icon(
-                                ft.Icons.CALENDAR_MONTH,
-                                color=ft.Colors.with_opacity(
-                                    0.70,
-                                    Colors.Text.ON_PRIMARY,
-                                ),
-                                size=18,
-                            ),
-                            ft.Text(
-                                data_hora,
-                                size=Typography.SMALL,
-                                color=ft.Colors.with_opacity(
-                                    0.70,
-                                    Colors.Text.ON_PRIMARY,
-                                ),
-                            ),
-                        ],
-                    ),
+                    content=consulta_calendario,
                 ),
-            ],
-        )
-
-    def _criar_resumo(
-        self,
-        total_estabelecimentos: str,
-        total_solicitacoes: str,
-        total_sacas: str,
-        total_kg: str,
-    ) -> ft.Control:
-        dados = [
-            (
-                "Solicitantes",
-                total_estabelecimentos,
-                ft.Icons.STORE,
-                Colors.Dashboard.ESTABLISHMENTS_BG,
-            ),
-            (
-                "Solicitações",
-                total_solicitacoes,
-                ft.Icons.ASSIGNMENT,
-                Colors.Dashboard.REQUESTS_BG,
-            ),
-            (
-                "Sacas",
-                total_sacas,
-                ft.Icons.INVENTORY_2,
-                Colors.Dashboard.SACKS_BG,
-            ),
-            (
-                "Peso registrado",
-                f"{total_kg} kg",
-                ft.Icons.SCALE,
-                Colors.Dashboard.WEIGHT_BG,
-            ),
-        ]
-
-        return ft.ResponsiveRow(
-            spacing=Spacing.MD,
-            run_spacing=Spacing.MD,
-            controls=[
-                ft.Container(
-                    col={
-                        "sm": 12,
-                        "md": 6,
-                        "lg": 3,
-                    },
-                    content=self._criar_indicador(
-                        titulo=titulo,
-                        valor=valor,
-                        icone=icone,
-                        cor=cor,
-                    ),
-                )
-                for titulo, valor, icone, cor in dados
             ],
         )
