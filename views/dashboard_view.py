@@ -32,6 +32,7 @@ class DashboardView:
             on_abrir_canceladas=None,
             on_abrir_para_hoje=None,
             on_abrir_todas_solicitacoes=None,
+            on_visualizar_solicitacao=None,
             on_abrir_solicitantes=None,
     ) -> None:
         self.page = page
@@ -42,6 +43,7 @@ class DashboardView:
         self.on_abrir_canceladas = on_abrir_canceladas
         self.on_abrir_para_hoje = on_abrir_para_hoje
         self.on_abrir_todas_solicitacoes = on_abrir_todas_solicitacoes
+        self.on_visualizar_solicitacao = on_visualizar_solicitacao
         self.on_abrir_solicitantes = on_abrir_solicitantes
 
 
@@ -77,6 +79,35 @@ class DashboardView:
             spacing=Spacing.LG,
             scroll=ft.ScrollMode.ADAPTIVE,
             expand=True,
+        )
+
+    def _visualizar_solicitacao_dashboard(
+            self,
+            solicitacao: dict,
+    ) -> None:
+        """Abre os detalhes de uma solicitação exibida no Dashboard."""
+
+        if self.on_visualizar_solicitacao is None:
+            return
+
+        solicitacao_id = int(
+            solicitacao.get("id")
+            or solicitacao.get("solicitacao_id")
+            or 0
+        )
+
+        if solicitacao_id <= 0:
+            return
+
+        solicitante = str(
+            solicitacao.get("estabelecimento_nome")
+            or solicitacao.get("solicitante")
+            or "Solicitante"
+        )
+
+        self.on_visualizar_solicitacao(
+            solicitacao_id,
+            solicitante,
         )
 
     @staticmethod
@@ -1217,10 +1248,12 @@ class DashboardView:
             0,
         )
 
-        ultimas_solicitacoes = self.controller.listar_ultimas(
+        hoje = date.today().isoformat()
+
+        solicitacoes_hoje = self.controller.listar_ultimas(
             limite=5,
-            data_inicial=self.data_inicial,
-            data_final=self.data_final,
+            data_inicial=hoje,
+            data_final=hoje,
         )
 
         cards_status_data = self._obter_cards_status(
@@ -1446,8 +1479,10 @@ class DashboardView:
             painel_evolucao,
             painel_distribuicao,
             DashboardTable(
-                solicitacoes=ultimas_solicitacoes,
-            ),
+                solicitacoes=solicitacoes_hoje,
+                on_ver_todas=self.on_abrir_todas_solicitacoes,
+                on_visualizar=self._visualizar_solicitacao_dashboard,
+            )
         ]
 
     def build(self) -> ft.Control:

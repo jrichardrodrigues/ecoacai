@@ -12,20 +12,16 @@ class DashboardTable(ft.Container):
     """Painel profissional das últimas solicitações."""
 
     def __init__(
-        self,
-        solicitacoes: list[dict],
-        on_ver_todas=None,
-        on_visualizar=None,
-        on_editar=None,
-        on_excluir=None,
+            self,
+            solicitacoes: list[dict],
+            on_ver_todas=None,
+            on_visualizar=None,
     ) -> None:
         super().__init__()
 
         self.solicitacoes = solicitacoes
         self.on_ver_todas = on_ver_todas
         self.on_visualizar = on_visualizar
-        self.on_editar = on_editar
-        self.on_excluir = on_excluir
 
         self.expand = True
         self.padding = ft.Padding(
@@ -91,7 +87,7 @@ class DashboardTable(ft.Container):
                 spacing=10,
                 controls=[
                     ft.Text(
-                        "Ver todas",
+                        "Consultar todas",
                         size=Typography.SMALL,
                         weight=ft.FontWeight.W_600,
                         color=ft.Colors.GREY_800,
@@ -129,16 +125,13 @@ class DashboardTable(ft.Container):
                             spacing=3,
                             controls=[
                                 ft.Text(
-                                    "Últimas solicitações",
+                                    "Solicitações de hoje",
                                     size=Typography.H3,
                                     weight=ft.FontWeight.BOLD,
                                     color=ft.Colors.GREY_900,
                                 ),
                                 ft.Text(
-                                    (
-                                        "As solicitações mais recentes "
-                                        "cadastradas no sistema"
-                                    ),
+                                    "Solicitações cadastradas na data de hoje.",
                                     size=Typography.SMALL,
                                     color=ft.Colors.GREY_600,
                                 ),
@@ -382,15 +375,14 @@ class DashboardTable(ft.Container):
         )
 
     def _criar_acoes(
-        self,
-        solicitacao: dict,
+            self,
+            solicitacao: dict,
     ) -> ft.Control:
-        """Cria os botões de ação de uma solicitação."""
+        """Cria a ação de consulta de uma solicitação."""
 
         return ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
             tight=True,
-            spacing=10,
             controls=[
                 self._botao_acao(
                     icone=ft.Icons.VISIBILITY_OUTLINED,
@@ -399,26 +391,6 @@ class DashboardTable(ft.Container):
                     tooltip="Visualizar",
                     on_click=self._adaptar_evento(
                         self.on_visualizar,
-                        solicitacao,
-                    ),
-                ),
-                self._botao_acao(
-                    icone=ft.Icons.EDIT_OUTLINED,
-                    cor=ft.Colors.GREEN_600,
-                    cor_fundo=ft.Colors.GREEN_50,
-                    tooltip="Editar",
-                    on_click=self._adaptar_evento(
-                        self.on_editar,
-                        solicitacao,
-                    ),
-                ),
-                self._botao_acao(
-                    icone=ft.Icons.DELETE_OUTLINE,
-                    cor=ft.Colors.RED_600,
-                    cor_fundo=ft.Colors.RED_50,
-                    tooltip="Excluir",
-                    on_click=self._adaptar_evento(
-                        self.on_excluir,
                         solicitacao,
                     ),
                 ),
@@ -465,103 +437,29 @@ class DashboardTable(ft.Container):
         )
 
     def _criar_rodape(self) -> ft.Control:
-        """Cria o rodapé com resumo e paginação visual."""
+        """Cria o rodapé com o resumo das solicitações exibidas."""
 
         quantidade = len(self.solicitacoes)
 
         if quantidade == 0:
-            resumo = "Nenhum registro"
+            resumo = "0 solicitações hoje"
         elif quantidade == 1:
-            resumo = "Exibindo 1 registro"
+            resumo = "1 solicitação hoje"
         else:
-            resumo = f"Exibindo {quantidade} registros"
+            resumo = f"{quantidade} solicitações hoje"
 
-        paginacao = ft.Row(
-            tight=True,
-            spacing=10,
-            controls=[
-                self._botao_pagina(
-                    ft.Icons.FIRST_PAGE,
-                    ativo=False,
-                ),
-                self._botao_pagina(
-                    ft.Icons.CHEVRON_LEFT,
-                    ativo=False,
-                ),
-                ft.Container(
-                    width=44,
-                    height=42,
-                    border_radius=Radius.MD,
-                    bgcolor=ft.Colors.INDIGO_600,
-                    alignment=ft.Alignment.CENTER,
-                    content=ft.Text(
-                        "1",
-                        color=ft.Colors.WHITE,
-                        weight=ft.FontWeight.BOLD,
-                    ),
-                ),
-                self._botao_pagina(
-                    ft.Icons.CHEVRON_RIGHT,
-                    ativo=False,
-                ),
-                self._botao_pagina(
-                    ft.Icons.LAST_PAGE,
-                    ativo=False,
-                ),
-            ],
-        )
-
-        seletor_pagina = ft.Container(
-            height=42,
+        return ft.Container(
             padding=ft.Padding(
-                left=16,
-                top=0,
-                right=12,
+                left=0,
+                top=2,
+                right=0,
                 bottom=0,
             ),
-            border_radius=Radius.MD,
-            border=ft.Border.all(
-                1,
-                ft.Colors.GREY_300,
+            content=ft.Text(
+                resumo,
+                size=Typography.SMALL,
+                color=ft.Colors.GREY_600,
             ),
-            alignment=ft.Alignment.CENTER,
-            content=ft.Row(
-                tight=True,
-                spacing=10,
-                controls=[
-                    ft.Text(
-                        "10 por página",
-                        size=Typography.SMALL,
-                        color=ft.Colors.GREY_700,
-                    ),
-                    ft.Icon(
-                        ft.Icons.KEYBOARD_ARROW_DOWN,
-                        size=18,
-                        color=ft.Colors.GREY_600,
-                    ),
-                ],
-            ),
-        )
-
-        return ft.Row(
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=[
-                ft.Container(
-                    width=260,
-                    content=ft.Text(
-                        resumo,
-                        size=Typography.SMALL,
-                        color=ft.Colors.GREY_600,
-                    ),
-                ),
-                paginacao,
-                ft.Container(
-                    width=260,
-                    alignment=ft.Alignment.CENTER_RIGHT,
-                    content=seletor_pagina,
-                ),
-            ],
         )
 
     @staticmethod
@@ -618,16 +516,13 @@ class DashboardTable(ft.Container):
                         ),
                     ),
                     ft.Text(
-                        "Nenhuma solicitação cadastrada",
+                        "Nenhuma solicitação nesta data",
                         size=Typography.BODY,
                         weight=ft.FontWeight.W_600,
                         color=ft.Colors.GREY_700,
                     ),
                     ft.Text(
-                        (
-                            "As solicitações mais recentes "
-                            "aparecerão aqui."
-                        ),
+                        "As solicitações cadastradas hoje aparecerão aqui.",
                         size=Typography.SMALL,
                         color=ft.Colors.GREY_500,
                         text_align=ft.TextAlign.CENTER,
