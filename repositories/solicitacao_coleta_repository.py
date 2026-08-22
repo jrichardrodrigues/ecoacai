@@ -504,8 +504,31 @@ class SolicitacaoColetaRepository:
                 UPDATE solicitacoes
                 SET
                     ativo = 0,
+                    data_hora_exclusao = CURRENT_TIMESTAMP,
                     atualizado_em = CURRENT_TIMESTAMP
                 WHERE id = ?
+                """,
+                (solicitacao_id,),
+            )
+
+        return cursor.rowcount > 0
+
+    def restaurar(
+            self,
+            solicitacao_id: int,
+    ) -> bool:
+        """Restaura uma solicitação excluída logicamente."""
+
+        with self.database.obter_conexao() as conexao:
+            cursor = conexao.execute(
+                """
+                UPDATE solicitacoes
+                SET
+                    ativo = 1,
+                    data_hora_exclusao = NULL,
+                    atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = ?
+                  AND ativo = 0
                 """,
                 (solicitacao_id,),
             )
@@ -1551,6 +1574,77 @@ class SolicitacaoColetaRepository:
             ).fetchall()
 
         return [dict(row) for row in rows]
+
+    def listar_excluidas(
+            self,
+            organizacao_id: int | None = None,
+    ) -> list[dict]:
+        """Lista solicitações excluídas logicamente."""
+
+        consulta = """
+            SELECT
+                s.id,
+                s.codigo,
+
+                s.organizacao_id,
+                s.empresa_parceira_id,
+                s.usuario_criacao_id,
+                s.estabelecimento_id,
+
+                COALESCE(
+                    o.nome,
+                    e.nome,
+                    'Solicitante não identificado'
+                ) AS solicitante,
+
+                s.tipo_residuo,
+                s.forma_acondicionamento,
+                s.unidade_medida,
+
+                s.quantidade_prevista,
+                s.peso_estimado_kg,
+
+                s.status,
+                s.data_solicitacao,
+                s.data_hora_exclusao,
+
+                s.ativo
+
+            FROM solicitacoes AS s
+
+            LEFT JOIN organizacoes AS o
+                ON o.id = s.organizacao_id
+
+            LEFT JOIN estabelecimentos AS e
+                ON e.id = s.estabelecimento_id
+
+            WHERE s.ativo = 0
+        """
+
+        parametros: list[Any] = []
+
+        if organizacao_id is not None:
+            consulta += """
+                AND s.organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        consulta += """
+            ORDER BY
+                s.data_hora_exclusao DESC,
+                s.id DESC
+        """
+
+        with self.database.obter_conexao() as conexao:
+            rows = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchall()
+
+        return [
+            dict(row)
+            for row in rows
+        ]
 
     def listar_com_estabelecimento(self) -> list[dict]:
         """

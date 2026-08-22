@@ -326,14 +326,17 @@ class SolicitacaoColetaService:
             organizacao_id: int | None = None,
             empresa_parceira_id: int | None = None,
             data_agendada: str | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> list[dict]:
         return self.repository.listar_operacional(
             status=status,
             organizacao_id=organizacao_id,
             empresa_parceira_id=empresa_parceira_id,
             data_agendada=data_agendada,
+            data_inicial=data_inicial,
+            data_final=data_final,
         )
-
     def listar_com_estabelecimento(self) -> list[dict]:
         """Mantém compatibilidade com a interface antiga."""
 
@@ -908,6 +911,50 @@ class SolicitacaoColetaService:
             return False, "Não foi possível excluir a solicitação."
 
         return True, "Solicitação excluída com sucesso."
+
+    def restaurar(
+            self,
+            solicitacao_id: int,
+    ) -> tuple[bool, str]:
+        """Restaura uma solicitação excluída logicamente."""
+
+        if not self._id_valido(solicitacao_id):
+            return False, "Solicitação inválida."
+
+        try:
+            sucesso = self.repository.restaurar(
+                solicitacao_id
+            )
+        except Exception as erro:
+            print(
+                "Erro ao restaurar solicitação:",
+                erro,
+            )
+            return (
+                False,
+                "Não foi possível restaurar a solicitação.",
+            )
+
+        if not sucesso:
+            return (
+                False,
+                "Solicitação excluída não encontrada.",
+            )
+
+        return (
+            True,
+            "Solicitação restaurada com sucesso.",
+        )
+
+    def listar_excluidas(
+            self,
+            organizacao_id: int | None = None,
+    ) -> list[dict]:
+        """Retorna as solicitações excluídas logicamente."""
+
+        return self.repository.listar_excluidas(
+            organizacao_id=organizacao_id,
+        )
 
     @staticmethod
     def _agora() -> str:

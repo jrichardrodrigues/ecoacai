@@ -5,6 +5,8 @@ from collections.abc import Callable
 import flet as ft
 
 from components.layout import BasePage
+from components.dialogs import confirmar_exclusao
+
 from controllers.solicitacao_coleta_controller import (
     SolicitacaoColetaController,
 )
@@ -19,8 +21,10 @@ class SolicitacoesGestorView:
         page: ft.Page,
         controller: SolicitacaoColetaController | None = None,
         on_ver_detalhes: Callable[[int, str], None] | None = None,
+        on_abrir_lixeira: Callable[[], None] | None = None,
         status_inicial: str | None = None,
         data_agendada_inicial: str | None = None,
+        data_solicitacao_inicial: str | None = None,
         titulo: str = "Solicitações",
         subtitulo: str = "Analise as solicitações de coleta recebidas dos Geradores.",
     ) -> None:
@@ -31,6 +35,7 @@ class SolicitacoesGestorView:
 
         self.status_inicial = status_inicial
         self.data_agendada_inicial = data_agendada_inicial
+        self.data_solicitacao_inicial = data_solicitacao_inicial
 
         self.titulo = titulo
         self.subtitulo = subtitulo
@@ -46,6 +51,8 @@ class SolicitacoesGestorView:
         )
 
         self.on_ver_detalhes = on_ver_detalhes
+
+        self.on_abrir_lixeira = on_abrir_lixeira
 
         self._carregar()
 
@@ -124,6 +131,8 @@ class SolicitacoesGestorView:
         solicitacoes = self.controller.listar_operacional(
             status=self.status_inicial,
             data_agendada=self.data_agendada_inicial,
+            data_inicial=self.data_solicitacao_inicial,
+            data_final=self.data_solicitacao_inicial,
         )
 
         self.lista.controls.clear()
@@ -181,6 +190,19 @@ class SolicitacoesGestorView:
                     icon=ft.Icons.RATE_REVIEW_OUTLINED,
                     on_click=lambda _e, sid=solicitacao_id: (
                         self._analisar(sid)
+                    ),
+                )
+            )
+
+            botoes.append(
+                ft.TextButton(
+                    content="Excluir",
+                    icon=ft.Icons.DELETE_OUTLINE,
+                    style=ft.ButtonStyle(
+                        color=ft.Colors.RED_700,
+                    ),
+                    on_click=lambda _e, sid=solicitacao_id: (
+                        self._excluir(sid)
                     ),
                 )
             )
@@ -261,6 +283,37 @@ class SolicitacoesGestorView:
             ),
         )
 
+    def _excluir(
+            self,
+            solicitacao_id: int,
+    ) -> None:
+        """Solicita confirmação e exclui logicamente a solicitação."""
+
+        def confirmar() -> None:
+            sucesso, mensagem = self.controller.excluir(
+                solicitacao_id
+            )
+
+            if sucesso:
+                mostrar_sucesso(
+                    self.page,
+                    mensagem,
+                )
+                self._carregar()
+            else:
+                mostrar_erro(
+                    self.page,
+                    mensagem,
+                )
+
+        confirmar_exclusao(
+            page=self.page,
+            mensagem=(
+                "Deseja realmente excluir esta solicitação?"
+            ),
+            on_confirm=confirmar,
+        )
+
     @staticmethod
     def _formatar_peso_estimado(
             dados: dict,
@@ -329,13 +382,12 @@ class SolicitacoesGestorView:
                         color=ft.Colors.BLUE_GREY_400,
                     ),
                     ft.Text(
-                        "Nenhuma solicitação disponível.",
+                        "Nenhuma solicitação nesta data.",
                         size=18,
                         weight=ft.FontWeight.BOLD,
                     ),
                     ft.Text(
-                        "As solicitações enviadas pelos "
-                        "Geradores aparecerão aqui.",
+                        "Não há solicitações cadastradas hoje.",
                         color=ft.Colors.BLUE_GREY_700,
                     ),
                 ],
@@ -351,8 +403,25 @@ class SolicitacoesGestorView:
     # ==========================================================
 
     def build(self) -> ft.Control:
+
+        botao_lixeira = ft.OutlinedButton(
+            content="Lixeira",
+            icon=ft.Icons.DELETE_OUTLINE,
+            on_click=(
+                lambda _e: self.on_abrir_lixeira()
+                if self.on_abrir_lixeira is not None
+                else None
+            ),
+        )
+
         conteudo = ft.Column(
             controls=[
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.END,
+                    controls=[
+                        botao_lixeira,
+                    ],
+                ),
                 self.total,
                 self.lista,
             ],

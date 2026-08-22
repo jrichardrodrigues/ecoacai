@@ -1165,6 +1165,13 @@ class SQLiteDatabase:
             "TEXT",
         )
 
+        cls._adicionar_coluna_se_nao_existir(
+            conexao,
+            "solicitacoes",
+            "data_hora_exclusao",
+            "TEXT",
+        )
+
         cls._preencher_codigos_solicitacoes(conexao)
         cls._criar_indices_solicitacoes(conexao)
 
@@ -1343,6 +1350,8 @@ class SQLiteDatabase:
                 motivo_recusa TEXT,
                 
                 data_hora_recusa TEXT,
+
+                data_hora_exclusao TEXT,
                 
                 latitude REAL,
                 

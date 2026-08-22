@@ -22,7 +22,9 @@ from views.detalhe_solicitacao_gestor_view import (
     DetalheSolicitacaoGestorView,
 )
 from views.detalhe_coleta_view import DetalheColetaView
-
+from views.solicitacoes_excluidas_view import (
+    SolicitacoesExcluidasView,
+)
 
 class NavigationController:
     """Controla a troca do conteúdo principal da aplicação."""
@@ -68,7 +70,10 @@ class NavigationController:
             on_abrir_concluidas=self.abrir_solicitacoes_concluidas,
             on_abrir_canceladas=self.abrir_solicitacoes_canceladas,
             on_abrir_para_hoje=self.abrir_solicitacoes_para_hoje,
-            on_abrir_todas_solicitacoes=self.abrir_todas_solicitacoes,
+            on_abrir_todas_solicitacoes=self.abrir_solicitacoes_de_hoje,
+            on_visualizar_solicitacao=(
+                self.abrir_detalhe_solicitacao_dashboard
+            ),
             on_abrir_solicitantes=self.abrir_solicitantes,
         ).build()
 
@@ -110,6 +115,7 @@ class NavigationController:
             self,
             status_inicial: str | None = None,
             data_agendada_inicial: str | None = None,
+            data_solicitacao_inicial: str | None = None,
             titulo: str = "Solicitações",
             subtitulo: str = "Analise as solicitações de coleta recebidas dos Geradores.",
     ) -> ft.Control:
@@ -119,11 +125,24 @@ class NavigationController:
             page=self.page,
             controller=self.solicitacao_coleta_controller,
             on_ver_detalhes=self.abrir_detalhe_solicitacao,
+            on_abrir_lixeira=self.abrir_lixeira_solicitacoes,
             status_inicial=status_inicial,
             data_agendada_inicial=data_agendada_inicial,
+            data_solicitacao_inicial=data_solicitacao_inicial,
             titulo=titulo,
             subtitulo=subtitulo,
         ).build()
+
+    def abrir_solicitacoes_de_hoje(self) -> None:
+        hoje = date.today().isoformat()
+
+        self._mostrar(
+            self._solicitacoes(
+                data_solicitacao_inicial=hoje,
+                titulo="Solicitações de Hoje",
+                subtitulo="Solicitações cadastradas na data de hoje.",
+            )
+        )
 
     def abrir_solicitacoes_pendentes(self) -> None:
         self._mostrar(
@@ -170,6 +189,19 @@ class NavigationController:
             )
         )
 
+    def abrir_lixeira_solicitacoes(self) -> None:
+        """Abre a lixeira de solicitações."""
+
+        view = SolicitacoesExcluidasView(
+            page=self.page,
+            controller=self.solicitacao_coleta_controller,
+            on_voltar=self.abrir_solicitacoes,
+        )
+
+        self._mostrar(
+            view.build()
+        )
+
     def abrir_solicitacoes_para_hoje(self) -> None:
         hoje = date.today().isoformat()
 
@@ -209,6 +241,35 @@ class NavigationController:
             solicitacao=solicitacao,
             solicitante=solicitante,
             on_voltar=self.abrir_solicitacoes,
+            on_agendar=self.abrir_agendamento_solicitacao,
+        )
+
+        self._mostrar(
+            view.build()
+        )
+
+    def abrir_detalhe_solicitacao_dashboard(
+            self,
+            solicitacao_id: int,
+            solicitante: str,
+    ) -> None:
+        """Abre os detalhes de uma solicitação a partir do Dashboard."""
+
+        solicitacao = (
+            self.solicitacao_coleta_controller.buscar_por_id(
+                solicitacao_id
+            )
+        )
+
+        if solicitacao is None:
+            return
+
+        view = DetalheSolicitacaoGestorView(
+            solicitacao=solicitacao,
+            solicitante=solicitante,
+            on_voltar=lambda: self._mostrar(
+                self._dashboard()
+            ),
             on_agendar=self.abrir_agendamento_solicitacao,
         )
 

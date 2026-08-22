@@ -92,6 +92,8 @@ class SolicitacaoColetaController:
             organizacao_id: int | None = None,
             empresa_parceira_id: int | None = None,
             data_agendada: str | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
     ) -> list[dict]:
         """Lista solicitações com seus vínculos operacionais."""
 
@@ -100,6 +102,8 @@ class SolicitacaoColetaController:
             organizacao_id=organizacao_id,
             empresa_parceira_id=empresa_parceira_id,
             data_agendada=data_agendada,
+            data_inicial=data_inicial,
+            data_final=data_final,
         )
 
     def listar_com_estabelecimento(
@@ -390,4 +394,24 @@ class SolicitacaoColetaController:
 
         return self.service.excluir(
             solicitacao_id
+        )
+
+    def restaurar(
+            self,
+            solicitacao_id: int,
+    ) -> tuple[bool, str]:
+        """Restaura uma solicitação excluída logicamente."""
+
+        return self.service.restaurar(
+            solicitacao_id
+        )
+
+    def listar_excluidas(
+            self,
+            organizacao_id: int | None = None,
+    ) -> list[dict]:
+        """Lista as solicitações excluídas logicamente."""
+
+        return self.service.listar_excluidas(
+            organizacao_id=organizacao_id,
         )
