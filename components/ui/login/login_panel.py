@@ -57,11 +57,24 @@ class LoginPanel(ft.Container):
         """Cria o botão principal de autenticação."""
 
         return ft.FilledButton(
-            content="ENTRAR",
-            icon=ft.Icons.LOGIN_ROUNDED,
+            content=ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=12,
+                controls=[
+                    ft.Icon(
+                        ft.Icons.LOGIN_ROUNDED,
+                        size=22,
+                    ),
+                    ft.Text(
+                        "ENTRAR",
+                        size=16,
+                        weight=ft.FontWeight.BOLD,
+                    ),
+                ],
+            ),
             on_click=self.on_login,
-            height=48,
-            expand=True,
+            height=60,
             style=ft.ButtonStyle(
                 bgcolor=theme.PRIMARY,
                 color=theme.SURFACE,
@@ -70,7 +83,7 @@ class LoginPanel(ft.Container):
                 ),
                 padding=ft.Padding.symmetric(
                     horizontal=theme.SPACE_LG,
-                    vertical=theme.SPACE_SM,
+                    vertical=0,
                 ),
             ),
         )
@@ -79,11 +92,24 @@ class LoginPanel(ft.Container):
         """Cria o botão secundário de cadastro."""
 
         return ft.OutlinedButton(
-            content="CRIAR CONTA",
-            icon=ft.Icons.PERSON_ADD_OUTLINED,
+            content=ft.Row(
+                alignment=ft.MainAxisAlignment.CENTER,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=12,
+                controls=[
+                    ft.Icon(
+                        ft.Icons.PERSON_ADD_OUTLINED,
+                        size=22,
+                    ),
+                    ft.Text(
+                        "CRIAR CONTA",
+                        size=16,
+                        weight=ft.FontWeight.W_600,
+                    ),
+                ],
+            ),
             on_click=self.on_register,
-            height=46,
-            expand=True,
+            height=58,
             style=ft.ButtonStyle(
                 color=theme.PRIMARY,
                 side=ft.BorderSide(
@@ -95,7 +121,7 @@ class LoginPanel(ft.Container):
                 ),
                 padding=ft.Padding.symmetric(
                     horizontal=theme.SPACE_LG,
-                    vertical=theme.SPACE_SM,
+                    vertical=0,
                 ),
             ),
         )
@@ -169,7 +195,14 @@ class LoginPanel(ft.Container):
                     ],
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
-                self._criar_botao_entrar(),
+                ft.Row(
+                    controls=[
+                        ft.Container(
+                            content=self._criar_botao_entrar(),
+                            expand=True,
+                        ),
+                    ],
+                ),
                 ft.Row(
                     controls=[
                         ft.Divider(
@@ -195,7 +228,14 @@ class LoginPanel(ft.Container):
                     color=theme.TEXT_SECONDARY,
                     text_align=ft.TextAlign.CENTER,
                 ),
-                self._criar_botao_criar_conta(),
+                ft.Row(
+                    controls=[
+                        ft.Container(
+                            content=self._criar_botao_criar_conta(),
+                            expand=True,
+                        ),
+                    ],
+                ),
                 ft.Container(expand=True),
                 self._criar_rodape(),
             ],
