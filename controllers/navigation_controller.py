@@ -381,14 +381,6 @@ class NavigationController:
             on_visualizar_coleta=self.abrir_detalhe_coleta,
         ).build()
 
-    def _coletas_agendadas(self) -> ft.Control:
-        """Abre a tela de coletas agendadas."""
-
-        return ColetasAgendadasView(
-            page=self.page,
-            on_visualizar_coleta=self.abrir_detalhe_coleta,
-        ).build()
-
     def abrir_detalhe_coleta(
             self,
             coleta: dict,

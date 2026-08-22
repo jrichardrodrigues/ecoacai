@@ -4,11 +4,16 @@ from components import criar_app_bar, criar_menu
 from controllers.navigation_controller import NavigationController
 
 
-def construir_interface(page: ft.Page) -> None:
+def construir_interface(
+        page: ft.Page,
+        on_voltar_zelurbis=None,
+) -> None:
     """Monta a área principal exibida após o login."""
 
     page.clean()
-    page.appbar = criar_app_bar()
+    page.appbar = criar_app_bar(
+        on_voltar_zelurbis=on_voltar_zelurbis,
+    )
 
     navigation_controller = NavigationController(page)
 

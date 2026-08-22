@@ -25,6 +25,7 @@ from views.portal_gerador_view import PortalGeradorView
 from views.recuperar_senha_view import RecuperarSenhaView
 from views.minhas_solicitacoes_view import MinhasSolicitacoesView
 from views.detalhe_solicitacao_view import DetalheSolicitacaoView
+from views.zelurbis_home_view import ZelurbisHomeView
 
 def main(page: ft.Page) -> None:
 
@@ -196,11 +197,31 @@ def main(page: ft.Page) -> None:
 
         exibir(assistente.build())
 
+    def abrir_home_zelurbis() -> None:
+        """Abre a Home principal da Plataforma ZELURBIS."""
+
+        page.appbar = None
+
+        view = ZelurbisHomeView(
+            page=page,
+            on_acessar_ecoacai=abrir_area_gestor,
+            on_sair=sair,
+        )
+
+        exibir(
+            view.build()
+        )
+
     def abrir_area_gestor() -> None:
-        """Mantém o Gestor na interface administrativa atual."""
+        """Abre o módulo operacional ECOAÇAÍ."""
 
         page.clean()
-        construir_interface(page)
+
+        construir_interface(
+            page,
+            on_voltar_zelurbis=abrir_home_zelurbis,
+        )
+
         page.update()
 
     def abrir_area_principal(
@@ -217,7 +238,7 @@ def main(page: ft.Page) -> None:
             return
 
         if sessao.eh_gestor:
-            abrir_area_gestor()
+            abrir_home_zelurbis()
             return
 
         if sessao.eh_empresa_parceira:
