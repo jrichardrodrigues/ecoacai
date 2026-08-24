@@ -16,7 +16,7 @@ def criar_menu(
         ("Solicitações", ft.Icons.LOCAL_SHIPPING_ROUNDED),
         ("Motoristas", ft.Icons.BADGE_ROUNDED),
         ("Veículos", ft.Icons.FIRE_TRUCK_ROUNDED),
-        ("Coletas Agendadas", ft.Icons.LIST_ALT_ROUNDED),
+        ("Operação de Coletas", ft.Icons.LIST_ALT_ROUNDED),
         ("Dashboard", ft.Icons.BAR_CHART_ROUNDED),
     ]
 
@@ -67,7 +67,7 @@ def criar_menu(
         )
 
     return ft.Container(
-        width=230,
+        width=250,
         bgcolor=COR_ECOACAI,
         padding=ft.Padding.only(
             left=12,

@@ -145,6 +145,8 @@ class ColetasAgendadasView:
             ],
         )
 
+        self.dropdown_status.on_change = self._ao_alterar_status
+
         self.dropdown_motorista = ft.Dropdown(
             label="Motorista",
             width=220,
@@ -182,6 +184,8 @@ class ColetasAgendadasView:
         self.texto_total_em_coleta = self._criar_texto_total()
         self.texto_total_concluidas = self._criar_texto_total()
         self.texto_total_canceladas = self._criar_texto_total()
+
+        self.cards_status: dict[str, ft.Container] = {}
 
         self.tabela = ft.DataTable(
             columns=[
@@ -970,12 +974,12 @@ class ColetasAgendadasView:
         titulo = ft.Column(
             controls=[
                 ft.Text(
-                    "Coletas Agendadas",
+                    "Operação de Coletas",
                     size=26,
                     weight=ft.FontWeight.BOLD,
                 ),
                 ft.Text(
-                    "Gerenciamento da agenda operacional de coletas.",
+                    "Gerencie o fluxo operacional das coletas, do agendamento à conclusão.",
                     size=14,
                 ),
             ],
@@ -1073,31 +1077,37 @@ class ColetasAgendadasView:
                 titulo="Em análise",
                 texto_total=self.texto_total_pendentes,
                 icone=ft.Icons.PENDING_ACTIONS,
+                status=StatusColeta.EM_ANALISE,
             ),
             self._criar_card_indicador(
                 titulo="Agendadas",
                 texto_total=self.texto_total_agendadas,
                 icone=ft.Icons.EVENT_AVAILABLE,
+                status=StatusColeta.AGENDADA,
             ),
             self._criar_card_indicador(
                 titulo="Em deslocamento",
                 texto_total=self.texto_total_em_deslocamento,
                 icone=ft.Icons.LOCAL_SHIPPING_OUTLINED,
+                status=StatusColeta.EM_DESLOCAMENTO,
             ),
             self._criar_card_indicador(
                 titulo="Em coleta",
                 texto_total=self.texto_total_em_coleta,
                 icone=ft.Icons.LOCAL_SHIPPING,
+                status=StatusColeta.EM_COLETA,
             ),
             self._criar_card_indicador(
                 titulo="Concluídas",
                 texto_total=self.texto_total_concluidas,
                 icone=ft.Icons.CHECK_CIRCLE,
+                status=StatusColeta.CONCLUIDA,
             ),
             self._criar_card_indicador(
                 titulo="Canceladas",
                 texto_total=self.texto_total_canceladas,
                 icone=ft.Icons.CANCEL,
+                status=StatusColeta.CANCELADA,
             ),
         ]
 
@@ -1114,10 +1124,19 @@ class ColetasAgendadasView:
             titulo: str,
             texto_total: ft.Text,
             icone: Any,
+            status: str | None = None,
     ) -> ft.Control:
-        """Cria um card de indicador."""
+        """Cria um card de indicador clicável."""
 
-        return ft.Container(
+        def ao_clicar(_e) -> None:
+            if status is None:
+                return
+
+            self.dropdown_status.value = status
+            self._atualizar_destaque_cards(status)
+            self._pesquisar(None)
+
+        card = ft.Container(
             content=ft.Row(
                 controls=[
                     ft.Container(
@@ -1150,7 +1169,58 @@ class ColetasAgendadasView:
                 width=1,
             ),
             border_radius=12,
+            ink=True,
+            on_click=(
+                ao_clicar
+                if status is not None
+                else None
+            ),
         )
+
+        if status is not None:
+            self.cards_status[status] = card
+
+        return card
+
+    def _ao_alterar_status(
+            self,
+            _evento: ft.Event,
+    ) -> None:
+        """Atualiza o destaque ao alterar o status no dropdown."""
+
+        status = self._status_selecionado()
+
+        self._atualizar_destaque_cards(status)
+
+    def _atualizar_destaque_cards(
+            self,
+            status_selecionado: str | None,
+    ) -> None:
+        """Destaca visualmente o card do status selecionado."""
+
+        for status, card in self.cards_status.items():
+            selecionado = status == status_selecionado
+
+            card.bgcolor = (
+                ft.Colors.with_opacity(
+                    0.08,
+                    ft.Colors.BLUE_700,
+                )
+                if selecionado
+                else None
+            )
+
+            card.border = ft.Border.all(
+                width=2 if selecionado else 1,
+                color=(
+                    ft.Colors.BLUE_700
+                    if selecionado
+                    else ft.Colors.BLACK26
+                ),
+            )
+
+        self._atualizar_pagina()
+
     def _criar_area_mensagem(self) -> ft.Control:
         """Cria a área de mensagens da tela."""
 
@@ -1850,11 +1920,6 @@ class ColetasAgendadasView:
                     on_click=lambda _:
                     self._recusar(solicitacao_id),
                 ),
-                ft.PopupMenuItem(
-                    content="Cancelar",
-                    on_click=lambda _:
-                    self._cancelar(solicitacao_id),
-                ),
             ])
 
         elif status == StatusColeta.AGENDADA:
@@ -1998,8 +2063,8 @@ class ColetasAgendadasView:
         self._atualizar_pagina()
 
     def _limpar_filtros(
-        self,
-        _evento: ft.Event,
+            self,
+            _evento: ft.Event,
     ) -> None:
         """Restaura os filtros iniciais."""
 
@@ -2012,7 +2077,8 @@ class ColetasAgendadasView:
         self.dropdown_veiculo.value = "TODOS"
 
         self.carregar_dados()
-        self._atualizar_pagina()
+
+        self._atualizar_destaque_cards(None)
 
     def _atualizar(
         self,

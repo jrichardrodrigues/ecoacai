@@ -659,12 +659,11 @@ class ColetasAgendadasService:
 
         if status_atual not in {
             StatusColeta.SOLICITADA,
-            StatusColeta.EM_ANALISE,
             StatusColeta.AGENDADA,
         }:
             return self._falha(
-                "Somente solicitações solicitadas, em análise "
-                "ou agendadas podem ser canceladas."
+                "Somente solicitações solicitadas ou agendadas "
+                "podem ser canceladas."
             )
 
         motivo_normalizado = str(

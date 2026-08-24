@@ -310,7 +310,10 @@ class AgendaRepository:
             veiculo_id: int | None = None,
     ) -> list[dict]:
         """
-        Retorna as solicitações agendadas em um intervalo de datas.
+        Retorna as solicitações da agenda em um intervalo de datas.
+
+        Utiliza a data de agendamento quando disponível e,
+        para solicitações ainda não agendadas, a data da solicitação.
 
         As datas devem ser informadas no formato AAAA-MM-DD.
         """
@@ -333,8 +336,15 @@ class AgendaRepository:
 
         consulta += """
             WHERE s.ativo = 1
-              AND DATE(s.data_hora_agendada)
-                  BETWEEN DATE(?) AND DATE(?)
+              AND DATE(
+                  COALESCE(
+                      NULLIF(
+                          TRIM(s.data_hora_agendada),
+                          ''
+                      ),
+                      s.data_solicitacao
+                  )
+              ) BETWEEN DATE(?) AND DATE(?)
         """
 
         parametros: list[object] = [
@@ -346,6 +356,7 @@ class AgendaRepository:
             status_normalizado = self._normalizar_status(
                 status
             )
+
 
             consulta += """
                 AND s.status = ?
