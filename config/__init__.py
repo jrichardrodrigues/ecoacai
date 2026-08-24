@@ -2,19 +2,31 @@ from .constants import (
     APP_NAME,
     APP_SUBTITLE,
     APP_VERSION,
+
+    # Cores gerais.
     COR_ALERTA,
-    COR_CARD,
     COR_ERRO,
     COR_FUNDO,
-    COR_PRIMARIA,
-    COR_SECUNDARIA,
     COR_SUCESSO,
-    COR_TEXTO,
+
+    # Identidade visual — ZELURBIS.
+    VERDE_SIDEBAR,
+    VERDE_SIDEBAR_ATIVO,
+    VERDE_DESTAQUE,
+
+    # Identidade visual — módulos.
+    COR_ECOACAI,
+    COR_ECOOLEO,
+    COR_ECOGARRAFAS,
+
+    # Domínio.
     SETORES,
     MARCAS_VEICULOS,
     TIPOS_VEICULOS,
     CAPACIDADES_VEICULOS,
     ANOS_VEICULOS,
+
+    # Status.
     StatusSolicitacao,
     StatusColeta,
     StatusVeiculo,

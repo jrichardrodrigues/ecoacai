@@ -17,7 +17,7 @@ from datetime import datetime
 # IDENTIDADE DA APLICAÇÃO
 ###############################################################################
 
-APP_NAME = "ECOAÇAÍ"
+APP_NAME = "ZELURBIS"
 APP_VERSION = "1.0.0"
 
 APP_SUBTITLE = (
@@ -28,16 +28,28 @@ APP_SUBTITLE = (
 # IDENTIDADE VISUAL
 ###############################################################################
 
-COR_PRIMARIA = "#781946"
-COR_SECUNDARIA = "#A42B69"
-
 COR_FUNDO = "#F8F4F6"
-COR_CARD = "#FFFFFF"
-COR_TEXTO = "#2D1B25"
 
 COR_SUCESSO = "#2E7D32"
 COR_ERRO = "#C62828"
 COR_ALERTA = "#F9A825"
+
+# =============================================================================
+# IDENTIDADE VISUAL — ZELURBIS
+# =============================================================================
+
+VERDE_SIDEBAR = "#003F32"
+VERDE_SIDEBAR_ATIVO = "#275E4B"
+VERDE_DESTAQUE = "#8DBF32"
+
+
+# =============================================================================
+# IDENTIDADE VISUAL — MÓDULOS
+# =============================================================================
+
+COR_ECOACAI = "#781946"
+COR_ECOOLEO = "#8F4903"
+COR_ECOGARRAFAS = "#1D1E33"
 
 ###############################################################################
 # DOMÍNIO

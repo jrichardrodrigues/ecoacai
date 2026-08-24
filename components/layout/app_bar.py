@@ -2,8 +2,7 @@ from collections.abc import Callable
 
 import flet as ft
 
-from config import APP_NAME, APP_SUBTITLE, COR_PRIMARIA
-
+from config import COR_ECOACAI
 
 def criar_app_bar(
     on_voltar_zelurbis: Callable[[], None] | None = None,
@@ -27,19 +26,19 @@ def criar_app_bar(
     return ft.AppBar(
         automatically_imply_leading=False,
         toolbar_height=72,
-        bgcolor=COR_PRIMARIA,
+        bgcolor=COR_ECOACAI,
         title_spacing=20,
         title=ft.Row(
             spacing=16,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
                 ft.Icon(
-                    ft.Icons.ECO,
+                    ft.Icons.ECO_ROUNDED,
                     color=ft.Colors.WHITE,
                     size=38,
                 ),
                 ft.Text(
-                    APP_NAME,
+                    "ECOAÇAÍ",
                     size=24,
                     weight=ft.FontWeight.BOLD,
                     color=ft.Colors.WHITE,
@@ -53,8 +52,8 @@ def criar_app_bar(
                     ),
                 ),
                 ft.Text(
-                    APP_SUBTITLE.upper(),
-                    size=16,
+                    "GESTÃO INTELIGENTE DE RESÍDUO DO AÇAÍ",
+                    size=17,
                     weight=ft.FontWeight.W_600,
                     color=ft.Colors.WHITE,
                 ),

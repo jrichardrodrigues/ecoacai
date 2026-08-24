@@ -11,26 +11,33 @@ def construir_interface(
     """Monta a área principal exibida após o login."""
 
     page.clean()
+
     page.appbar = criar_app_bar(
         on_voltar_zelurbis=on_voltar_zelurbis,
     )
 
     navigation_controller = NavigationController(page)
 
-    def ao_mudar_menu(e: ft.ControlEvent) -> None:
-        indice_selecionado = e.control.selected_index
+    menu_area = ft.Container()
 
-        if indice_selecionado is None:
-            return
+    def ao_mudar_menu(indice: int) -> None:
+        """Atualiza o menu selecionado e muda a tela."""
 
-        navigation_controller.mudar_tela(indice_selecionado)
-        page.update()
+        menu_area.content = criar_menu(
+            on_change=ao_mudar_menu,
+            indice_selecionado=indice,
+        )
 
-    menu = criar_menu(ao_mudar_menu)
+        navigation_controller.mudar_tela(indice)
+
+    menu_area.content = criar_menu(
+        on_change=ao_mudar_menu,
+        indice_selecionado=0,
+    )
 
     layout_principal = ft.Row(
         controls=[
-            menu,
+            menu_area,
             ft.VerticalDivider(width=1),
             navigation_controller.conteudo,
         ],

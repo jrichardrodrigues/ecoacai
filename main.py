@@ -197,13 +197,16 @@ def main(page: ft.Page) -> None:
 
         exibir(assistente.build())
 
-    def abrir_home_zelurbis() -> None:
+    def abrir_home_zelurbis(
+            sessao: SessaoUsuario | None = None,
+    ) -> None:
         """Abre a Home principal da Plataforma ZELURBIS."""
 
         page.appbar = None
 
         view = ZelurbisHomeView(
             page=page,
+            sessao=sessao,
             on_acessar_ecoacai=abrir_area_gestor,
             on_sair=sair,
         )
@@ -238,7 +241,9 @@ def main(page: ft.Page) -> None:
             return
 
         if sessao.eh_gestor:
-            abrir_home_zelurbis()
+            abrir_home_zelurbis(
+                sessao
+            )
             return
 
         if sessao.eh_empresa_parceira:
@@ -300,8 +305,8 @@ def main(page: ft.Page) -> None:
 
 
 
-    abrir_login()
-
+    # abrir_login()
+    abrir_home_zelurbis()
 
 if __name__ == "__main__":
     ft.run(
