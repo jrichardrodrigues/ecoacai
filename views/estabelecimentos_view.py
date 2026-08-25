@@ -2,16 +2,15 @@ from collections.abc import Callable
 
 import flet as ft
 
-from components.tables import (
-    EstabelecimentoTable,
-    Toolbar,
-)
 from controllers.estabelecimento_controller import (
     EstabelecimentoController,
 )
 from models import Estabelecimento
 from utils.messages import mostrar_erro, mostrar_sucesso
+
+from components.tables import EstabelecimentoTable
 from components.dialogs import confirmar_exclusao
+from components.layout import PageHeader
 
 
 class EstabelecimentosView:
@@ -31,11 +30,15 @@ class EstabelecimentosView:
 
         self.controller = EstabelecimentoController()
 
-        self.toolbar = Toolbar(
-            titulo="Solicitantes",
-            on_search=self.pesquisar,
-            on_add=self.novo,
+        self.campo_pesquisa = ft.TextField(
+            hint_text="Pesquisar",
+            prefix_icon=ft.Icons.SEARCH,
+            expand=True,
+            height=48,
+            text_size=15,
         )
+
+        self.campo_pesquisa.on_change = self.pesquisar
 
         self.total = ft.Text(
             "",
@@ -198,7 +201,7 @@ class EstabelecimentosView:
             )
 
             self.atualizar_tabela(
-                pesquisa=self.toolbar.search.value or "",
+                pesquisa=self.campo_pesquisa.value or "",
             )
 
             self.page.update()
@@ -234,16 +237,70 @@ class EstabelecimentosView:
     def build(self) -> ft.Control:
         """Constrói e retorna a tela."""
 
+        largura_conteudo = 1300
+
+        cabecalho = PageHeader(
+            title="Solicitantes",
+            subtitle="Cadastre, consulte e gerencie os solicitantes da operação.",
+        )
+
+        barra_pesquisa = ft.Row(
+            controls=[
+                self.campo_pesquisa,
+                ft.OutlinedButton(
+                    content=ft.Row(
+                        controls=[
+                            ft.Icon(
+                                ft.Icons.ADD,
+                                size=18,
+                            ),
+                            ft.Text(
+                                "Novo Solicitante",
+                                size=14,
+                            ),
+                        ],
+                        spacing=8,
+                        tight=True,
+                    ),
+                    on_click=self.novo,
+                    height=48,
+                ),
+            ],
+            spacing=10,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        area_total = ft.Row(
+            controls=[
+                ft.Container(
+                    content=self.total,
+                    width=largura_conteudo,
+                ),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
+
+        area_tabela = ft.Container(
+            content=ft.Stack(
+                controls=[
+                    self.sem_registros,
+                    self.tabela,
+                ],
+                expand=True,
+            ),
+            width=largura_conteudo,
+        )
+
         return ft.Column(
             controls=[
-                self.toolbar,
-                self.total,
-                ft.Stack(
+                cabecalho,
+                barra_pesquisa,
+                area_total,
+                ft.Row(
                     controls=[
-                        self.sem_registros,
-                        self.tabela,
+                        area_tabela,
                     ],
-                    expand=True,
+                    alignment=ft.MainAxisAlignment.CENTER,
                 ),
             ],
             spacing=15,

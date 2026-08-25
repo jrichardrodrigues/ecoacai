@@ -8,17 +8,17 @@ from components.fields import (
     NameField,
     PhoneField,
 )
-from config import COR_SUCESSO, SETORES
+
+from config.constants import BAIRROS_SETORES, SETORES
+
 from controllers.estabelecimento_controller import (
     EstabelecimentoController,
 )
 from models import Estabelecimento
 from utils.messages import mostrar_erro, mostrar_sucesso
 from components.theme import (
-    Typography,
     Spacing,
     Radius,
-    Colors,
 )
 from components.layout import PageHeader
 from components.buttons import PrimaryButton, SecondaryButton
@@ -71,22 +71,29 @@ class CadastroView:
             border_radius=Radius.INPUT,
         )
 
-        self.bairro = ft.TextField(
+        self.bairro = ft.Dropdown(
             label="Bairro",
-            hint_text="Informe o Bairro",
-            expand=True,
-            border_radius=Radius.INPUT,
-        )
-
-        self.setor = ft.Dropdown(
-            label="Setor de recolhimento",
-            hint_text="Selecione o Setor",
+            hint_text="Selecione o Bairro",
             expand=True,
             border_radius=Radius.INPUT,
             options=[
-                ft.dropdown.Option(setor)
-                for setor in SETORES
+                ft.dropdown.Option(bairro)
+                for bairro in sorted(
+                    BAIRROS_SETORES.keys()
+                )
             ],
+        )
+
+        self.bairro.on_select = (
+            self._preencher_setor_por_bairro
+        )
+
+        self.setor = ft.TextField(
+            label="Setor de recolhimento",
+            hint_text="Definido automaticamente pelo Bairro",
+            expand=True,
+            border_radius=Radius.INPUT,
+            read_only=True,
         )
 
         self.nome.container.expand = True
@@ -95,6 +102,33 @@ class CadastroView:
         self.celular.container.expand = True
 
         self.preencher_campos()
+
+    def _preencher_setor_por_bairro(
+            self,
+            _e,
+    ) -> None:
+        bairro_informado = (
+                self.bairro.value or ""
+        ).strip()
+
+        if not bairro_informado:
+            self.setor.value = None
+            self.setor.update()
+            return
+
+        bairro_normalizado = bairro_informado.casefold()
+
+        setor_encontrado = next(
+            (
+                setor
+                for bairro, setor in BAIRROS_SETORES.items()
+                if bairro.casefold() == bairro_normalizado
+            ),
+            None,
+        )
+
+        self.setor.value = setor_encontrado
+        self.setor.update()
 
     def preencher_campos(self) -> None:
         """Preenche o formulário no modo de edição."""

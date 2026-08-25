@@ -83,28 +83,60 @@ class VeiculosView:
         self.tabela = ft.DataTable(
             columns=[
                 ft.DataColumn(
-                    label=ft.Text("Placa"),
+                    label=ft.Text(
+                        "Placa",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Veículo"),
+                    label=ft.Text(
+                        "Veículo",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Ano"),
+                    label=ft.Text(
+                        "Ano",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Tipo"),
+                    label=ft.Text(
+                        "Tipo",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Capacidade"),
+                    label=ft.Text(
+                        "Capacidade",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Status"),
+                    label=ft.Text(
+                        "Status",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Situação"),
+                    label=ft.Text(
+                        "Situação",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Ações"),
+                    label=ft.Text(
+                        "Ações",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
             ],
             rows=[],
@@ -117,7 +149,13 @@ class VeiculosView:
 
         self.tabela_container = ft.Container(
             content=ft.Row(
-                controls=[self.tabela],
+                controls=[
+                    ft.Container(
+                        content=self.tabela,
+                        width=1300,
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
                 scroll=ft.ScrollMode.AUTO,
             ),
             border=ft.Border.all(
@@ -370,6 +408,7 @@ class VeiculosView:
                 ft.DataCell(
                     ft.Text(
                         veiculo.placa or "-",
+                        size=16,
                         weight=ft.FontWeight.BOLD,
                     )
                 ),
@@ -380,11 +419,12 @@ class VeiculosView:
                                 self._descricao_veiculo(
                                     veiculo
                                 ),
+                                size=16,
                                 weight=ft.FontWeight.W_500,
                             ),
                             ft.Text(
                                 veiculo.marca or "",
-                                size=12,
+                                size=14,
                                 color=ft.Colors.ON_SURFACE_VARIANT,
                             ),
                         ],
@@ -395,19 +435,22 @@ class VeiculosView:
                     ft.Text(
                         str(veiculo.ano)
                         if veiculo.ano is not None
-                        else "-"
+                        else "-",
+                        size=16,
                     )
                 ),
                 ft.DataCell(
                     ft.Text(
-                        veiculo.tipo or "-"
+                        veiculo.tipo or "-",
+                        size=16,
                     )
                 ),
                 ft.DataCell(
                     ft.Text(
                         self._formatar_capacidade(
                             veiculo.capacidade
-                        )
+                        ),
+                        size=16,
                     )
                 ),
                 ft.DataCell(
@@ -783,7 +826,7 @@ class VeiculosView:
 
     @staticmethod
     def _formatar_capacidade(
-        capacidade: float | None,
+            capacidade: float | None,
     ) -> str:
         if capacidade is None:
             return "-"
@@ -805,7 +848,7 @@ class VeiculosView:
                 .replace("X", ".")
             )
 
-        return f"{texto} kg"
+        return f"{texto} t"
 
     def _mostrar_mensagem(
         self,

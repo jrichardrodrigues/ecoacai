@@ -14,19 +14,59 @@ class EstabelecimentoTable(DataTable):
     ):
         super().__init__(
             columns=[
-                ft.DataColumn(ft.Text("Nome")),
-                ft.DataColumn(ft.Text("CPF")),
-                ft.DataColumn(ft.Text("Celular")),
-                ft.DataColumn(ft.Text("Bairro")),
-                ft.DataColumn(ft.Text("Setor")),
-                ft.DataColumn(ft.Text("Situação")),
-                ft.DataColumn(ft.Text("Ações")),
+                ft.DataColumn(
+                    ft.Text("Nome", size=17, weight=ft.FontWeight.W_600)
+                ),
+                ft.DataColumn(
+                    ft.Text("CPF", size=17, weight=ft.FontWeight.W_600)
+                ),
+                ft.DataColumn(
+                    ft.Text("Celular", size=17, weight=ft.FontWeight.W_600)
+                ),
+                ft.DataColumn(
+                    ft.Text("Bairro", size=17, weight=ft.FontWeight.W_600)
+                ),
+                ft.DataColumn(
+                    ft.Text("Setor", size=17, weight=ft.FontWeight.W_600)
+                ),
+                ft.DataColumn(
+                    ft.Text("Situação", size=17, weight=ft.FontWeight.W_600)
+                ),
+                ft.DataColumn(
+                    ft.Text("Ações", size=17, weight=ft.FontWeight.W_600)
+                ),
             ],
         )
 
         self.on_edit = on_edit
         self.on_delete = on_delete
         self.on_collect = on_collect
+
+    @staticmethod
+    def _formatar_celular(celular: str) -> str:
+        """Formata o celular para exibição."""
+
+        digitos = "".join(
+            caractere
+            for caractere in str(celular or "")
+            if caractere.isdigit()
+        )
+
+        if len(digitos) == 11:
+            return (
+                f"({digitos[:2]}) "
+                f"{digitos[2:7]}-"
+                f"{digitos[7:]}"
+            )
+
+        if len(digitos) == 10:
+            return (
+                f"({digitos[:2]}) "
+                f"{digitos[2:6]}-"
+                f"{digitos[6:]}"
+            )
+
+        return str(celular or "")
 
     def carregar(self, estabelecimentos):
 
@@ -37,16 +77,33 @@ class EstabelecimentoTable(DataTable):
             rows.append(
                 ft.DataRow(
                     cells=[
-                        ft.DataCell(ft.Text(estabelecimento.nome)),
-                        ft.DataCell(ft.Text(estabelecimento.cpf)),
-                        ft.DataCell(ft.Text(estabelecimento.celular)),
-                        ft.DataCell(ft.Text(estabelecimento.bairro)),
-                        ft.DataCell(ft.Text(estabelecimento.setor)),
+                        ft.DataCell(
+                            ft.Text(estabelecimento.nome, size=16)
+                        ),
+                        ft.DataCell(
+                            ft.Text(estabelecimento.cpf, size=16)
+                        ),
+                        ft.DataCell(
+                            ft.Text(
+                                self._formatar_celular(
+                                    estabelecimento.celular
+                                ),
+                                size=16,
+                                no_wrap=True,
+                            )
+                        ),
+                        ft.DataCell(
+                            ft.Text(estabelecimento.bairro, size=16)
+                        ),
+                        ft.DataCell(
+                            ft.Text(estabelecimento.setor, size=16)
+                        ),
                         ft.DataCell(
                             ft.Text(
                                 "Ativo"
                                 if estabelecimento.ativo
-                                else "Inativo"
+                                else "Inativo",
+                                size=16,
                             )
                         ),
                         ft.DataCell(

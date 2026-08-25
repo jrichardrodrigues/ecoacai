@@ -16,13 +16,14 @@ class DataTable(ft.DataTable):
                 color=ft.Colors.GREY_300,
             ),
             border_radius=10,
-            column_spacing=30,
+            column_spacing=40,
             horizontal_lines=ft.BorderSide(
                 width=1,
                 color=ft.Colors.GREY_200,
             ),
-            heading_row_height=45,
-            data_row_min_height=42,
+            heading_row_height=52,
+            data_row_min_height=48,
+            data_row_max_height=56,
             expand=True,
         )
 

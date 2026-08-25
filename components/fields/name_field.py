@@ -23,7 +23,7 @@ class NameField(BaseValidatedField):
         super().__init__(
             label="Nome do Proprietário/Responsável",
             hint_text="Digite o nome completo",
-            max_length=100,
+            max_length=80,
         )
 
     @staticmethod

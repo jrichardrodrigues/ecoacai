@@ -103,22 +103,46 @@ class MotoristasView:
         self.tabela = ft.DataTable(
             columns=[
                 ft.DataColumn(
-                    label=ft.Text("Nome"),
+                    label=ft.Text(
+                        "Nome",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Telefone"),
+                    label=ft.Text(
+                        "Telefone",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("CNH"),
+                    label=ft.Text(
+                        "CNH",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Categoria"),
+                    label=ft.Text(
+                        "Categoria",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Situação"),
+                    label=ft.Text(
+                        "Situação",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
                 ft.DataColumn(
-                    label=ft.Text("Ações"),
+                    label=ft.Text(
+                        "Ações",
+                        size=17,
+                        weight=ft.FontWeight.W_600,
+                    ),
                 ),
             ],
             rows=[],
@@ -134,7 +158,7 @@ class MotoristasView:
                 controls=[
                     ft.Container(
                         content=self.tabela,
-                        width=1050,
+                        width=1300,
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -245,6 +269,9 @@ class MotoristasView:
                     self.filtro_situacao,
                     self.botao_pesquisar,
                     self.botao_limpar_pesquisa,
+
+                    ft.Container(width=8),
+
                     PrimaryButton(
                         label="Novo Motorista",
                         icon=ft.Icons.ADD,
@@ -252,9 +279,7 @@ class MotoristasView:
                     ),
                 ],
                 spacing=Spacing.SM,
-                vertical_alignment=(
-                    ft.CrossAxisAlignment.END
-                ),
+                vertical_alignment=ft.CrossAxisAlignment.END,
             ),
             self.estado_lista,
             self.container_tabela,
@@ -543,6 +568,7 @@ class MotoristasView:
                 ft.DataCell(
                     ft.Text(
                         motorista.nome,
+                        size=16,
                     )
                 ),
                 ft.DataCell(
@@ -550,21 +576,25 @@ class MotoristasView:
                         self._formatar_telefone(
                             motorista.telefone,
                         ),
+                        size=16,
                     )
                 ),
                 ft.DataCell(
                     ft.Text(
                         motorista.cnh,
+                        size=16,
                     )
                 ),
                 ft.DataCell(
                     ft.Text(
                         motorista.categoria_cnh,
+                        size=16,
                     )
                 ),
                 ft.DataCell(
                     ft.Text(
                         situacao,
+                        size=16,
                         color=(
                             ft.Colors.GREEN
                             if motorista.ativo

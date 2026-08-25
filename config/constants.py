@@ -56,28 +56,79 @@ COR_ECOGARRAFAS = "#1D1E33"
 ###############################################################################
 
 SETORES = [
-    "Guamá",
-    "Terra Firme",
-    "Jurunas",
-    "Condor",
-    "Cremação",
-    "Marco",
-    "Nazaré",
-    "São Brás",
-    "Canudos",
-    "Pedreira",
-    "Marambaia",
-    "Bengui",
-    "Tapanã",
-    "Icoaraci",
-    "Batista Campos",
-    "Umarizal",
-    "Souza",
-    "Cidade Velha",
-    "Sacramenta",
-    "Telegráfo",
-    "Curió-Utinga",
+    "SETOR 1",
+    "SETOR 2",
+    "SETOR 3",
+    "SETOR 4",
+    "SETOR 5",
+    "SETOR 6",
 ]
+
+
+BAIRROS_SETORES = {
+    # SETOR 1
+    "Jurunas": "SETOR 1",
+    "Condor": "SETOR 1",
+    "Batista Campos": "SETOR 1",
+    "Cremação": "SETOR 1",
+    "Cidade Velha": "SETOR 1",
+    "Campina": "SETOR 1",
+    "Reduto": "SETOR 1",
+    "Umarizal": "SETOR 1",
+
+    # SETOR 2
+    "Guamá": "SETOR 2",
+    "Canudos": "SETOR 2",
+    "Terra Firme": "SETOR 2",
+    "São Brás": "SETOR 2",
+    "Nazaré": "SETOR 2",
+    "Marco": "SETOR 2",
+    "Fátima": "SETOR 2",
+    "Curió": "SETOR 2",
+    "Souza": "SETOR 2",
+
+    # SETOR 3
+    "Pedreira": "SETOR 3",
+    "Telégrafo": "SETOR 3",
+    "Barreiro": "SETOR 3",
+    "Sacramenta": "SETOR 3",
+    "Miramar": "SETOR 3",
+    "Val de Cans": "SETOR 3",
+    "Pratinha": "SETOR 3",
+    "Marambaia": "SETOR 3",
+
+    # SETOR 4
+    "Aurá": "SETOR 4",
+    "Águas Lindas": "SETOR 4",
+    "Guanabara": "SETOR 4",
+    "Castanheira": "SETOR 4",
+    "Cabanagem": "SETOR 4",
+    "Mangueirão": "SETOR 4",
+    "Benguí": "SETOR 4",
+    "Una": "SETOR 4",
+
+    # SETOR 5
+    "Parque Verde": "SETOR 5",
+    "Tapanã": "SETOR 5",
+    "Coqueiro": "SETOR 5",
+    "Tenoné": "SETOR 5",
+    "P. Guajará": "SETOR 5",
+    "Paracuri": "SETOR 5",
+    "S. Clemente": "SETOR 5",
+    "Cordeiro": "SETOR 5",
+
+    # SETOR 6
+    "P. Grossa": "SETOR 6",
+    "Cruzeiro": "SETOR 6",
+    "Agulha": "SETOR 6",
+    "Campina de Icoaraci": "SETOR 6",
+    "Água Boa": "SETOR 6",
+    "Maracacuera": "SETOR 6",
+    "Águas Negras": "SETOR 6",
+    "Brasília": "SETOR 6",
+    "S. João Outeiro": "SETOR 6",
+    "Itaiteua": "SETOR 6",
+}
 
 ###############################################################################
 # STATUS DAS SOLICITAÇÕES

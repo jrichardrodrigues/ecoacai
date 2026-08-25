@@ -71,6 +71,68 @@ class SolicitacoesGestorView:
         )
 
     @staticmethod
+    def _criar_status_chip(
+            status: str,
+    ) -> ft.Container:
+        """Cria o chip visual correspondente ao status da solicitação."""
+
+        status_normalizado = str(
+            status or ""
+        ).strip().upper()
+
+        estilos = {
+            "SOLICITADA": (
+                ft.Colors.AMBER_100,
+                ft.Colors.AMBER_900,
+            ),
+            "EM_ANALISE": (
+                ft.Colors.ORANGE_100,
+                ft.Colors.ORANGE_900,
+            ),
+            "AGENDADA": (
+                ft.Colors.BLUE_100,
+                ft.Colors.BLUE_900,
+            ),
+            "EM_COLETA": (
+                ft.Colors.ORANGE_100,
+                ft.Colors.ORANGE_900,
+            ),
+            "CONCLUIDA": (
+                ft.Colors.GREEN_100,
+                ft.Colors.GREEN_900,
+            ),
+            "CANCELADA": (
+                ft.Colors.GREY_200,
+                ft.Colors.GREY_800,
+            ),
+        }
+
+        cor_fundo, cor_texto = estilos.get(
+            status_normalizado,
+            (
+                ft.Colors.BLUE_GREY_100,
+                ft.Colors.BLUE_GREY_800,
+            ),
+        )
+
+        return ft.Container(
+            content=ft.Text(
+                SolicitacoesGestorView._formatar_status(
+                    status_normalizado
+                ),
+                size=13,
+                weight=ft.FontWeight.BOLD,
+                color=cor_texto,
+            ),
+            bgcolor=cor_fundo,
+            padding=ft.Padding.symmetric(
+                horizontal=12,
+                vertical=5,
+            ),
+            border_radius=16,
+        )
+
+    @staticmethod
     def _formatar_residuo(
         tipo: str,
     ) -> str:
@@ -223,7 +285,10 @@ class SolicitacoesGestorView:
 
         return ft.Card(
             content=ft.Container(
-                padding=16,
+                padding=ft.Padding.symmetric(
+                    horizontal=16,
+                    vertical=10,
+                ),
                 content=ft.Column(
                     controls=[
                         ft.Row(
@@ -236,16 +301,15 @@ class SolicitacoesGestorView:
                                 ft.Container(
                                     expand=True,
                                 ),
-                                ft.Text(
-                                    self._formatar_status(
-                                        status
-                                    ),
-                                    weight=ft.FontWeight.BOLD,
+                                self._criar_status_chip(
+                                    status
                                 ),
                             ],
                         ),
 
-                        ft.Divider(),
+                        ft.Divider(
+                            height=8,
+                        ),
 
                         ft.Text(
                             f"Solicitante: {solicitante}"
@@ -268,17 +332,23 @@ class SolicitacoesGestorView:
                             + self._formatar_peso_estimado(dados)
                         ),
 
-                        ft.Text(
-                            "Solicitada em: "
-                            f"{dados.get('data_solicitacao') or '-'}"
-                        ),
-
                         ft.Row(
-                            controls=botoes,
-                            alignment=ft.MainAxisAlignment.END,
+                            controls=[
+                                ft.Text(
+                                    "Solicitada em: "
+                                    f"{dados.get('data_solicitacao') or '-'}"
+                                ),
+                                ft.Container(
+                                    expand=True,
+                                ),
+                                *botoes,
+                            ],
+                            vertical_alignment=(
+                                ft.CrossAxisAlignment.CENTER
+                            ),
                         ),
                     ],
-                    spacing=8,
+                    spacing=5,
                 ),
             ),
         )
@@ -417,20 +487,25 @@ class SolicitacoesGestorView:
         conteudo = ft.Column(
             controls=[
                 ft.Row(
-                    alignment=ft.MainAxisAlignment.END,
                     controls=[
+                        self.total,
+                        ft.Container(
+                            expand=True,
+                        ),
                         botao_lixeira,
                     ],
+                    vertical_alignment=(
+                        ft.CrossAxisAlignment.CENTER
+                    ),
                 ),
-                self.total,
                 self.lista,
             ],
-            spacing=16,
+            spacing=12,
         )
 
         return BasePage(
             title=self.titulo,
             subtitle=self.subtitulo,
             content=conteudo,
-            max_width=1100,
+            max_width=1300,
         )
