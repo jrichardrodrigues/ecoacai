@@ -18,6 +18,7 @@ def criar_menu(
         ("Veículos", ft.Icons.FIRE_TRUCK_ROUNDED),
         ("Operação de Coletas", ft.Icons.LIST_ALT_ROUNDED),
         ("Dashboard", ft.Icons.BAR_CHART_ROUNDED),
+        ("Relatórios", ft.Icons.DESCRIPTION_ROUNDED),
     ]
 
     controles = []

@@ -1396,6 +1396,158 @@ class SolicitacaoColetaRepository:
 
         return int(row[0] or 0)
 
+    def listar_coletas_para_relatorio(
+            self,
+            *,
+            setor: str | None = None,
+            bairro: str | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+            organizacao_id: int | None = None,
+    ) -> list[dict]:
+        """
+        Lista coletas concluídas para geração de relatórios.
+
+        Permite filtrar por setor, bairro, período de conclusão
+        e organização.
+
+        O período considera a data de conclusão da coleta.
+        """
+
+        consulta = """
+            SELECT
+                s.id,
+                s.codigo,
+
+                s.organizacao_id,
+                s.estabelecimento_id,
+
+                COALESCE(
+                    o.nome,
+                    e.nome,
+                    'Solicitante não identificado'
+                ) AS solicitante,
+
+                e.bairro,
+                e.setor,
+
+                s.tipo_residuo,
+                s.forma_acondicionamento,
+                s.unidade_medida,
+
+                s.quantidade_sacas_coletada,
+                s.quantidade_kg_coletado,
+
+                s.data_solicitacao,
+                s.data_hora_agendada,
+                s.data_hora_chegada,
+                s.data_hora_conclusao,
+
+                s.status
+
+            FROM solicitacoes AS s
+
+            LEFT JOIN organizacoes AS o
+                ON o.id = s.organizacao_id
+
+            LEFT JOIN estabelecimentos AS e
+                ON e.id = s.estabelecimento_id
+
+            WHERE s.ativo = 1
+              AND s.status = 'CONCLUIDA'
+              AND s.data_hora_conclusao IS NOT NULL
+              AND COALESCE(s.quantidade_kg_coletado, 0) > 0
+        """
+
+        parametros: list[Any] = []
+
+        inicio = (
+            data_inicial.strip()
+            if data_inicial and data_inicial.strip()
+            else None
+        )
+
+        fim = (
+            data_final.strip()
+            if data_final and data_final.strip()
+            else None
+        )
+
+        setor_normalizado = (
+            setor.strip()
+            if setor and setor.strip()
+            else None
+        )
+
+        bairro_normalizado = (
+            bairro.strip()
+            if bairro and bairro.strip()
+            else None
+        )
+
+        if inicio and fim and inicio > fim:
+            raise ValueError(
+                "A data inicial não pode ser maior que a data final."
+            )
+
+        if organizacao_id is not None:
+            consulta += """
+                AND s.organizacao_id = ?
+            """
+            parametros.append(organizacao_id)
+
+        if setor_normalizado:
+            consulta += """
+                AND UPPER(TRIM(e.setor)) = UPPER(TRIM(?))
+            """
+            parametros.append(setor_normalizado)
+
+        if bairro_normalizado:
+            consulta += """
+                AND UPPER(TRIM(e.bairro)) = UPPER(TRIM(?))
+            """
+            parametros.append(bairro_normalizado)
+
+        if inicio and fim:
+            consulta += """
+                AND DATE(s.data_hora_conclusao)
+                    BETWEEN DATE(?) AND DATE(?)
+            """
+            parametros.extend([
+                inicio,
+                fim,
+            ])
+
+        elif inicio:
+            consulta += """
+                AND DATE(s.data_hora_conclusao) >= DATE(?)
+            """
+            parametros.append(inicio)
+
+        elif fim:
+            consulta += """
+                AND DATE(s.data_hora_conclusao) <= DATE(?)
+            """
+            parametros.append(fim)
+
+        consulta += """
+            ORDER BY
+                s.data_hora_conclusao DESC,
+                s.id DESC
+        """
+
+        with self.database.obter_conexao() as conexao:
+
+            rows = conexao.execute(
+                consulta,
+                tuple(parametros),
+            ).fetchall()
+
+        return [
+            dict(row)
+            for row in rows
+        ]
+
     def listar_operacional(
             self,
             *,

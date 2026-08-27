@@ -142,8 +142,15 @@ class CadastroView:
         self.celular.value = self.estabelecimento.celular
 
         self.endereco.value = self.estabelecimento.endereco
-        self.bairro.value = self.estabelecimento.bairro
-        self.setor.value = self.estabelecimento.setor
+
+        bairro = (self.estabelecimento.bairro or "").strip()
+
+        if bairro in BAIRROS_SETORES:
+            self.bairro.value = bairro
+            self.setor.value = BAIRROS_SETORES[bairro]
+        else:
+            self.bairro.value = None
+            self.setor.value = None
 
     def obter_dados(self) -> dict[str, str | None]:
         """Reúne os valores preenchidos no formulário."""

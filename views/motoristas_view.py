@@ -70,6 +70,12 @@ class MotoristasView:
             on_click=self.limpar_pesquisa,
         )
 
+        self.botao_novo_motorista = PrimaryButton(
+            label="Novo Motorista",
+            icon=ft.Icons.ADD,
+            on_click=self.abrir_novo_motorista,
+        )
+
         # ======================================================
         # FILTRO DE SITUAÇÃO
         # ======================================================
@@ -256,31 +262,35 @@ class MotoristasView:
         """Configura os controles da tela de listagem."""
 
         self.area_conteudo.controls = [
-            PageHeader(
-                title="Motoristas",
-                subtitle=(
-                    "Cadastre, consulte e gerencie "
-                    "os motoristas da operação."
-                ),
+            ft.Row(
+                controls=[
+                    ft.Container(
+                        content=PageHeader(
+                            title="Motoristas",
+                            subtitle=(
+                                "Cadastre, consulte e gerencie "
+                                "os motoristas da operação."
+                            ),
+                        ),
+                        expand=True,
+                    ),
+                    self.botao_novo_motorista,
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
+
             ft.Row(
                 controls=[
                     self.campo_pesquisa,
                     self.filtro_situacao,
                     self.botao_pesquisar,
                     self.botao_limpar_pesquisa,
-
-                    ft.Container(width=8),
-
-                    PrimaryButton(
-                        label="Novo Motorista",
-                        icon=ft.Icons.ADD,
-                        on_click=self.abrir_novo_motorista,
-                    ),
                 ],
                 spacing=Spacing.SM,
                 vertical_alignment=ft.CrossAxisAlignment.END,
             ),
+
             self.estado_lista,
             self.container_tabela,
             self.paginacao,
@@ -291,7 +301,15 @@ class MotoristasView:
 
         return ft.Column(
             controls=[
-                self.area_conteudo,
+                ft.Container(
+                    content=self.area_conteudo,
+                    padding=ft.Padding(
+                        left=0,
+                        top=0,
+                        right=16,
+                        bottom=0,
+                    ),
+                ),
             ],
             spacing=Spacing.MD,
             scroll=ft.ScrollMode.ADAPTIVE,

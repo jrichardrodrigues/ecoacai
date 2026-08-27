@@ -8,6 +8,8 @@ import flet as ft
 from components.chips import StatusChip
 from components.layout import PageHeader
 from components.dialogs import ConfirmDialog
+from components.buttons import PrimaryButton, SecondaryButton
+
 from controllers.veiculo_controller import VeiculoController
 from models import Veiculo
 from views.veiculo_form_view import VeiculoFormView
@@ -36,7 +38,7 @@ class VeiculosView:
             label="Pesquisar veículo",
             hint_text="Placa, marca, modelo ou tipo",
             prefix_icon=ft.Icons.SEARCH,
-            on_change=self._ao_pesquisar,
+            on_submit=self._ao_pesquisar,
             expand=True,
         )
 
@@ -61,23 +63,22 @@ class VeiculosView:
             on_select=self._ao_alterar_filtro,
         )
 
-        self.novo_button = ft.Button(
-            content="Novo veículo",
+        self.novo_button = PrimaryButton(
+            label="Novo Veículo",
             icon=ft.Icons.ADD,
             on_click=self._abrir_cadastro,
         )
 
-        self.atualizar_button = ft.IconButton(
-            icon=ft.Icons.REFRESH,
-            tooltip="Atualizar lista",
-            on_click=self._atualizar_lista,
+        self.botao_pesquisar = PrimaryButton(
+            label="Pesquisar",
+            icon=ft.Icons.SEARCH,
+            on_click=self._ao_pesquisar,
         )
 
-        self.voltar_button = ft.IconButton(
-            icon=ft.Icons.ARROW_BACK,
-            tooltip="Voltar",
-            on_click=self._voltar,
-            visible=self.ao_voltar is not None,
+        self.botao_limpar = SecondaryButton(
+            label="Limpar",
+            icon=ft.Icons.CLEAR,
+            on_click=self._limpar_pesquisa,
         )
 
         self.tabela = ft.DataTable(
@@ -245,7 +246,6 @@ class VeiculosView:
     def _construir_cabecalho(self) -> ft.Control:
         return ft.Row(
             controls=[
-                self.voltar_button,
                 ft.Container(
                     content=PageHeader(
                         title="Veículos",
@@ -254,32 +254,21 @@ class VeiculosView:
                     ),
                     expand=True,
                 ),
-                self.atualizar_button,
                 self.novo_button,
             ],
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
     def _construir_filtros(self) -> ft.Control:
-        return ft.ResponsiveRow(
+        return ft.Row(
             controls=[
-                ft.Container(
-                    content=self.pesquisa_field,
-                    col={
-                        "xs": 12,
-                        "md": 8,
-                    },
-                ),
-                ft.Container(
-                    content=self.filtro_dropdown,
-                    col={
-                        "xs": 12,
-                        "md": 4,
-                    },
-                ),
+                self.pesquisa_field,
+                self.filtro_dropdown,
+                self.botao_pesquisar,
+                self.botao_limpar,
             ],
-            spacing=16,
-            run_spacing=16,
+            spacing=8,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
     def _construir_paginacao(self) -> ft.Control:
@@ -548,6 +537,16 @@ class VeiculosView:
         event: ft.Event[ft.TextField] | None = None,
     ) -> None:
         self.pagina_atual = 1
+        self._carregar_veiculos()
+
+    def _limpar_pesquisa(
+            self,
+            event: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        self.pesquisa_field.value = ""
+        self.filtro_dropdown.value = "ATIVOS"
+        self.pagina_atual = 1
+
         self._carregar_veiculos()
 
     def _ao_alterar_filtro(

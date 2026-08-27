@@ -23,8 +23,14 @@ class PrimaryButton(ft.ElevatedButton):
             height=48,
             expand=expand,
             disabled=disabled,
-            bgcolor=Colors.PRIMARY,
-            color=ft.Colors.WHITE,
+            bgcolor={
+                ft.ControlState.DEFAULT: Colors.PRIMARY,
+                ft.ControlState.DISABLED: ft.Colors.GREY_300,
+            },
+            color={
+                ft.ControlState.DEFAULT: ft.Colors.WHITE,
+                ft.ControlState.DISABLED: ft.Colors.GREY_600,
+            },
             style=ft.ButtonStyle(
                 padding=ft.Padding(
                     left=16,

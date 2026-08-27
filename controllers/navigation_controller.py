@@ -5,10 +5,12 @@ from datetime import date
 import flet as ft
 
 from models import Estabelecimento, Motorista, Solicitacao, Veiculo
+
 from views.cadastro_view import CadastroView
 from views.estabelecimentos_view import EstabelecimentosView
 from views.solicitacao_form_view import SolicitacaoFormView
 from views.dashboard_view import DashboardView
+from views.relatorios_view import RelatoriosView
 from views.home_page import HomeView
 from views.motorista_form_view import MotoristaFormView
 from views.motoristas_view import MotoristasView
@@ -51,6 +53,7 @@ class NavigationController:
             5: self._veiculos,
             6: self._coletas_agendadas,
             7: self._dashboard,
+            8: self._relatorios,
         }
 
     def _mostrar(self, controle: ft.Control) -> None:
@@ -75,6 +78,13 @@ class NavigationController:
                 self.abrir_detalhe_solicitacao_dashboard
             ),
             on_abrir_solicitantes=self.abrir_solicitantes,
+        ).build()
+
+    def _relatorios(self) -> ft.Control:
+        """Abre a tela de relatórios de coletas."""
+
+        return RelatoriosView(
+            page=self.page,
         ).build()
 
     def _home(self) -> ft.Control:
