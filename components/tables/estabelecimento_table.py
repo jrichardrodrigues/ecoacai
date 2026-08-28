@@ -43,6 +43,26 @@ class EstabelecimentoTable(DataTable):
         self.on_collect = on_collect
 
     @staticmethod
+    def _formatar_cpf(cpf: str) -> str:
+        """Formata o CPF para exibição."""
+
+        digitos = "".join(
+            caractere
+            for caractere in str(cpf or "")
+            if caractere.isdigit()
+        )
+
+        if len(digitos) != 11:
+            return str(cpf or "")
+
+        return (
+            f"{digitos[:3]}."
+            f"{digitos[3:6]}."
+            f"{digitos[6:9]}-"
+            f"{digitos[9:]}"
+        )
+
+    @staticmethod
     def _formatar_celular(celular: str) -> str:
         """Formata o celular para exibição."""
 
@@ -81,7 +101,13 @@ class EstabelecimentoTable(DataTable):
                             ft.Text(estabelecimento.nome, size=16)
                         ),
                         ft.DataCell(
-                            ft.Text(estabelecimento.cpf, size=16)
+                            ft.Text(
+                                self._formatar_cpf(
+                                    estabelecimento.cpf
+                                ),
+                                size=16,
+                                no_wrap=True,
+                            )
                         ),
                         ft.DataCell(
                             ft.Text(

@@ -24,11 +24,20 @@ class SecondaryButton(ft.OutlinedButton):
             expand=expand,
             disabled=disabled,
             style=ft.ButtonStyle(
-                color=Colors.PRIMARY,
-                side=ft.BorderSide(
-                    width=1,
-                    color=Colors.PRIMARY,
-                ),
+                color={
+                    ft.ControlState.DEFAULT: Colors.PRIMARY,
+                    ft.ControlState.DISABLED: ft.Colors.GREY_500,
+                },
+                side={
+                    ft.ControlState.DEFAULT: ft.BorderSide(
+                        width=1,
+                        color=Colors.PRIMARY,
+                    ),
+                    ft.ControlState.DISABLED: ft.BorderSide(
+                        width=1,
+                        color=ft.Colors.GREY_300,
+                    ),
+                },
                 padding=ft.Padding(
                     left=16,
                     top=10,

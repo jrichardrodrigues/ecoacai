@@ -1401,6 +1401,7 @@ class SolicitacaoColetaRepository:
             *,
             setor: str | None = None,
             bairro: str | None = None,
+            estabelecimento_id: int | None = None,
             data_inicial: str | None = None,
             data_final: str | None = None,
             organizacao_id: int | None = None,
@@ -1479,11 +1480,23 @@ class SolicitacaoColetaRepository:
             else None
         )
 
+        if (
+                setor_normalizado
+                and setor_normalizado.upper() == "TODOS"
+        ):
+            setor_normalizado = None
+
         bairro_normalizado = (
             bairro.strip()
             if bairro and bairro.strip()
             else None
         )
+
+        if (
+                bairro_normalizado
+                and bairro_normalizado.upper() == "TODOS"
+        ):
+            bairro_normalizado = None
 
         if inicio and fim and inicio > fim:
             raise ValueError(
@@ -1495,6 +1508,12 @@ class SolicitacaoColetaRepository:
                 AND s.organizacao_id = ?
             """
             parametros.append(organizacao_id)
+
+        if estabelecimento_id is not None:
+            consulta += """
+                AND s.estabelecimento_id = ?
+            """
+            parametros.append(estabelecimento_id)
 
         if setor_normalizado:
             consulta += """

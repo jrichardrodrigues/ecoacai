@@ -30,6 +30,7 @@ class RelatorioPdfService:
             self,
             *,
             caminho_arquivo: str | Path,
+            solicitante: str,
             setor: str,
             bairro: str,
             data_inicial: str | None,
@@ -161,6 +162,7 @@ class RelatorioPdfService:
         elementos.append(
             Paragraph(
                 self._criar_descricao_filtros(
+                    solicitante=solicitante,
                     setor=setor,
                     bairro=bairro,
                     data_inicial=data_inicial,
@@ -228,20 +230,32 @@ class RelatorioPdfService:
     def _criar_descricao_filtros(
             self,
             *,
+            solicitante: str,
             setor: str,
             bairro: str,
             data_inicial: str | None,
             data_final: str | None,
     ) -> str:
 
-        setor_texto = (
-            str(setor or "").strip()
-            or "Todos os setores"
+        solicitante_texto = (
+                str(solicitante or "").strip()
+                or "Todos os solicitantes"
         )
 
+        if solicitante_texto.upper() == "TODOS":
+            solicitante_texto = "Todos os solicitantes"
+
+        setor_texto = (
+                str(setor or "").strip()
+                or "Todos os setores"
+        )
+
+        if setor_texto.upper() == "TODOS":
+            setor_texto = "Todos os setores"
+
         bairro_texto = (
-            str(bairro or "").strip()
-            or "Todos os bairros"
+                str(bairro or "").strip()
+                or "Todos os bairros"
         )
 
         if bairro_texto.upper() == "TODOS":
@@ -280,6 +294,8 @@ class RelatorioPdfService:
             periodo = "Todo o período"
 
         return (
+            f"{solicitante_texto}"
+            f" &nbsp;&nbsp;•&nbsp;&nbsp; "
             f"{setor_texto}"
             f" &nbsp;&nbsp;•&nbsp;&nbsp; "
             f"{bairro_texto}"

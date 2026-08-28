@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import math
 from datetime import datetime
+
+import os
+import subprocess
+import sys
+import shutil
 from pathlib import Path
 
 import flet as ft
@@ -9,6 +14,7 @@ import flet as ft
 from components.buttons import PrimaryButton, SecondaryButton
 from components.layout import PageHeader
 from config.constants import BAIRROS_SETORES, SETORES
+from controllers.estabelecimento_controller import EstabelecimentoController
 
 from services.relatorio_service import RelatorioService
 from services.relatorio_pdf_service import RelatorioPdfService
@@ -17,7 +23,7 @@ from services.relatorio_pdf_service import RelatorioPdfService
 class RelatoriosView:
     """Tela de consulta e geração de relatórios de coletas."""
 
-    ITENS_POR_PAGINA = 2
+    ITENS_POR_PAGINA = 10
 
     def __init__(
             self,
@@ -26,15 +32,41 @@ class RelatoriosView:
         self.page = page
         self.relatorio_service = RelatorioService()
         self.relatorio_pdf_service = RelatorioPdfService()
+        self.estabelecimento_controller = EstabelecimentoController()
 
         self.pagina_atual = 1
         self.total_paginas = 1
         self.registros_relatorio: list[dict] = []
         self.resumo_relatorio: dict = {}
+        self.ultimo_pdf_gerado: Path | None = None
 
         # ======================================================
         # FILTROS
         # ======================================================
+
+        estabelecimentos = (
+            self.estabelecimento_controller
+            .listar_estabelecimentos()
+        )
+
+        self.solicitante_dropdown = ft.Dropdown(
+            label="Solicitante",
+            hint_text="Todos os solicitantes",
+            options=[
+                ft.DropdownOption(
+                    key="TODOS",
+                    text="Todos os solicitantes",
+                ),
+                *[
+                    ft.DropdownOption(
+                        key=str(estabelecimento.id),
+                        text=estabelecimento.nome,
+                    )
+                    for estabelecimento in estabelecimentos
+                ],
+            ],
+            value="TODOS",
+        )
 
         self.setor_dropdown = ft.Dropdown(
             label="Setor",
@@ -42,18 +74,26 @@ class RelatoriosView:
             width=220,
             options=[
                 ft.DropdownOption(
-                    key=setor,
-                    text=setor,
-                )
-                for setor in SETORES
+                    key="TODOS",
+                    text="Todos os setores",
+                ),
+                *[
+                    ft.DropdownOption(
+                        key=setor,
+                        text=setor,
+                    )
+                    for setor in SETORES
+                ],
             ],
+            value="TODOS",
             on_select=self._ao_alterar_setor,
         )
 
         self.bairro_dropdown = ft.Dropdown(
             label="Bairro",
             hint_text="Todos os bairros",
-            width=280,
+            width=220,
+            value=None,
             disabled=True,
             options=[],
         )
@@ -61,7 +101,6 @@ class RelatoriosView:
         self.data_inicial_field = ft.TextField(
             label="Data inicial",
             hint_text="dd/mm/aaaa",
-            width=180,
             read_only=True,
             suffix_icon=ft.Icons.CALENDAR_MONTH,
             on_click=self._abrir_data_inicial,
@@ -71,7 +110,6 @@ class RelatoriosView:
         self.data_final_field = ft.TextField(
             label="Data final",
             hint_text="dd/mm/aaaa",
-            width=180,
             read_only=True,
             suffix_icon=ft.Icons.CALENDAR_MONTH,
             on_click=self._abrir_data_final,
@@ -94,6 +132,13 @@ class RelatoriosView:
             label="Gerar PDF",
             icon=ft.Icons.PICTURE_AS_PDF_OUTLINED,
             on_click=self._gerar_pdf,
+            disabled=True,
+        )
+
+        self.botao_salvar_pdf = SecondaryButton(
+            label="Salvar PDF",
+            icon=ft.Icons.DOWNLOAD_ROUNDED,
+            on_click=self._salvar_pdf_como,
             disabled=True,
         )
 
@@ -133,6 +178,8 @@ class RelatoriosView:
                         ),
                     ],
                     spacing=12,
+                    run_spacing=12,
+                    wrap=True,
                 ),
 
                 ft.Text(
@@ -212,23 +259,83 @@ class RelatoriosView:
                     ),
                     expand=True,
                 ),
-                self.botao_gerar_pdf,
+                ft.Row(
+                    controls=[
+                        self.botao_salvar_pdf,
+                        self.botao_gerar_pdf,
+                    ],
+                    spacing=10,
+                ),
             ],
             vertical_alignment=ft.CrossAxisAlignment.START,
         )
 
     def _construir_filtros(self) -> ft.Control:
-        return ft.Row(
+        return ft.Column(
             controls=[
-                self.setor_dropdown,
-                self.bairro_dropdown,
-                self.data_inicial_field,
-                self.data_final_field,
-                self.botao_pesquisar,
-                self.botao_limpar,
+                # ==================================================
+                # LINHA 1 — FILTROS
+                # ==================================================
+                ft.Row(
+                    controls=[
+                        # ------------------------------------------
+                        # GRUPO ESQUERDO
+                        # Solicitante | Setor | Bairro
+                        # ------------------------------------------
+                        ft.Row(
+                            controls=[
+                                ft.Container(
+                                    content=self.solicitante_dropdown,
+                                    width=270,
+                                ),
+                                ft.Container(
+                                    content=self.setor_dropdown,
+                                    width=200,
+                                ),
+                                ft.Container(
+                                    content=self.bairro_dropdown,
+                                    width=200,
+                                ),
+                            ],
+                            spacing=16,
+                        ),
+
+                        # ------------------------------------------
+                        # GRUPO DIREITO
+                        # Data inicial | Data final
+                        # ------------------------------------------
+                        ft.Row(
+                            controls=[
+                                ft.Container(
+                                    content=self.data_inicial_field,
+                                    width=220,
+                                ),
+                                ft.Container(
+                                    content=self.data_final_field,
+                                    width=220,
+                                ),
+                            ],
+                            spacing=12,
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.START,
+                    spacing=40,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+
+                # ==================================================
+                # LINHA 2 — AÇÕES
+                # ==================================================
+                ft.Row(
+                    controls=[
+                        self.botao_pesquisar,
+                        self.botao_limpar,
+                    ],
+                    alignment=ft.MainAxisAlignment.END,
+                    spacing=12,
+                ),
             ],
             spacing=8,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
     # ==========================================================
@@ -251,11 +358,17 @@ class RelatoriosView:
             self._atualizar_pagina()
             return
 
-        bairros = sorted(
-            bairro
-            for bairro, setor_bairro in BAIRROS_SETORES.items()
-            if setor_bairro == setor
-        )
+        # Todos os setores = todos os bairros
+        if setor.upper() == "TODOS":
+            bairros = sorted(
+                BAIRROS_SETORES.keys()
+            )
+        else:
+            bairros = sorted(
+                bairro
+                for bairro, setor_bairro in BAIRROS_SETORES.items()
+                if setor_bairro == setor
+            )
 
         self.bairro_dropdown.options = [
             ft.DropdownOption(
@@ -493,9 +606,30 @@ class RelatoriosView:
         )
 
     def _criar_descricao_filtros(self) -> ft.Control:
-        setor = str(
-            self.setor_dropdown.value or ""
+        solicitante = str(
+            self.solicitante_dropdown.value or "TODOS"
         ).strip()
+
+        if solicitante == "TODOS":
+            solicitante_texto = "Todos os solicitantes"
+        else:
+            solicitante_texto = next(
+                (
+                    option.text
+                    for option in self.solicitante_dropdown.options
+                    if str(option.key) == solicitante
+                ),
+                solicitante,
+            )
+
+        setor = str(
+            self.setor_dropdown.value or "TODOS"
+        ).strip()
+
+        if setor == "TODOS":
+            setor_texto = "Todos os setores"
+        else:
+            setor_texto = setor
 
         bairro = str(
             self.bairro_dropdown.value or "TODOS"
@@ -530,7 +664,12 @@ class RelatoriosView:
             periodo = "Todo o período"
 
         return ft.Text(
-            f"{setor}  •  {bairro_texto}  •  {periodo}",
+            (
+                f"{solicitante_texto}  •  "
+                f"{setor_texto}  •  "
+                f"{bairro_texto}  •  "
+                f"{periodo}"
+            ),
             size=14,
             color=ft.Colors.ON_SURFACE_VARIANT,
             weight=ft.FontWeight.W_500,
@@ -783,16 +922,19 @@ class RelatoriosView:
             event: ft.Event[ft.Control] | None = None,
     ) -> None:
 
-        setor = str(
-            self.setor_dropdown.value or ""
+        solicitante_valor = str(
+            self.solicitante_dropdown.value or "TODOS"
         ).strip()
 
-        if not setor:
-            self._mostrar_mensagem(
-                "Selecione um setor para consultar o relatório.",
-                erro=True,
-            )
-            return
+        estabelecimento_id = (
+            None
+            if solicitante_valor.upper() == "TODOS"
+            else int(solicitante_valor)
+        )
+
+        setor = str(
+            self.setor_dropdown.value or "TODOS"
+        ).strip()
 
         bairro = str(
             self.bairro_dropdown.value or "TODOS"
@@ -817,22 +959,25 @@ class RelatoriosView:
                     "que a data final."
                 )
 
+            # --------------------------------------------------
+            # INVALIDA QUALQUER PDF GERADO ANTERIORMENTE
+            # --------------------------------------------------
+
+            self.ultimo_pdf_gerado = None
+            self.botao_salvar_pdf.disabled = True
+
             dados = (
                 self.relatorio_service
                 .obter_coletas_por_setor(
                     setor=setor,
                     bairro=bairro,
+                    estabelecimento_id=estabelecimento_id,
                     data_inicial=data_inicial,
                     data_final=data_final,
                 )
             )
 
-            self._mostrar_resultados(
-                dados
-            )
-
-            # Habilita o PDF após uma consulta válida
-            self.botao_gerar_pdf.disabled = False
+            self._mostrar_resultados(dados)
 
             self._atualizar_pagina()
 
@@ -862,6 +1007,22 @@ class RelatoriosView:
                 erro=True,
             )
             return
+
+        solicitante_id = str(
+            self.solicitante_dropdown.value or "TODOS"
+        ).strip()
+
+        if solicitante_id == "TODOS":
+            solicitante = "Todos os solicitantes"
+        else:
+            solicitante = next(
+                (
+                    opcao.text
+                    for opcao in self.solicitante_dropdown.options
+                    if str(opcao.key) == solicitante_id
+                ),
+                "Solicitante não identificado",
+            )
 
         setor = str(
             self.setor_dropdown.value or ""
@@ -896,6 +1057,7 @@ class RelatoriosView:
                 self.relatorio_pdf_service
                 .gerar_relatorio_coletas(
                     caminho_arquivo=caminho_arquivo,
+                    solicitante=solicitante,
                     setor=setor,
                     bairro=bairro,
                     data_inicial=data_inicial or None,
@@ -904,6 +1066,13 @@ class RelatoriosView:
                     registros=self.registros_relatorio,
                 )
             )
+
+            self.ultimo_pdf_gerado = caminho_gerado
+
+            self.botao_salvar_pdf.disabled = False
+            self.botao_salvar_pdf.update()
+
+            self._abrir_pdf(caminho_gerado)
 
             self._mostrar_mensagem(
                 f"Relatório gerado com sucesso: "
@@ -920,7 +1089,14 @@ class RelatoriosView:
             self,
             event: ft.Event[ft.Control] | None = None,
     ) -> None:
-        self.setor_dropdown.value = None
+
+        # ======================================================
+        # RESTAURA OS FILTROS
+        # ======================================================
+
+        self.solicitante_dropdown.value = "TODOS"
+
+        self.setor_dropdown.value = "TODOS"
 
         self.bairro_dropdown.value = None
         self.bairro_dropdown.options = []
@@ -929,22 +1105,121 @@ class RelatoriosView:
         self.data_inicial_field.value = ""
         self.data_final_field.value = ""
 
-        self.pagina_atual = 1
-        self.total_paginas = 1
+        # ======================================================
+        # LIMPA OS DADOS DO RELATÓRIO
+        # ======================================================
+
         self.registros_relatorio = []
         self.resumo_relatorio = {}
 
-        self.area_resultados.controls = []
+        self.pagina_atual = 1
+
+        # ======================================================
+        # LIMPA A ÁREA DE RESULTADOS
+        # ======================================================
+
+        self.area_resultados.controls.clear()
         self.area_resultados.visible = False
+
         self.estado_inicial.visible = True
 
+        # ======================================================
+        # INVALIDA O PDF
+        # ======================================================
+
+        self.ultimo_pdf_gerado = None
+
         self.botao_gerar_pdf.disabled = True
+        self.botao_salvar_pdf.disabled = True
+
+        # ======================================================
+        # ATUALIZA A INTERFACE
+        # ======================================================
 
         self._atualizar_pagina()
 
     # ==========================================================
     # UTILITÁRIOS
     # ==========================================================
+
+    @staticmethod
+    def _abrir_pdf(
+            caminho_arquivo: str | Path,
+    ) -> None:
+        """
+        Abre o PDF no visualizador padrão do sistema operacional.
+        """
+
+        caminho = Path(caminho_arquivo).resolve()
+
+        if not caminho.exists():
+            raise FileNotFoundError(
+                f"Arquivo PDF não encontrado: {caminho}"
+            )
+
+        if sys.platform.startswith("linux"):
+            subprocess.Popen(
+                ["xdg-open", str(caminho)]
+            )
+
+        elif sys.platform == "darwin":
+            subprocess.Popen(
+                ["open", str(caminho)]
+            )
+
+        elif os.name == "nt":
+            os.startfile(str(caminho))
+
+        else:
+            raise RuntimeError(
+                "Não foi possível identificar um método "
+                "para abrir o PDF neste sistema operacional."
+            )
+
+    async def _salvar_pdf_como(
+            self,
+            event: ft.Event[ft.Control] | None = None,
+    ) -> None:
+
+        if (
+                self.ultimo_pdf_gerado is None
+                or not self.ultimo_pdf_gerado.exists()
+        ):
+            self._mostrar_mensagem(
+                "Gere o relatório antes de salvá-lo.",
+                erro=True,
+            )
+            return
+
+        try:
+            destino = await ft.FilePicker().save_file(
+                dialog_title="Salvar relatório de coletas",
+                file_name=self.ultimo_pdf_gerado.name,
+                allowed_extensions=["pdf"],
+            )
+
+            if not destino:
+                return
+
+            destino = Path(destino)
+
+            if destino.suffix.lower() != ".pdf":
+                destino = destino.with_suffix(".pdf")
+
+            shutil.copy2(
+                self.ultimo_pdf_gerado,
+                destino,
+            )
+
+            self._mostrar_mensagem(
+                f"Relatório salvo em: {destino}"
+            )
+
+        except Exception as exc:
+            self._mostrar_mensagem(
+                f"Não foi possível salvar o PDF: {exc}",
+                erro=True,
+            )
 
     @staticmethod
     def _converter_data_filtro(
