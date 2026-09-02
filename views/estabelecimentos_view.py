@@ -11,6 +11,8 @@ from utils.messages import mostrar_erro, mostrar_sucesso
 from components.tables import EstabelecimentoTable
 from components.dialogs import confirmar_exclusao
 from components.layout import PageHeader
+from components.buttons import PrimaryButton
+from components.theme import Radius
 
 
 class EstabelecimentosView:
@@ -36,6 +38,7 @@ class EstabelecimentosView:
             expand=True,
             height=48,
             text_size=15,
+            border_radius=Radius.INPUT,
         )
 
         self.campo_pesquisa.on_change = self.pesquisar
@@ -237,34 +240,23 @@ class EstabelecimentosView:
     def build(self) -> ft.Control:
         """Constrói e retorna a tela."""
 
-        largura_conteudo = 1300
+        largura_conteudo = 1100
 
         cabecalho = PageHeader(
             title="Solicitantes",
             subtitle="Cadastre, consulte e gerencie os solicitantes da operação.",
         )
 
+        botao_novo = PrimaryButton(
+            label="Novo Solicitante",
+            icon=ft.Icons.ADD,
+            on_click=self.novo,
+        )
+
         barra_pesquisa = ft.Row(
             controls=[
                 self.campo_pesquisa,
-                ft.OutlinedButton(
-                    content=ft.Row(
-                        controls=[
-                            ft.Icon(
-                                ft.Icons.ADD,
-                                size=18,
-                            ),
-                            ft.Text(
-                                "Novo Solicitante",
-                                size=14,
-                            ),
-                        ],
-                        spacing=8,
-                        tight=True,
-                    ),
-                    on_click=self.novo,
-                    height=48,
-                ),
+                botao_novo,
             ],
             spacing=10,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,

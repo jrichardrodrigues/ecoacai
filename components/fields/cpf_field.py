@@ -6,14 +6,16 @@ from .base_validated_field import BaseValidatedField
 class CpfField(BaseValidatedField):
 
     def __init__(
-        self,
-        usuario_service=None,
-        ignorar_id: int = 0,
+            self,
+            usuario_service=None,
+            ignorar_id: int = 0,
+            on_change=None,
     ):
         super().__init__(
             label="CPF",
             hint_text="000.000.000-00",
             max_length=14,
+            on_change=on_change,
         )
 
         self.usuario_service = usuario_service

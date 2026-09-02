@@ -328,6 +328,7 @@ class SolicitacaoColetaService:
             data_agendada: str | None = None,
             data_inicial: str | None = None,
             data_final: str | None = None,
+            pesquisa: str | None = None,
     ) -> list[dict]:
         return self.repository.listar_operacional(
             status=status,
@@ -336,6 +337,7 @@ class SolicitacaoColetaService:
             data_agendada=data_agendada,
             data_inicial=data_inicial,
             data_final=data_final,
+            pesquisa=pesquisa,
         )
     def listar_com_estabelecimento(self) -> list[dict]:
         """Mantém compatibilidade com a interface antiga."""

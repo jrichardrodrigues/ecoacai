@@ -47,21 +47,26 @@ class CadastroView:
             else 0
         )
 
-        self.nome = NameField()
+        self.nome = NameField(
+            on_change=self._atualizar_estado_botoes,
+        )
 
         self.cpf = CpfField(
             usuario_service=self.controller.estabelecimento_service,
             ignorar_id=ignorar_id,
+            on_change=self._atualizar_estado_botoes,
         )
 
         self.email = EmailField(
             usuario_service=self.controller.estabelecimento_service,
             ignorar_id=ignorar_id,
+            on_change=self._atualizar_estado_botoes,
         )
 
         self.celular = PhoneField(
             usuario_service=self.controller.estabelecimento_service,
             ignorar_id=ignorar_id,
+            on_change=self._atualizar_estado_botoes,
         )
 
         self.endereco = ft.TextField(
@@ -69,6 +74,8 @@ class CadastroView:
             hint_text="Rua, Travessa, Avenida e Número",
             expand=True,
             border_radius=Radius.INPUT,
+            max_length=120,
+            on_change=self._atualizar_estado_botoes,
         )
 
         self.bairro = ft.Dropdown(
@@ -130,6 +137,8 @@ class CadastroView:
         self.setor.value = setor_encontrado
         self.setor.update()
 
+        self._atualizar_estado_botoes()
+
     def preencher_campos(self) -> None:
         """Preenche o formulário no modo de edição."""
 
@@ -151,6 +160,41 @@ class CadastroView:
         else:
             self.bairro.value = None
             self.setor.value = None
+
+    def _atualizar_estado_botoes(
+            self,
+            _e=None,
+    ) -> None:
+        """Atualiza o estado dos botões conforme o formulário."""
+
+        valores = [
+            self.nome.value,
+            self.cpf.value,
+            self.email.value,
+            self.celular.value,
+            self.endereco.value,
+            self.bairro.value,
+            self.setor.value,
+        ]
+
+        possui_algum_valor = any(
+            str(valor or "").strip()
+            for valor in valores
+        )
+
+        todos_preenchidos = all(
+            str(valor or "").strip()
+            for valor in valores
+        )
+
+        self.botao_limpar.disabled = not possui_algum_valor
+        self.botao_salvar.disabled = not todos_preenchidos
+
+        try:
+            self.botao_limpar.update()
+            self.botao_salvar.update()
+        except RuntimeError:
+            pass
 
     def obter_dados(self) -> dict[str, str | None]:
         """Reúne os valores preenchidos no formulário."""
@@ -265,6 +309,20 @@ class CadastroView:
             else ft.Icons.SAVE
         )
 
+        self.botao_salvar = PrimaryButton(
+            label=texto_botao,
+            icon=icone_botao,
+            on_click=self.salvar,
+            disabled=True,
+        )
+
+        self.botao_limpar = SecondaryButton(
+            label="Limpar",
+            icon=ft.Icons.CLEAR,
+            on_click=self.limpar_campos,
+            disabled=True,
+        )
+
         return ft.Column(
             controls=[
                 PageHeader(
@@ -298,6 +356,7 @@ class CadastroView:
                         self.bairro,
                     ],
                     spacing=Spacing.MD,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
                 ),
 
                 ft.Row(
@@ -310,16 +369,8 @@ class CadastroView:
 
                 ft.Row(
                     controls=[
-                        PrimaryButton(
-                            label=texto_botao,
-                            icon=icone_botao,
-                            on_click=self.salvar,
-                        ),
-                        SecondaryButton(
-                            label="Limpar",
-                            icon=ft.Icons.CLEAR,
-                            on_click=self.limpar_campos,
-                        ),
+                        self.botao_salvar,
+                        self.botao_limpar,
                     ],
                     spacing=Spacing.SM,
                 )

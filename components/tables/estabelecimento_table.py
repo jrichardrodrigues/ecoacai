@@ -38,6 +38,8 @@ class EstabelecimentoTable(DataTable):
             ],
         )
 
+        self.column_spacing = 18
+
         self.on_edit = on_edit
         self.on_delete = on_delete
         self.on_collect = on_collect

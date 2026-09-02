@@ -1576,6 +1576,7 @@ class SolicitacaoColetaRepository:
             data_agendada: str | None = None,
             data_inicial: str | None = None,
             data_final: str | None = None,
+            pesquisa: str | None = None,
     ) -> list[dict]:
         """
         Lista solicitações com os principais vínculos operacionais.
@@ -1663,6 +1664,33 @@ class SolicitacaoColetaRepository:
         """
 
         parametros: list[Any] = []
+
+        termo_pesquisa = (
+            pesquisa.strip()
+            if pesquisa and pesquisa.strip()
+            else None
+        )
+
+        if termo_pesquisa:
+            consulta += """
+                AND (
+                    UPPER(s.codigo) LIKE UPPER(?)
+                    OR UPPER(
+                        COALESCE(
+                            o.nome,
+                            e.nome,
+                            ''
+                        )
+                    ) LIKE UPPER(?)
+                )
+            """
+
+            termo_like = f"%{termo_pesquisa}%"
+
+            parametros.extend([
+                termo_like,
+                termo_like,
+            ])
 
         inicio = (
             data_inicial.strip()

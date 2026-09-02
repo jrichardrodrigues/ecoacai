@@ -13,6 +13,13 @@ from controllers.veiculo_controller import VeiculoController
 from controllers.solicitacao_coleta_controller import (
     SolicitacaoColetaController,
 )
+
+from components.buttons import PrimaryButton, SecondaryButton
+from components.responsive import (
+    ResponsiveFilterBar,
+    ResponsiveHeader,
+)
+
 from config.constants import StatusColeta
 
 
@@ -149,9 +156,9 @@ class ColetasAgendadasView:
 
         self.dropdown_motorista = ft.Dropdown(
             label="Motorista",
-            width=220,
             dense=True,
             value="TODOS",
+            width=220,
             options=[
                 ft.DropdownOption(
                     key="TODOS",
@@ -162,9 +169,9 @@ class ColetasAgendadasView:
 
         self.dropdown_veiculo = ft.Dropdown(
             label="Veículo",
-            width=220,
             dense=True,
             value="TODOS",
+            width=180,
             options=[
                 ft.DropdownOption(
                     key="TODOS",
@@ -231,6 +238,50 @@ class ColetasAgendadasView:
             width=22,
             height=22,
             visible=False,
+        )
+
+    def _criar_filtros(self) -> ft.Control:
+        """Cria a área de filtros."""
+
+        botao_pesquisar = PrimaryButton(
+            label="Pesquisar",
+            icon=ft.Icons.SEARCH,
+            on_click=self._pesquisar,
+        )
+
+        botao_limpar = SecondaryButton(
+            label="Limpar",
+            icon=ft.Icons.CLEAR,
+            on_click=self._limpar_filtros,
+        )
+
+        linha_campos = ft.Row(
+            controls=[
+                self.campo_data_inicial,
+                self.campo_data_final,
+                self.dropdown_status,
+                self.dropdown_motorista,
+                self.dropdown_veiculo,
+            ],
+            spacing=12,
+            run_spacing=12,
+            wrap=True,
+        )
+
+        linha_botoes = ft.Row(
+            controls=[
+                botao_pesquisar,
+                botao_limpar,
+            ],
+            spacing=12,
+        )
+
+        return ft.Column(
+            controls=[
+                linha_campos,
+                linha_botoes,
+            ],
+            spacing=12,
         )
 
     def _construir_dialog_agendamento(self) -> None:
@@ -971,102 +1022,15 @@ class ColetasAgendadasView:
     def _criar_cabecalho(self) -> ft.Control:
         """Cria o cabeçalho da tela."""
 
-        titulo = ft.Column(
-            controls=[
-                ft.Text(
-                    "Operação de Coletas",
-                    size=26,
-                    weight=ft.FontWeight.BOLD,
-                ),
-                ft.Text(
-                    "Gerencie o fluxo operacional das coletas, do agendamento à conclusão.",
-                    size=14,
-                ),
-            ],
-            spacing=3,
-        )
-
-        botao_nova_coleta = ft.FilledButton(
-            content=ft.Row(
-                controls=[
-                    ft.Icon(
-                        ft.Icons.ADD,
-                        size=18,
-                    ),
-                    ft.Text("Agendar Coleta"),
-                ],
-                spacing=8,
-                tight=True,
+        return ResponsiveHeader(
+            title="Operação de Coletas",
+            subtitle=(
+                "Gerencie o fluxo operacional das coletas, "
+                "do agendamento à conclusão."
             ),
-            on_click=self._nova_coleta,
-        )
-
-        return ft.Row(
-            controls=[
-                titulo,
-                botao_nova_coleta,
-            ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        )
-
-    def _criar_filtros(self) -> ft.Control:
-        """Cria a barra de filtros."""
-
-        botao_pesquisar = ft.FilledButton(
-            content=ft.Row(
-                controls=[
-                    ft.Icon(
-                        ft.Icons.SEARCH,
-                        size=18,
-                    ),
-                    ft.Text("Pesquisar"),
-                ],
-                spacing=8,
-                tight=True,
-            ),
-            on_click=self._pesquisar,
-        )
-
-        botao_limpar = ft.OutlinedButton(
-            content=ft.Row(
-                controls=[
-                    ft.Icon(
-                        ft.Icons.CLEAR,
-                        size=18,
-                    ),
-                    ft.Text("Limpar"),
-                ],
-                spacing=8,
-                tight=True,
-            ),
-            on_click=self._limpar_filtros,
-        )
-
-        linha_filtros = ft.Row(
-            controls=[
-                self.campo_data_inicial,
-                self.campo_data_final,
-                self.dropdown_status,
-                self.dropdown_motorista,
-                self.dropdown_veiculo,
-                botao_pesquisar,
-                botao_limpar,
-                self.indicador_carregamento,
-            ],
-            spacing=12,
-            run_spacing=12,
-            wrap=True,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        )
-
-        return ft.Container(
-            content=linha_filtros,
-            padding=16,
-            border=ft.Border.all(
-                width=1,
-            ),
-            border_radius=12,
+            action_label="Agendar Coleta",
+            action_icon=ft.Icons.ADD,
+            on_action=self._nova_coleta,
         )
 
     def _criar_dashboard(self) -> ft.Control:
@@ -1230,7 +1194,7 @@ class ColetasAgendadasView:
         )
 
     def _criar_tabela(self) -> ft.Control:
-        """Cria a área da tabela."""
+        """Cria a área responsiva da tabela."""
 
         cabecalho_tabela = ft.Row(
             controls=[
@@ -1252,7 +1216,7 @@ class ColetasAgendadasView:
             controls=[
                 self.tabela,
             ],
-            alignment=ft.MainAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.START,
             scroll=ft.ScrollMode.AUTO,
         )
 
@@ -1270,6 +1234,7 @@ class ColetasAgendadasView:
                 width=1,
             ),
             border_radius=12,
+            width=float("inf"),
         )
 
     @staticmethod

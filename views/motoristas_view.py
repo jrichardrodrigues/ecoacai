@@ -6,7 +6,10 @@ from components.buttons import (
     PrimaryButton,
     SecondaryButton,
 )
-from components.layout import PageHeader
+from components.responsive import (
+    ResponsiveFilterBar,
+    ResponsiveHeader,
+)
 from components.theme import (
     Colors,
     Radius,
@@ -54,7 +57,7 @@ class MotoristasView:
             ),
             prefix_icon=ft.Icons.SEARCH,
             border_radius=Radius.INPUT,
-            expand=True,
+            width=600,
             on_submit=self.pesquisar,
         )
 
@@ -262,35 +265,24 @@ class MotoristasView:
         """Configura os controles da tela de listagem."""
 
         self.area_conteudo.controls = [
-            ft.Row(
-                controls=[
-                    ft.Container(
-                        content=PageHeader(
-                            title="Motoristas",
-                            subtitle=(
-                                "Cadastre, consulte e gerencie "
-                                "os motoristas da operação."
-                            ),
-                        ),
-                        expand=True,
-                    ),
-                    self.botao_novo_motorista,
-                ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ResponsiveHeader(
+                title="Motoristas",
+                subtitle=(
+                    "Cadastre, consulte e gerencie "
+                    "os motoristas da operação."
+                ),
+                action_label="Novo Motorista",
+                action_icon=ft.Icons.ADD,
+                on_action=self.abrir_novo_motorista,
             ),
-
-            ft.Row(
+            ResponsiveFilterBar(
                 controls=[
                     self.campo_pesquisa,
                     self.filtro_situacao,
                     self.botao_pesquisar,
                     self.botao_limpar_pesquisa,
                 ],
-                spacing=Spacing.SM,
-                vertical_alignment=ft.CrossAxisAlignment.END,
             ),
-
             self.estado_lista,
             self.container_tabela,
             self.paginacao,

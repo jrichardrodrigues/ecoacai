@@ -6,8 +6,18 @@ from .base_field import BaseField
 class BaseValidatedField(BaseField):
     """Campo reutilizável com uma mensagem de validação visível."""
 
-    def __init__(self, label: str, **kwargs):
-        super().__init__(label=label, **kwargs)
+    def __init__(
+            self,
+            label: str,
+            on_change=None,
+            **kwargs,
+    ):
+        self.on_change_callback = on_change
+
+        super().__init__(
+            label=label,
+            **kwargs,
+        )
 
         self.mensagem = ft.Text(
             value="",
@@ -30,8 +40,12 @@ class BaseValidatedField(BaseField):
 
     def _ao_alterar(self, e):
         self.value = e.control.value or ""
+
         self.validar()
         self._atualizar()
+
+        if self.on_change_callback is not None:
+            self.on_change_callback(e)
 
     def _ao_sair(self, e):
         self.value = e.control.value or ""

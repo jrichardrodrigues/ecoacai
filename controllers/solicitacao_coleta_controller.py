@@ -94,6 +94,7 @@ class SolicitacaoColetaController:
             data_agendada: str | None = None,
             data_inicial: str | None = None,
             data_final: str | None = None,
+            pesquisa: str | None = None,
     ) -> list[dict]:
         """Lista solicitações com seus vínculos operacionais."""
 
@@ -104,6 +105,7 @@ class SolicitacaoColetaController:
             data_agendada=data_agendada,
             data_inicial=data_inicial,
             data_final=data_final,
+            pesquisa=pesquisa,
         )
 
     def listar_com_estabelecimento(

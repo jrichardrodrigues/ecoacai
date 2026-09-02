@@ -6,9 +6,13 @@ from collections.abc import Callable
 import flet as ft
 
 from components.chips import StatusChip
-from components.layout import PageHeader
+from components.responsive import (
+    ResponsiveFilterBar,
+    ResponsiveHeader,
+)
 from components.dialogs import ConfirmDialog
 from components.buttons import PrimaryButton, SecondaryButton
+from components.theme import Radius
 
 from controllers.veiculo_controller import VeiculoController
 from models import Veiculo
@@ -38,6 +42,7 @@ class VeiculosView:
             label="Pesquisar veículo",
             hint_text="Placa, marca, modelo ou tipo",
             prefix_icon=ft.Icons.SEARCH,
+            border_radius=Radius.INPUT,
             on_submit=self._ao_pesquisar,
             expand=True,
         )
@@ -46,6 +51,7 @@ class VeiculosView:
             label="Situação",
             value="ATIVOS",
             width=190,
+            border_radius=Radius.INPUT,
             options=[
                 ft.DropdownOption(
                     key="ATIVOS",
@@ -142,9 +148,12 @@ class VeiculosView:
             ],
             rows=[],
             column_spacing=24,
+            data_row_min_height=44,
+            data_row_max_height=56,
             horizontal_lines=ft.BorderSide(
                 width=1,
                 color=ft.Colors.OUTLINE_VARIANT,
+
             ),
         )
 
@@ -153,7 +162,6 @@ class VeiculosView:
                 controls=[
                     ft.Container(
                         content=self.tabela,
-                        width=1300,
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -229,7 +237,7 @@ class VeiculosView:
                     self.estado_vazio,
                     self._construir_paginacao(),
                 ],
-                spacing=18,
+                spacing=10,
                 scroll=ft.ScrollMode.AUTO,
             ),
         )
@@ -244,31 +252,22 @@ class VeiculosView:
         return self.container
 
     def _construir_cabecalho(self) -> ft.Control:
-        return ft.Row(
-            controls=[
-                ft.Container(
-                    content=PageHeader(
-                        title="Veículos",
-                        subtitle="Cadastro e gerenciamento da frota.",
-                        show_divider=False,
-                    ),
-                    expand=True,
-                ),
-                self.novo_button,
-            ],
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        return ResponsiveHeader(
+            title="Veículos",
+            subtitle="Cadastro e gerenciamento da frota.",
+            action_label="Novo Veículo",
+            action_icon=ft.Icons.ADD,
+            on_action=self._abrir_cadastro,
         )
 
     def _construir_filtros(self) -> ft.Control:
-        return ft.Row(
+        return ResponsiveFilterBar(
             controls=[
                 self.pesquisa_field,
                 self.filtro_dropdown,
                 self.botao_pesquisar,
                 self.botao_limpar,
             ],
-            spacing=8,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
     def _construir_paginacao(self) -> ft.Control:

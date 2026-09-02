@@ -19,11 +19,15 @@ class NameField(BaseValidatedField):
         "von",
     }
 
-    def __init__(self):
+    def __init__(
+            self,
+            on_change=None,
+    ):
         super().__init__(
             label="Nome do Proprietário/Responsável",
             hint_text="Digite o nome completo",
             max_length=80,
+            on_change=on_change,
         )
 
     @staticmethod

@@ -4,8 +4,10 @@ from collections.abc import Callable
 
 import flet as ft
 
-from components.layout import BasePage
 from components.dialogs import confirmar_exclusao
+from components.layout.page_header import PageHeader
+from components.buttons import PrimaryButton, SecondaryButton
+from components.theme import Radius
 
 from controllers.solicitacao_coleta_controller import (
     SolicitacaoColetaController,
@@ -40,6 +42,76 @@ class SolicitacoesGestorView:
         self.titulo = titulo
         self.subtitulo = subtitulo
 
+        # ==========================================================
+        # FILTROS DE CONSULTA
+        # ==========================================================
+
+        self.campo_pesquisa = ft.TextField(
+            label="Pesquisar",
+            hint_text="Código ou solicitante",
+            prefix_icon=ft.Icons.SEARCH,
+            width=580,
+            border_radius=Radius.INPUT,
+        )
+
+        self.filtro_status = ft.Dropdown(
+            label="Status",
+            width=190,
+            value="TODOS",
+            border_radius=Radius.INPUT,
+            options=[
+                ft.DropdownOption(
+                    key="TODOS",
+                    text="Todos",
+                ),
+                ft.DropdownOption(
+                    key="EM_ANALISE",
+                    text="Em análise",
+                ),
+                ft.DropdownOption(
+                    key="AGENDADA",
+                    text="Agendada",
+                ),
+                ft.DropdownOption(
+                    key="EM_DESLOCAMENTO",
+                    text="Em deslocamento",
+                ),
+                ft.DropdownOption(
+                    key="EM_COLETA",
+                    text="Em coleta",
+                ),
+                ft.DropdownOption(
+                    key="CONCLUIDA",
+                    text="Concluída",
+                ),
+                ft.DropdownOption(
+                    key="CANCELADA",
+                    text="Cancelada",
+                ),
+            ],
+        )
+
+        self.data_inicial_field = ft.TextField(
+            label="Data inicial",
+            hint_text="dd/mm/aaaa",
+            width=150,
+            read_only=True,
+            suffix_icon=ft.Icons.CALENDAR_MONTH,
+            border_radius=Radius.INPUT,
+            on_click=self._abrir_data_inicial,
+            always_call_on_tap=True,
+        )
+
+        self.data_final_field = ft.TextField(
+            label="Data final",
+            hint_text="dd/mm/aaaa",
+            width=150,
+            read_only=True,
+            suffix_icon=ft.Icons.CALENDAR_MONTH,
+            border_radius=Radius.INPUT,
+            on_click=self._abrir_data_final,
+            always_call_on_tap=True,
+        )
         self.lista = ft.Column(
             spacing=12,
         )
@@ -55,6 +127,64 @@ class SolicitacoesGestorView:
         self.on_abrir_lixeira = on_abrir_lixeira
 
         self._carregar()
+
+    def _abrir_data_inicial(
+            self,
+            event: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        picker = ft.DatePicker(
+            help_text="Selecione a data inicial",
+            cancel_text="Cancelar",
+            confirm_text="Selecionar",
+            entry_mode=ft.DatePickerEntryMode.CALENDAR_ONLY,
+            on_change=self._ao_selecionar_data_inicial,
+        )
+
+        self.page.show_dialog(picker)
+
+    def _abrir_data_final(
+            self,
+            event: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        picker = ft.DatePicker(
+            help_text="Selecione a data final",
+            cancel_text="Cancelar",
+            confirm_text="Selecionar",
+            entry_mode=ft.DatePickerEntryMode.CALENDAR_ONLY,
+            on_change=self._ao_selecionar_data_final,
+        )
+
+        self.page.show_dialog(picker)
+
+    def _ao_selecionar_data_inicial(
+            self,
+            event: ft.Event[ft.DatePicker],
+    ) -> None:
+        data = event.control.value
+
+        if data is None:
+            return
+
+        self.data_inicial_field.value = data.strftime(
+            "%d/%m/%Y"
+        )
+
+        self.page.update()
+
+    def _ao_selecionar_data_final(
+            self,
+            event: ft.Event[ft.DatePicker],
+    ) -> None:
+        data = event.control.value
+
+        if data is None:
+            return
+
+        self.data_final_field.value = data.strftime(
+            "%d/%m/%Y"
+        )
+
+        self.page.update()
 
     # ==========================================================
     # FORMATAÇÃO
@@ -185,16 +315,105 @@ class SolicitacoesGestorView:
 
         return f"{quantidade} unidade(s)"
 
+    @staticmethod
+    def _converter_data_filtro(
+            valor: str | None,
+    ) -> str | None:
+        if not valor:
+            return None
+
+        valor = valor.strip()
+
+        if not valor:
+            return None
+
+        try:
+            dia, mes, ano = valor.split("/")
+            return f"{ano}-{mes}-{dia}"
+        except ValueError:
+            raise ValueError(
+                "Informe a data no formato dd/mm/aaaa."
+            )
+
+    def _ao_pesquisar(
+            self,
+            _e: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        try:
+            data_inicial = self._converter_data_filtro(
+                self.data_inicial_field.value
+            )
+
+            data_final = self._converter_data_filtro(
+                self.data_final_field.value
+            )
+
+            if (
+                    data_inicial
+                    and data_final
+                    and data_inicial > data_final
+            ):
+                raise ValueError(
+                    "A data inicial não pode ser maior que a data final."
+                )
+
+            pesquisa = str(
+                self.campo_pesquisa.value or ""
+            ).strip()
+
+            status = str(
+                self.filtro_status.value or "TODOS"
+            ).strip()
+
+            if status == "TODOS":
+                status = None
+
+            self._carregar(
+                pesquisa=pesquisa or None,
+                status=status,
+                data_inicial=data_inicial,
+                data_final=data_final,
+            )
+
+            self.page.update()
+
+        except ValueError as erro:
+            mostrar_erro(
+                self.page,
+                str(erro),
+            )
+
+    def _limpar_filtros(
+            self,
+            _e: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        self.campo_pesquisa.value = ""
+        self.filtro_status.value = "TODOS"
+        self.data_inicial_field.value = ""
+        self.data_final_field.value = ""
+
+        self._carregar()
+
+        self.page.update()
+
     # ==========================================================
     # DADOS
     # ==========================================================
 
-    def _carregar(self) -> None:
+    def _carregar(
+            self,
+            *,
+            pesquisa: str | None = None,
+            status: str | None = None,
+            data_inicial: str | None = None,
+            data_final: str | None = None,
+    ) -> None:
         solicitacoes = self.controller.listar_operacional(
-            status=self.status_inicial,
+            pesquisa=pesquisa,
+            status=status,
             data_agendada=self.data_agendada_inicial,
-            data_inicial=self.data_solicitacao_inicial,
-            data_final=self.data_solicitacao_inicial,
+            data_inicial=data_inicial,
+            data_final=data_final,
         )
 
         self.lista.controls.clear()
@@ -474,38 +693,116 @@ class SolicitacoesGestorView:
 
     def build(self) -> ft.Control:
 
+        cabecalho = PageHeader(
+            title=self.titulo,
+            subtitle=self.subtitulo,
+        )
+
         botao_lixeira = ft.OutlinedButton(
-            content="Lixeira",
+            content=ft.Text("Lixeira"),
             icon=ft.Icons.DELETE_OUTLINE,
             on_click=(
                 lambda _e: self.on_abrir_lixeira()
                 if self.on_abrir_lixeira is not None
                 else None
             ),
+            height=48,
+            style=ft.ButtonStyle(
+                color={
+                    ft.ControlState.DEFAULT: ft.Colors.RED_700,
+                    ft.ControlState.DISABLED: ft.Colors.GREY_500,
+                },
+                side={
+                    ft.ControlState.DEFAULT: ft.BorderSide(
+                        width=1,
+                        color=ft.Colors.RED_700,
+                    ),
+                    ft.ControlState.DISABLED: ft.BorderSide(
+                        width=1,
+                        color=ft.Colors.GREY_300,
+                    ),
+                },
+                padding=ft.Padding(
+                    left=16,
+                    top=10,
+                    right=16,
+                    bottom=10,
+                ),
+                shape=ft.RoundedRectangleBorder(
+                    radius=Radius.MD,
+                ),
+            ),
         )
 
-        conteudo = ft.Column(
+        botao_pesquisar = PrimaryButton(
+            label="Pesquisar",
+            icon=ft.Icons.SEARCH,
+            on_click=self._ao_pesquisar,
+        )
+
+        botao_limpar = SecondaryButton(
+            label="Limpar",
+            icon=ft.Icons.CLEAR,
+            on_click=self._limpar_filtros,
+        )
+
+        barra_botoes = ft.Row(
             controls=[
-                ft.Row(
-                    controls=[
-                        self.total,
-                        ft.Container(
-                            expand=True,
-                        ),
-                        botao_lixeira,
-                    ],
-                    vertical_alignment=(
-                        ft.CrossAxisAlignment.CENTER
-                    ),
-                ),
-                self.lista,
+                botao_pesquisar,
+                botao_limpar,
+                botao_lixeira,
             ],
             spacing=12,
+            alignment=ft.MainAxisAlignment.END,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        return BasePage(
-            title=self.titulo,
-            subtitle=self.subtitulo,
-            content=conteudo,
-            max_width=1300,
+        barra_filtros = ft.Row(
+            controls=[
+                self.campo_pesquisa,
+                self.filtro_status,
+                self.data_inicial_field,
+                self.data_final_field,
+            ],
+            spacing=12,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        barra_acoes = ft.Row(
+            controls=[
+                self.total,
+            ],
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        area_lista = ft.Container(
+            content=self.lista,
+            expand=True,
+        )
+
+        return ft.Column(
+            controls=[
+                cabecalho,
+
+                ft.Column(
+                    controls=[
+                        ft.Row(
+                            controls=[
+                                barra_botoes,
+                            ],
+                            alignment=ft.MainAxisAlignment.END,
+                        ),
+
+                        barra_filtros,
+                    ],
+                    spacing=8,
+                ),
+
+                barra_acoes,
+
+                area_lista,
+            ],
+            spacing=15,
+            expand=True,
+            scroll=ft.ScrollMode.AUTO,
         )

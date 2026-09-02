@@ -22,11 +22,13 @@ class PhoneField(BaseValidatedField):
             self,
             usuario_service=None,
             ignorar_id: int = 0,
+            on_change=None,
     ):
         super().__init__(
             label="Celular/WhatsApp",
             hint_text="(91) 98888-7777",
             max_length=15,
+            on_change=on_change,
         )
 
         self.usuario_service = usuario_service

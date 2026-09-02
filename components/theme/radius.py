@@ -24,7 +24,7 @@ class Radius:
     # ==========================================================
 
     BUTTON = MD
-    INPUT = MD
+    INPUT = XS
     CARD = XL
     DIALOG = XL
     MENU = LG
