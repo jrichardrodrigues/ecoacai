@@ -3,6 +3,8 @@ import flet as ft
 from .action_buttons import ActionButtons
 from .data_table import DataTable
 
+from components.theme import Spacing
+
 
 class EstabelecimentoTable(DataTable):
 
@@ -38,7 +40,16 @@ class EstabelecimentoTable(DataTable):
             ],
         )
 
-        self.column_spacing = 18
+        # Mantém o mesmo padrão visual da tabela de Veículos.
+        self.column_spacing = Spacing.MD
+        self.horizontal_margin = Spacing.MD
+        self.heading_row_height = 52
+        self.data_row_min_height = 52
+        self.data_row_max_height = 64
+        self.horizontal_lines = ft.BorderSide(
+            width=1,
+            color=ft.Colors.OUTLINE_VARIANT,
+        )
 
         self.on_edit = on_edit
         self.on_delete = on_delete

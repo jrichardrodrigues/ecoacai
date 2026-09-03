@@ -57,7 +57,7 @@ class MotoristasView:
             ),
             prefix_icon=ft.Icons.SEARCH,
             border_radius=Radius.INPUT,
-            width=600,
+            expand=True,
             on_submit=self.pesquisar,
         )
 
@@ -171,11 +171,10 @@ class MotoristasView:
                 controls=[
                     ft.Container(
                         content=self.tabela,
-                        width=1300,
+                        expand=True,
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
-                scroll=ft.ScrollMode.AUTO,
             ),
             border=ft.Border.all(
                 width=1,

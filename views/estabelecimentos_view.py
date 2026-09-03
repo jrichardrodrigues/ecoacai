@@ -240,7 +240,8 @@ class EstabelecimentosView:
     def build(self) -> ft.Control:
         """Constrói e retorna a tela."""
 
-        largura_conteudo = 1100
+        # Mantém a área tabular no mesmo padrão visual da tela Veículos.
+        largura_conteudo = 1300
 
         cabecalho = PageHeader(
             title="Solicitantes",
@@ -267,6 +268,7 @@ class EstabelecimentosView:
                 ft.Container(
                     content=self.total,
                     width=largura_conteudo,
+                    margin=ft.Margin.only(left=30),
                 ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
@@ -281,6 +283,7 @@ class EstabelecimentosView:
                 expand=True,
             ),
             width=largura_conteudo,
+            margin=ft.Margin.only(left=30),
         )
 
         return ft.Column(

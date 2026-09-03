@@ -759,8 +759,8 @@ class SolicitacoesGestorView:
         # O campo de pesquisa não participa mais da expansão da Row.
         # Assim sua largura não é sacrificada quando a janela chega
         # ao limite mínimo desktop.
-        self.campo_pesquisa.expand = None
-        self.campo_pesquisa.width = 210
+        self.campo_pesquisa.expand = True
+        self.campo_pesquisa.width = None
 
         self.filtro_status.width = 130
         self.data_inicial_field.width = 125
