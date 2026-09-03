@@ -170,7 +170,7 @@ class VeiculosView:
                         width=1300,
                     ),
                 ],
-                scroll=ft.ScrollMode.ADAPTIVE,
+                scroll=ft.ScrollMode.ALWAYS,
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
             border=ft.Border.all(
