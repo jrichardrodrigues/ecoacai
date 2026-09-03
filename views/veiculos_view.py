@@ -12,7 +12,10 @@ from components.responsive import (
 )
 from components.dialogs import ConfirmDialog
 from components.buttons import PrimaryButton, SecondaryButton
-from components.theme import Radius
+from components.theme import (
+    Radius,
+    Spacing,
+)
 
 from controllers.veiculo_controller import VeiculoController
 from models import Veiculo
@@ -147,9 +150,11 @@ class VeiculosView:
                 ),
             ],
             rows=[],
-            column_spacing=24,
-            data_row_min_height=44,
-            data_row_max_height=56,
+            column_spacing=Spacing.MD,
+            horizontal_margin=Spacing.MD,
+            heading_row_height=52,
+            data_row_min_height=52,
+            data_row_max_height=64,
             horizontal_lines=ft.BorderSide(
                 width=1,
                 color=ft.Colors.OUTLINE_VARIANT,
@@ -162,17 +167,19 @@ class VeiculosView:
                 controls=[
                     ft.Container(
                         content=self.tabela,
+                        width=1300,
                     ),
                 ],
+                scroll=ft.ScrollMode.ADAPTIVE,
                 alignment=ft.MainAxisAlignment.CENTER,
-                scroll=ft.ScrollMode.AUTO,
             ),
             border=ft.Border.all(
                 width=1,
                 color=ft.Colors.OUTLINE_VARIANT,
             ),
             border_radius=8,
-            padding=8,
+            padding=Spacing.XS,
+            expand=True,
         )
 
         self.estado_vazio = ft.Container(
@@ -180,6 +187,7 @@ class VeiculosView:
                 controls=[
                     ft.Icon(
                         ft.Icons.LOCAL_SHIPPING_OUTLINED,
+
                         size=64,
                         color=ft.Colors.OUTLINE,
                     ),

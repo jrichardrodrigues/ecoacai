@@ -33,6 +33,19 @@ def main(page: ft.Page) -> None:
 
     page.title = APP_NAME
     page.theme_mode = ft.ThemeMode.LIGHT
+
+    page.theme = ft.Theme(
+        scrollbar_theme=ft.ScrollbarTheme(
+            thumb_color=ft.Colors.GREY_500,
+            track_color=ft.Colors.GREY_200,
+            track_border_color=ft.Colors.GREY_300,
+            thickness=8,
+            radius=8,
+            main_axis_margin=2,
+            cross_axis_margin=2,
+        ),
+    )
+
     page.bgcolor = COR_FUNDO
     page.padding = 0
 

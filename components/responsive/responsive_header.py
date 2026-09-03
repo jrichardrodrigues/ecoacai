@@ -4,6 +4,8 @@ from typing import Any
 
 import flet as ft
 
+from components.buttons import PrimaryButton
+
 
 class ResponsiveHeader(ft.ResponsiveRow):
     """Cabeçalho responsivo padrão das telas do sistema."""
@@ -52,18 +54,9 @@ class ResponsiveHeader(ft.ResponsiveRow):
         ]
 
         if action_label:
-            action_button = ft.FilledButton(
-                content=ft.Row(
-                    controls=[
-                        ft.Icon(
-                            action_icon or ft.Icons.ADD,
-                            size=18,
-                        ),
-                        ft.Text(action_label),
-                    ],
-                    spacing=8,
-                    tight=True,
-                ),
+            action_button = PrimaryButton(
+                label=action_label,
+                icon=action_icon or ft.Icons.ADD,
                 on_click=on_action,
             )
 

@@ -162,6 +162,10 @@ class MotoristasView:
             data_row_max_height=64,
         )
 
+        # Mantém a tabela com uma largura mínima estável.
+        # Em telas amplas ela permanece centralizada; quando a área disponível
+        # fica menor, o Row passa a oferecer rolagem horizontal sem comprimir
+        # ou cortar definitivamente as colunas.
         self.container_tabela = ft.Container(
             content=ft.Row(
                 controls=[
@@ -171,7 +175,7 @@ class MotoristasView:
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
-                scroll=ft.ScrollMode.ADAPTIVE,
+                scroll=ft.ScrollMode.AUTO,
             ),
             border=ft.Border.all(
                 width=1,
