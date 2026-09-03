@@ -50,8 +50,8 @@ class SolicitacoesGestorView:
             label="Pesquisar",
             hint_text="Código ou solicitante",
             prefix_icon=ft.Icons.SEARCH,
-            width=580,
             border_radius=Radius.INPUT,
+            width=210,
         )
 
         self.filtro_status = ft.Dropdown(
@@ -723,9 +723,9 @@ class SolicitacoesGestorView:
                     ),
                 },
                 padding=ft.Padding(
-                    left=16,
+                    left=10,
                     top=10,
-                    right=16,
+                    right=10,
                     bottom=10,
                 ),
                 shape=ft.RoundedRectangleBorder(
@@ -746,16 +746,25 @@ class SolicitacoesGestorView:
             on_click=self._limpar_filtros,
         )
 
-        barra_botoes = ft.Row(
-            controls=[
-                botao_pesquisar,
-                botao_limpar,
-                botao_lixeira,
-            ],
-            spacing=12,
-            alignment=ft.MainAxisAlignment.END,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        )
+        # Larguras compactas dos botões para preservar toda a faixa
+        # de filtros no limite mínimo desktop de 1280 px.
+        botao_pesquisar.width = 125
+        botao_limpar.width = 110
+        botao_lixeira.width = 95
+
+        # Barra única de filtros e ações.
+        # Em desktop, a aplicação trabalha com largura mínima global de
+        # 1280 px. Por isso, preservamos uma largura mínima útil para o
+        # campo de pesquisa e compactamos apenas os controles auxiliares.
+        # O campo de pesquisa não participa mais da expansão da Row.
+        # Assim sua largura não é sacrificada quando a janela chega
+        # ao limite mínimo desktop.
+        self.campo_pesquisa.expand = None
+        self.campo_pesquisa.width = 210
+
+        self.filtro_status.width = 130
+        self.data_inicial_field.width = 125
+        self.data_final_field.width = 125
 
         barra_filtros = ft.Row(
             controls=[
@@ -763,8 +772,11 @@ class SolicitacoesGestorView:
                 self.filtro_status,
                 self.data_inicial_field,
                 self.data_final_field,
+                botao_pesquisar,
+                botao_limpar,
+                botao_lixeira,
             ],
-            spacing=12,
+            spacing=6,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
@@ -784,19 +796,7 @@ class SolicitacoesGestorView:
             controls=[
                 cabecalho,
 
-                ft.Column(
-                    controls=[
-                        ft.Row(
-                            controls=[
-                                barra_botoes,
-                            ],
-                            alignment=ft.MainAxisAlignment.END,
-                        ),
-
-                        barra_filtros,
-                    ],
-                    spacing=8,
-                ),
+                barra_filtros,
 
                 barra_acoes,
 

@@ -255,33 +255,34 @@ class ColetasAgendadasView:
             on_click=self._limpar_filtros,
         )
 
-        linha_campos = ft.Row(
+        # Os filtros ocupam toda a largura disponível.
+        # A proporção 4:4:3:3:3 prioriza os campos de data e
+        # reduz Motorista e Veículo nas larguras intermediárias.
+        self.campo_data_inicial.width = None
+        self.campo_data_inicial.expand = 4
+
+        self.campo_data_final.width = None
+        self.campo_data_final.expand = 4
+
+        self.dropdown_status.width = None
+        self.dropdown_status.expand = 3
+
+        self.dropdown_motorista.width = None
+        self.dropdown_motorista.expand = 3
+
+        self.dropdown_veiculo.width = None
+        self.dropdown_veiculo.expand = 3
+
+        return ResponsiveFilterBar(
             controls=[
                 self.campo_data_inicial,
                 self.campo_data_final,
                 self.dropdown_status,
                 self.dropdown_motorista,
                 self.dropdown_veiculo,
-            ],
-            spacing=12,
-            run_spacing=12,
-            wrap=True,
-        )
-
-        linha_botoes = ft.Row(
-            controls=[
                 botao_pesquisar,
                 botao_limpar,
             ],
-            spacing=12,
-        )
-
-        return ft.Column(
-            controls=[
-                linha_campos,
-                linha_botoes,
-            ],
-            spacing=12,
         )
 
     def _construir_dialog_agendamento(self) -> None:
