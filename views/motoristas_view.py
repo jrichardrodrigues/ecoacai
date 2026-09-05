@@ -9,7 +9,6 @@ from components.buttons import (
 from components.responsive import (
     ResponsiveFilterBar,
     ResponsiveHeader,
-    ResponsiveTable,
 )
 from components.theme import (
     Colors,
@@ -163,15 +162,24 @@ class MotoristasView:
             data_row_max_height=64,
         )
 
-        self.container_tabela = ResponsiveTable(
-            content=self.tabela,
-            min_width=1300,
+        self.container_tabela = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Container(
+                        content=self.tabela,
+                        width=1300,
+                    ),
+                ],
+                scroll=ft.ScrollMode.ALWAYS,
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
             border=ft.Border.all(
                 width=1,
                 color=Colors.BORDER,
             ),
             border_radius=Radius.CARD,
             padding=Spacing.XS,
+            expand=True,
         )
 
         # ======================================================
@@ -188,6 +196,7 @@ class MotoristasView:
         )
 
         self.estado_lista = ft.Container(
+            visible=False,
             content=ft.Column(
                 controls=[
                     self.indicador_carregamento,
@@ -240,10 +249,14 @@ class MotoristasView:
         # CONTEÚDO PRINCIPAL
         # ======================================================
 
-        self.area_conteudo = ft.Column(
-            controls=[],
-            spacing=Spacing.MD,
+        self.container = ft.Container(
             expand=True,
+            padding=24,
+            content=ft.Column(
+                controls=[],
+                spacing=10,
+                scroll=ft.ScrollMode.AUTO,
+            ),
         )
 
         self.exibir_listagem()
@@ -256,7 +269,7 @@ class MotoristasView:
     def exibir_listagem(self) -> None:
         """Configura os controles da tela de listagem."""
 
-        self.area_conteudo.controls = [
+        self.container.content.controls = [
             ResponsiveHeader(
                 title="Motoristas",
                 subtitle=(
@@ -283,22 +296,7 @@ class MotoristasView:
     def construir(self) -> ft.Control:
         """Constrói a tela principal de motoristas."""
 
-        return ft.Column(
-            controls=[
-                ft.Container(
-                    content=self.area_conteudo,
-                    padding=ft.Padding(
-                        left=0,
-                        top=0,
-                        right=16,
-                        bottom=0,
-                    ),
-                ),
-            ],
-            spacing=Spacing.MD,
-            scroll=ft.ScrollMode.ADAPTIVE,
-            expand=True,
-        )
+        return self.container
 
     # ==========================================================
     # NAVEGAÇÃO
@@ -448,6 +446,7 @@ class MotoristasView:
 
         self.indicador_carregamento.visible = True
         self.mensagem_lista.visible = False
+        self.estado_lista.visible = True
         self.container_tabela.visible = False
         self.paginacao.visible = False
 
@@ -457,6 +456,10 @@ class MotoristasView:
         """Finaliza o estado de carregamento."""
 
         self.indicador_carregamento.visible = False
+
+        if self.motoristas:
+            self.estado_lista.visible = False
+
         self.page.update()
 
     def _atualizar_estado_lista(self) -> None:
@@ -467,6 +470,7 @@ class MotoristasView:
         )
 
         self.container_tabela.visible = possui_registros
+        self.estado_lista.visible = not possui_registros
         self.mensagem_lista.visible = not possui_registros
         self.paginacao.visible = possui_registros
 

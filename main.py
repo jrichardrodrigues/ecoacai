@@ -52,8 +52,9 @@ def main(page: ft.Page) -> None:
     page.window.width = 1330
     page.window.height = 920
 
-    page.window.min_width = 1330
-    page.window.min_height = 920
+    page.window.min_width = 1200
+    page.window.min_height = 700
+
 
     sessao_service = SessaoService()
 

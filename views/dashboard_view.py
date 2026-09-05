@@ -1432,11 +1432,24 @@ class DashboardView:
                                 ft.Icon(
                                     ft.Icons.FILTER_ALT,
                                     size=18,
+                                    color=ft.Colors.WHITE,
                                 ),
-                                ft.Text("Aplicar"),
+                                ft.Text(
+                                    "Aplicar",
+                                    color=ft.Colors.WHITE,
+                                    weight=ft.FontWeight.W_600,
+                                ),
                             ],
                             spacing=8,
                             tight=True,
+                        ),
+                        height=44,
+                        style=ft.ButtonStyle(
+                            bgcolor=Colors.PRIMARY,
+                            color=ft.Colors.WHITE,
+                            shape=ft.RoundedRectangleBorder(
+                                radius=Radius.MD,
+                            ),
                         ),
                         on_click=self._aplicar_filtro,
                     ),
@@ -1446,11 +1459,27 @@ class DashboardView:
                                 ft.Icon(
                                     ft.Icons.CLEAR,
                                     size=18,
+                                    color=Colors.PRIMARY,
                                 ),
-                                ft.Text("Limpar"),
+                                ft.Text(
+                                    "Limpar",
+                                    color=Colors.PRIMARY,
+                                    weight=ft.FontWeight.W_600,
+                                ),
                             ],
                             spacing=8,
                             tight=True,
+                        ),
+                        height=44,
+                        style=ft.ButtonStyle(
+                            color=Colors.PRIMARY,
+                            side=ft.BorderSide(
+                                width=1,
+                                color=Colors.PRIMARY,
+                            ),
+                            shape=ft.RoundedRectangleBorder(
+                                radius=Radius.MD,
+                            ),
                         ),
                         on_click=self._limpar_filtro,
                     ),
