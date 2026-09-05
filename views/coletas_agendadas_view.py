@@ -19,6 +19,7 @@ from components.responsive import (
     ResponsiveFilterBar,
     ResponsiveHeader,
 )
+from components.responsive import ResponsiveTable
 
 from config.constants import StatusColeta
 
@@ -1213,12 +1214,9 @@ class ColetasAgendadasView:
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
-        tabela_com_rolagem = ft.Row(
-            controls=[
-                self.tabela,
-            ],
-            alignment=ft.MainAxisAlignment.START,
-            scroll=ft.ScrollMode.AUTO,
+        tabela_com_rolagem = ResponsiveTable(
+            content=self.tabela,
+            min_width=1300,
         )
 
         return ft.Container(

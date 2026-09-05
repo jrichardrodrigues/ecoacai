@@ -122,6 +122,36 @@ class SolicitacoesGestorView:
             color=ft.Colors.BLUE_GREY_700,
         )
 
+        # ==========================================================
+        # PAGINAÇÃO
+        # ==========================================================
+
+        self.itens_por_pagina = 10
+        self.pagina_atual = 1
+        self.total_paginas = 1
+
+        self._solicitacoes_filtradas: list[dict] = []
+
+        self.texto_paginacao = ft.Text(
+            "Página 1 de 1",
+            size=14,
+            color=ft.Colors.BLUE_GREY_700,
+        )
+
+        self.botao_pagina_anterior = ft.IconButton(
+            icon=ft.Icons.CHEVRON_LEFT,
+            tooltip="Página anterior",
+            disabled=True,
+            on_click=self._pagina_anterior,
+        )
+
+        self.botao_proxima_pagina = ft.IconButton(
+            icon=ft.Icons.CHEVRON_RIGHT,
+            tooltip="Próxima página",
+            disabled=True,
+            on_click=self._proxima_pagina,
+        )
+
         self.on_ver_detalhes = on_ver_detalhes
 
         self.on_abrir_lixeira = on_abrir_lixeira
@@ -130,7 +160,7 @@ class SolicitacoesGestorView:
 
     def _abrir_data_inicial(
             self,
-            event: ft.Event[ft.Control] | None = None,
+            _event: ft.Event[ft.Control] | None = None,
     ) -> None:
         picker = ft.DatePicker(
             help_text="Selecione a data inicial",
@@ -144,7 +174,7 @@ class SolicitacoesGestorView:
 
     def _abrir_data_final(
             self,
-            event: ft.Event[ft.Control] | None = None,
+            _event: ft.Event[ft.Control] | None = None,
     ) -> None:
         picker = ft.DatePicker(
             help_text="Selecione a data final",
@@ -368,6 +398,8 @@ class SolicitacoesGestorView:
             if status == "TODOS":
                 status = None
 
+            self.pagina_atual = 1
+
             self._carregar(
                 pesquisa=pesquisa or None,
                 status=status,
@@ -392,6 +424,8 @@ class SolicitacoesGestorView:
         self.data_inicial_field.value = ""
         self.data_final_field.value = ""
 
+        self.pagina_atual = 1
+
         self._carregar()
 
         self.page.update()
@@ -399,6 +433,89 @@ class SolicitacoesGestorView:
     # ==========================================================
     # DADOS
     # ==========================================================
+
+    def _pagina_anterior(
+            self,
+            _e: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        if self.pagina_atual <= 1:
+            return
+
+        self.pagina_atual -= 1
+        self._atualizar_pagina()
+
+        self.area_lista_scroll.scroll_to(
+            offset=0,
+            duration=250,
+        )
+
+        self.page.update()
+
+    def _proxima_pagina(
+            self,
+            _e: ft.Event[ft.Control] | None = None,
+    ) -> None:
+        if self.pagina_atual >= self.total_paginas:
+            return
+
+        self.pagina_atual += 1
+        self._atualizar_pagina()
+
+        self.area_lista_scroll.scroll_to(
+            offset=0,
+            duration=250,
+        )
+
+        self.page.update()
+
+    def _atualizar_pagina(self) -> None:
+        total = len(self._solicitacoes_filtradas)
+
+        self.total_paginas = max(
+            1,
+            (
+                    total + self.itens_por_pagina - 1
+            ) // self.itens_por_pagina,
+        )
+
+        if self.pagina_atual > self.total_paginas:
+            self.pagina_atual = self.total_paginas
+
+        inicio = (
+                (self.pagina_atual - 1)
+                * self.itens_por_pagina
+        )
+
+        fim = inicio + self.itens_por_pagina
+
+        solicitacoes_pagina = (
+            self._solicitacoes_filtradas[inicio:fim]
+        )
+
+        self.lista.controls.clear()
+
+        for dados in solicitacoes_pagina:
+            self.lista.controls.append(
+                self._criar_card(dados)
+            )
+
+        if not self._solicitacoes_filtradas:
+            self.lista.controls.append(
+                self._estado_vazio()
+            )
+
+        self.texto_paginacao.value = (
+            f"Página {self.pagina_atual} "
+            f"de {self.total_paginas}"
+        )
+
+        self.botao_pagina_anterior.disabled = (
+                self.pagina_atual <= 1
+        )
+
+        self.botao_proxima_pagina.disabled = (
+                self.pagina_atual >= self.total_paginas
+        )
 
     def _carregar(
             self,
@@ -416,24 +533,16 @@ class SolicitacoesGestorView:
             data_final=data_final,
         )
 
-        self.lista.controls.clear()
+        self._solicitacoes_filtradas = list(solicitacoes)
 
-        for dados in solicitacoes:
-            self.lista.controls.append(
-                self._criar_card(dados)
-            )
-
-        total = len(solicitacoes)
+        total = len(self._solicitacoes_filtradas)
 
         self.total.value = (
             f"{total} "
             f"{'solicitação' if total == 1 else 'solicitações'}"
         )
 
-        if not solicitacoes:
-            self.lista.controls.append(
-                self._estado_vazio()
-            )
+        self._atualizar_pagina()
 
     # ==========================================================
     # CARDS
@@ -787,12 +896,31 @@ class SolicitacoesGestorView:
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        area_lista = ft.Container(
-            content=self.lista,
+        self.area_lista_scroll = ft.Column(
+            controls=[
+                self.lista,
+            ],
+            scroll=ft.ScrollMode.AUTO,
             expand=True,
         )
 
-        return ft.Column(
+        area_lista = ft.Container(
+            content=self.area_lista_scroll,
+            expand=True,
+        )
+
+        barra_paginacao = ft.Row(
+            controls=[
+                self.botao_pagina_anterior,
+                self.texto_paginacao,
+                self.botao_proxima_pagina,
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=12,
+        )
+
+        self.conteudo_principal = ft.Column(
             controls=[
                 cabecalho,
 
@@ -801,8 +929,11 @@ class SolicitacoesGestorView:
                 barra_acoes,
 
                 area_lista,
+
+                barra_paginacao,
             ],
             spacing=15,
             expand=True,
-            scroll=ft.ScrollMode.AUTO,
         )
+
+        return self.conteudo_principal

@@ -9,6 +9,7 @@ from components.buttons import (
 from components.responsive import (
     ResponsiveFilterBar,
     ResponsiveHeader,
+    ResponsiveTable,
 )
 from components.theme import (
     Colors,
@@ -162,27 +163,15 @@ class MotoristasView:
             data_row_max_height=64,
         )
 
-        # Mantém a tabela com uma largura mínima estável.
-        # Em telas amplas ela permanece centralizada; quando a área disponível
-        # fica menor, o Row passa a oferecer rolagem horizontal sem comprimir
-        # ou cortar definitivamente as colunas.
-        self.container_tabela = ft.Container(
-            content=ft.Row(
-                controls=[
-                    ft.Container(
-                        content=self.tabela,
-                        expand=True,
-                    ),
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-            ),
+        self.container_tabela = ResponsiveTable(
+            content=self.tabela,
+            min_width=1300,
             border=ft.Border.all(
                 width=1,
                 color=Colors.BORDER,
             ),
             border_radius=Radius.CARD,
             padding=Spacing.XS,
-            expand=True,
         )
 
         # ======================================================

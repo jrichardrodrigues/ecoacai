@@ -13,6 +13,7 @@ from components.dialogs import confirmar_exclusao
 from components.layout import PageHeader
 from components.buttons import PrimaryButton
 from components.theme import Radius
+from components.responsive import ResponsiveTable
 
 
 class EstabelecimentosView:
@@ -275,15 +276,18 @@ class EstabelecimentosView:
         )
 
         area_tabela = ft.Container(
-            content=ft.Stack(
-                controls=[
-                    self.sem_registros,
-                    self.tabela,
-                ],
-                expand=True,
+            content=ResponsiveTable(
+                content=ft.Stack(
+                    controls=[
+                        self.sem_registros,
+                        self.tabela,
+                    ],
+                    expand=True,
+                ),
+                min_width=1300,
             ),
-            width=largura_conteudo,
             margin=ft.Margin.only(left=30),
+            expand=True,
         )
 
         return ft.Column(
